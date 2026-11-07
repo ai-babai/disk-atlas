@@ -179,6 +179,13 @@ class CLIBehaviorTests(unittest.TestCase):
         self.assertTrue(all(event['event'] == 'progress' for event in events))
         self.assertEqual(self.call('scan', self.input, '--quiet').stderr, '')
 
+    def test_show_loading_has_visible_progress_even_on_failure(self):
+        result = self.call('show', self.snapshot, '--progress', code=1)
+        events = [json.loads(line) for line in result.stderr.splitlines()]
+        self.assertEqual(events[0]['event'], 'progress')
+        self.assertIn('error', events[-1])
+        self.assertEqual(result.stdout, '')
+
     def test_signal_stops_scan_and_preserves_sources(self):
         # The first progress event is emitted only after signal handlers are registered.
         many = self.input / 'many'

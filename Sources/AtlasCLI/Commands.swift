@@ -168,14 +168,20 @@ struct ReportCommand: AsyncParsableCommand {
     }
 }
 
-struct ShowCommand: ParsableCommand {
+struct ShowCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "show", abstract: "Open an exported snapshot in the installed macOS app.")
     @Argument var snapshot: String
     @OptionGroup var format: OutputOptions
-    func run() throws {
-        try show(snapshot)
-        try format.emit(["opened": true], command: "show")
+    @OptionGroup var work: WorkOptions
+    func run() async throws {
+        let snapshot = snapshot
+        let result = try await CLIWork.perform(work) { context in
+            context.update("opening_snapshot")
+            try show(snapshot, context: context)
+            return ["opened": true]
+        }
+        try format.emit(result, command: "show")
     }
 }
 

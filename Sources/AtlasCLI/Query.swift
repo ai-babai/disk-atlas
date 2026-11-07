@@ -101,8 +101,9 @@ func newOutput(_ path: String?) throws -> URL? {
     return url
 }
 
-func show(_ path: String) throws {
+func show(_ path: String, context: CLIWork? = nil) throws {
     _ = try Snapshot.load(from: URL(fileURLWithPath: path))
+    try context?.check()
     let app = installedApp()
     guard FileManager.default.fileExists(atPath: app.path) else {
         throw CLIError.missing("Install Disk Atlas.app first.")
