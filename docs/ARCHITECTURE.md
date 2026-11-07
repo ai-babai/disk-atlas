@@ -95,6 +95,16 @@ archive is attached persists its report when the history UUID becomes available.
 
 ## Rendering and storage
 
+The welcome screen reads startup volume name and filesystem capacity on a utility
+worker; it does not walk directories or read contents. Capacity refreshes when
+welcome appears, without polling. Home parks the current snapshot and selection
+while retaining its existing presentation index and filters. Back (also ⌘[) and
+reopening the active history entry restore this cached workspace without decoding
+or scanning again. Applying another snapshot or deleting its history clears it.
+The inspector toggle is the trailing toolbar action. Size mode is a direct
+segmented control beside its info explanation; narrow workspaces wrap controls
+onto two rows, and the file table scrolls horizontally when fixed columns cannot fit.
+
 Scanning, snapshot decoding, compression and index construction run off the main
 thread. The immutable index caches both size orderings, descendant ranges and type
 totals. Filtered queries use a bounded top-K heap and cancellation checks. Only the
@@ -129,7 +139,10 @@ Leaving the list or collapsing a duplicate group dismisses its preview. The syst
 owns format support, preview loading/animation and missing-file presentation.
 
 Native NSSplitViewController items remain mounted when collapsed; their animator
-moves the divider in 220 ms, preserving resized pane widths. SwiftUI environment
+moves the divider in 220 ms. The inspector uses a resizable generic split item
+with an explicit 210–460 point range, rather than AppKit’s fixed-width inspector
+constructor. Separate AppKit autosave names retain navigation and inspector widths
+after dragging, collapse and returning from Home. SwiftUI environment
 values cross hosting boundaries, including Reduce Motion, appearance and disabled
 state. Map state is isolated from unrelated observable-store updates; only the
 selected branch invalidates nested Canvas artwork. Single clicks are immediate;

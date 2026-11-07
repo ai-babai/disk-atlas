@@ -57,15 +57,6 @@
       "start": 132
     },
     {
-      "bodyHash": "dedae9294c9d21c08e6ba0be4d6646ee97298644aee92f60c8eb449b014729a3",
-      "cognitive": 16,
-      "cyclomatic": 7,
-      "end": 87,
-      "file": "Sources/DiskAtlas/ScanSetup.swift",
-      "identity": "ScanSetup.property:body",
-      "start": 16
-    },
-    {
       "bodyHash": "a54fb4e2bfb8d3e402053e6f1a06b9071c136cf95fdfd6538f89035c4bc6de93",
       "cognitive": 18,
       "cyclomatic": 10,

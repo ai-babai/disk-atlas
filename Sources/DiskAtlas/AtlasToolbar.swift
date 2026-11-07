@@ -8,10 +8,16 @@ struct AtlasToolbar: ToolbarContent {
         path
         actions
         language
+        inspector
     }
     private var navigation: some ToolbarContent {
         ToolbarItem(placement: .navigation) {
-            if store.snapshot != nil {
+            if store.canReturnToWorkspace {
+                Button(action: store.returnToWorkspace) {
+                    Label(L10n.text("Назад к ") + store.returnTitle, systemImage: "chevron.left").lineLimit(1)
+                        .truncationMode(.middle)
+                }.help(L10n.text("Вернуться к снимку"))
+            } else if store.snapshot != nil {
                 Button {
                     store.sidebarVisible.toggle()
                 } label: {
@@ -50,6 +56,16 @@ struct AtlasToolbar: ToolbarContent {
                 Button(L10n.text("Новый анализ"), systemImage: "plus") { store.beginSelection() }.disabled(
                     store.scanning || store.preparing
                 ).labelStyle(.titleAndIcon)
+
+            }
+        }
+    }
+    private var language: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) { LanguagePicker(store: store) }
+    }
+    private var inspector: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            if store.snapshot != nil {
                 if !store.showDuplicates {
                     Button {
                         store.inspectorVisible.toggle()
@@ -62,9 +78,6 @@ struct AtlasToolbar: ToolbarContent {
                 }
             }
         }
-    }
-    private var language: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) { LanguagePicker(store: store) }
     }
     @ViewBuilder private var duplicateActions: some View {
         if store.duplicates.busy {

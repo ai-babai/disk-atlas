@@ -5,6 +5,15 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.9.0 — 2026-11-07
+
+- Explain the two stages explicitly: calculate file sizes, then find duplicates in the background.
+- Restore the cached workspace with Back or the same history entry after returning Home, preserving selection and filters.
+- Make the right inspector genuinely resizable and retain pane widths across updates, collapse and Home. Put its toggle at the trailing toolbar edge.
+- Replace the nested Size menu with a direct On disk / File size switch and info; adapt narrow layouts and keep table columns reachable by horizontal scrolling.
+- Show startup volume name, free space and total capacity immediately from filesystem metadata without scanning files.
+- Add volume metadata checks and retire one more frozen complexity exception without changing quality thresholds.
+
 ## 0.8.0 — 2026-11-07
 
 - Reveal nested map selections in one temporary list row, without navigating or clearing filters; use AppKit’s native scroll destination so the first row is not hidden by the header.

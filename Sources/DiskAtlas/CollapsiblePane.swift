@@ -34,10 +34,11 @@ struct CollapsiblePane<Pane: View, Content: View>: NSViewControllerRepresentable
             let navigation = parent.kind == .navigation
             item =
                 navigation
-                ? NSSplitViewItem(sidebarWithViewController: paneHost)
-                : NSSplitViewItem(inspectorWithViewController: paneHost)
+                ? NSSplitViewItem(sidebarWithViewController: paneHost) : NSSplitViewItem(viewController: paneHost)
+            item.canCollapse = true
+            item.preferredThicknessFraction = NSSplitViewItem.unspecifiedDimension
             item.minimumThickness = navigation ? 180 : 210
-            item.maximumThickness = navigation ? 350 : 380
+            item.maximumThickness = navigation ? 350 : 460
             item.canCollapseFromWindowResize = false
             item.collapseBehavior = .preferResizingSiblingsWithFixedSplitView
             item.holdingPriority = .init(260)
@@ -50,6 +51,7 @@ struct CollapsiblePane<Pane: View, Content: View>: NSViewControllerRepresentable
             paneHost.view.setFrameSize(NSSize(width: navigation ? 210 : 250, height: 800))
             contentHost.view.setFrameSize(NSSize(width: navigation ? 1169 : 918, height: 800))
             controller.splitViewItems = navigation ? [item, main] : [main, item]
+            controller.splitView.autosaveName = navigation ? "DiskAtlas.navigation" : "DiskAtlas.inspector"
             observation = item.observe(\.isCollapsed) { [weak self] _, _ in self?.changedFromDrag() }
         }
 

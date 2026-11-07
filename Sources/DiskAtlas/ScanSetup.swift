@@ -65,16 +65,7 @@ struct ScanSetup: View {
                 }
                 return true
             }
-            VStack(alignment: .leading, spacing: 7) {
-                Toggle(L10n.text("Найти дубликаты"), isOn: $store.prepareDuplicateSearch).font(.system(size: 11))
-                    .disabled(store.duplicates.busy)
-                if store.prepareDuplicateSearch {
-                    Text(L10n.text("После анализа — проверка в фоне. Чтение файлов может занять время.")).font(
-                        .system(size: 10)
-                    ).foregroundStyle(Palette.sub).fixedSize(horizontal: false, vertical: true)
-                    DuplicateStartOptions(session: store.duplicates).transition(.opacity)
-                }
-            }.animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: store.prepareDuplicateSearch)
+            duplicateChoice
             HStack(spacing: 16) {
                 Button(L10n.text("Анализировать"), systemImage: "chart.pie") { store.analyzeSelection() }.buttonStyle(
                     .borderedProminent
@@ -84,6 +75,21 @@ struct ScanSetup: View {
                 ).foregroundStyle(Palette.sub).lineSpacing(3)
             }
         }
+    }
+
+    private var duplicateChoice: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Toggle(L10n.text("Найти дубликаты"), isOn: $store.prepareDuplicateSearch).font(.system(size: 11)).disabled(
+                store.duplicates.busy)
+            if store.prepareDuplicateSearch {
+                Text(
+                    L10n.text(
+                        "Сначала посчитаем размеры файлов, затем найдём дубликаты в фоне. Поиск дубликатов может занять время."
+                    )
+                ).font(.system(size: 10)).foregroundStyle(Palette.sub).fixedSize(horizontal: false, vertical: true)
+                DuplicateStartOptions(session: store.duplicates).transition(.opacity)
+            }
+        }.animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: store.prepareDuplicateSearch)
     }
 
     private func quick(_ title: String, icon: String, path: String) -> some View {

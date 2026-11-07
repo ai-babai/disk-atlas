@@ -61,6 +61,9 @@ public enum L10n {
     ]
     private static let english: [String: String] = [
         "Все копии совпавшего файла остаются в группе.": "Every copy of a matching file stays in its group.",
+        "Свободно": "Free", "Назад к ": "Back to ", "Вернуться к снимку": "Return to snapshot", " из ": " of ",
+        "Сначала посчитаем размеры файлов, затем найдём дубликаты в фоне. Поиск дубликатов может занять время.":
+            "First we calculate file sizes, then find duplicates in the background. Finding duplicates may take time.",
         "На главную": "Home", "Сохранение отменено.": "Saving cancelled.", "Останавливаем…": "Stopping…",
         "Не удалось выделить память.": "Could not allocate memory.", "Файлов с копиями": "Files with copies",
         "Открыть дубликаты": "Open duplicates", "Открыть": "Open", "Новая проверка": "New check",
@@ -118,9 +121,7 @@ public enum L10n {
             "Snapshots contain names, paths, sizes and dates. Duplicate checks read content only when you opt in. No deletion commands.",
         "Сортировка": "Sort", "Повторный объём": "Repeated bytes", "Размер копии": "Copy size",
         "По убыванию": "Descending", "Как считается размер": "Size calculation", "Фильтры": "Filters",
-        "После анализа — проверка в фоне. Чтение файлов может занять время.":
-            "Checks run in the background after analysis. Reading files can take time.", "Отчёт": "Report",
-        "Отчёт не сохранён": "Report not saved",
+        "Отчёт": "Report", "Отчёт не сохранён": "Report not saved",
         "Снимки содержат имена, пути, размеры и даты. Чтение содержимого для дубликатов требует отдельного запуска. Команд удаления нет.":
             "Snapshots contain names, paths, sizes and dates. Duplicate content reading requires a separate explicit start. No deletion commands.",
         "Без минимума": "No minimum", "Параметры": "Options", "Любой размер": "Any size", "От ": "From ",

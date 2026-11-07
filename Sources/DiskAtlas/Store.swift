@@ -91,6 +91,13 @@ import UniformTypeIdentifiers
     let duplicates: DuplicateSession
     private var duplicateObserver: AnyCancellable?
     private var baseIndex: PresentationIndex?
+    private struct ParkedWorkspace {
+        let snapshot: Snapshot
+        let selection: Int?
+        let duplicates: Bool
+    }
+    private var parkedWorkspace: ParkedWorkspace?
+    @Published private(set) var startupVolume: VolumeCapacity?
     private var filterTask: Task<Void, Never>?
     private var filterWorker: Task<PresentationIndex, Error>?
     private var filterGeneration = UUID()
@@ -175,6 +182,7 @@ import UniformTypeIdentifiers
 
     private func clearDeletedSnapshot() {
         guard let activeHistoryID, !historyRecords.contains(where: { $0.id == activeHistoryID }) else { return }
+        parkedWorkspace = nil
         retire(index)
         duplicates.discard()
         filterTask?.cancel()
@@ -218,8 +226,12 @@ import UniformTypeIdentifiers
     func openHistory(_ record: ScanHistoryRecord) {
         guard !scanning && !preparing && !deletingHistory else { return }
         if activeHistoryID == record.id {
-            largestFiles = false
-            navigate(0)
+            if snapshot == nil {
+                returnToWorkspace()
+            } else {
+                largestFiles = false
+                navigate(0)
+            }
             showHistory = false
             return
         }
@@ -526,6 +538,7 @@ import UniformTypeIdentifiers
     }
 
     func apply(_ value: Snapshot, index: PresentationIndex, historyID: UUID? = nil, metadataEstimate: Int64? = nil) {
+        parkedWorkspace = nil
         filterTask?.cancel()
         filterWorker?.cancel()
         filterGeneration = UUID()
@@ -559,8 +572,9 @@ import UniformTypeIdentifiers
 
     var canGoHome: Bool { !scanning && !preparing && !deletingHistory && savingHistory == 0 }
     func goHome() {
-        guard canGoHome else { return }
-        snapshot = nil
+        guard canGoHome, let snapshot else { return }
+        parkedWorkspace = ParkedWorkspace(snapshot: snapshot, selection: selection, duplicates: showDuplicates)
+        self.snapshot = nil
         pendingPaths = []
         prepareDuplicateSearch = false
         showSourcePicker = false
@@ -568,8 +582,23 @@ import UniformTypeIdentifiers
         selection = nil
         notice = nil
     }
+    var canReturnToWorkspace: Bool { snapshot == nil && parkedWorkspace != nil && !scanning && !preparing }
+    var returnTitle: String { parkedWorkspace?.snapshot.rootEntry.name ?? "" }
+    func returnToWorkspace() {
+        guard canReturnToWorkspace, let parkedWorkspace else { return }
+        snapshot = parkedWorkspace.snapshot
+        selection = parkedWorkspace.selection
+        showDuplicates = parkedWorkspace.duplicates
+        pendingPaths = parkedWorkspace.snapshot.scanRoots
+        self.parkedWorkspace = nil
+    }
+    func refreshStartupVolume() async {
+        let value = await Task.detached(priority: .utility) { try? VolumeCapacity.read() }.value
+        guard !Task.isCancelled else { return }
+        startupVolume = value
+    }
     func showDuplicateActivity() {
-        if snapshot == nil { snapshot = baseIndex?.snapshot }
+        if snapshot == nil { returnToWorkspace() }
         showDuplicates = true
     }
 

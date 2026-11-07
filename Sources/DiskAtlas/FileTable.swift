@@ -30,6 +30,7 @@ struct FileTable: NSViewRepresentable {
     func makeNSView(context: Context) -> NSScrollView {
         let scroll = AtlasTableScrollView()
         scroll.hasVerticalScroller = true
+        scroll.hasHorizontalScroller = true
         scroll.autohidesScrollers = true
         scroll.drawsBackground = false
         let table = AtlasTableView()
@@ -296,7 +297,7 @@ private final class AtlasTableScrollView: NSScrollView {
         super.layout()
         guard let table = documentView as? NSTableView, let name = table.tableColumns.first else { return }
         let fixedWidth = table.tableColumns.dropFirst().filter { !$0.isHidden }.reduce(CGFloat(0)) { $0 + $1.width }
-        let width = max(0, contentView.bounds.width - 16)
+        let width = max(fixedWidth + name.minWidth, contentView.bounds.width - 16)
         let nameWidth = max(name.minWidth, width - fixedWidth)
         if abs(name.width - nameWidth) > 0.5 || abs(table.frame.width - width) > 0.5 {
             name.width = nameWidth

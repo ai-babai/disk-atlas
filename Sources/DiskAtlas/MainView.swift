@@ -67,30 +67,36 @@ struct MainView: View {
             })
     }
 
+    private var displayControls: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) {
+                mapMode
+                Spacer(minLength: 8)
+                viewOptions
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                mapMode
+                viewOptions.frame(maxWidth: .infinity, alignment: .trailing)
+            }
+        }
+    }
+    private var mapMode: some View {
+        Picker(L10n.text("Отображение"), selection: $store.largestFiles) {
+            Text(L10n.text("Карта")).tag(false)
+            Text(L10n.text("Крупные файлы")).tag(true)
+        }.pickerStyle(.segmented).labelsHidden().frame(width: 166)
+    }
+    private var viewOptions: some View {
+        HStack(spacing: 8) {
+            ViewFilterButton(store: store)
+            SizeModeControl(logical: $store.logical).id(store.language)
+        }
+    }
+
     private var workspace: some View {
         VStack(alignment: .leading, spacing: 18) {
             heading
-            HStack(spacing: 8) {
-                Picker(L10n.text("Отображение"), selection: $store.largestFiles) {
-                    Text(L10n.text("Карта")).tag(false)
-                    Text(L10n.text("Крупные файлы")).tag(true)
-                }.pickerStyle(.segmented).labelsHidden().frame(width: 166)
-                Spacer(minLength: 0)
-                ViewFilterButton(store: store)
-                Menu {
-                    Picker(L10n.text("Размер"), selection: $store.logical) {
-                        Text(L10n.text("На диске")).tag(false)
-                        Text(L10n.text("Размер файлов")).tag(true)
-                    }
-                } label: {
-                    Label(L10n.text("Размер"), systemImage: "internaldrive").font(.system(size: 11)).padding(
-                        .horizontal, 10
-                    ).frame(height: 28).background(Palette.soft, in: RoundedRectangle(cornerRadius: 6))
-                }.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help(
-                    L10n.text("Как считается размер")
-                ).accessibilityLabel(L10n.text("Как считается размер"))
-                SizeInfo()
-            }
+            displayControls
             if store.viewFiltersEnabled {
                 HStack {
                     Label(
@@ -318,6 +324,7 @@ struct MainView: View {
                 }.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().frame(width: 28, height: 28).help(
                     L10n.text("Оформление"))
             }.padding(.bottom, 3)
+            if let volume = store.startupVolume { VolumeOverview(volume: volume) }
             Text(store.scanning ? L10n.text("Собираем карту файлов.") : L10n.text("Что будем анализировать?")).font(
                 .system(size: 31, weight: .medium, design: .rounded)
             ).tracking(-0.5)
@@ -341,9 +348,9 @@ struct MainView: View {
                 Label(L10n.text("Файлы не изменяются"), systemImage: "lock.shield")
                 Label("CLI + MCP", systemImage: "terminal")
             }.font(.system(size: 11)).foregroundStyle(Palette.sub).padding(.bottom, 32)
-        }.frame(maxWidth: store.historyRecords.isEmpty || store.scanning ? 650 : 960, alignment: .leading).padding(
-            .horizontal, 32
-        ).frame(maxWidth: .infinity)
+        }.task { await store.refreshStartupVolume() }.frame(
+            maxWidth: store.historyRecords.isEmpty || store.scanning ? 650 : 960, alignment: .leading
+        ).padding(.horizontal, 32).frame(maxWidth: .infinity)
     }
 
     private var footer: some View { WorkspaceStatusBar(store: store, session: store.duplicates) }

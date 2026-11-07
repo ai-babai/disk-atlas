@@ -35,10 +35,15 @@ or find an item by name. Open an earlier scan whenever you need to return to it.
   toolbar. Double-click a file to reveal it in Finder.
 - **The same data for agents.** CLI, JSON output and an MCP server share the scan core.
 
+The start screen shows the startup volume’s name, free space and total capacity
+without scanning files. Returning Home keeps the current snapshot in memory;
+the Back arrow or its history entry restores it immediately. Inspector width is
+remembered after resizing, hiding and returning from Home.
+
 ## Download & install
 
 1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Download **Disk-Atlas-0.8.0-universal.dmg**. The same app supports Apple Silicon
+2. Download **Disk-Atlas-0.9.0-universal.dmg**. The same app supports Apple Silicon
    and Intel Macs running **macOS 14 Sonoma or later**.
 3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
    then launch the app from Applications. A ZIP is also available.
@@ -71,6 +76,7 @@ shasum -a 256 -c SHA256SUMS.txt
 | ⌘S / ⌘R / ⌘. | Export / rescan / stop |
 | ⌘↑ / Return | Go up / explore folder or reveal file |
 | Space / Esc | Quick Look for the focused file / close preview |
+| ⌘[ | Return from Home to the current snapshot |
 | ⌘B / ⌥⌘I | Toggle navigation / inspector |
 | ⇧⌘C | Copy the current scope as agent-friendly JSON |
 
@@ -94,8 +100,8 @@ then Space to preview that copy. Checkboxes remain a separate selection for Tras
 Previews read the current file only on request; snapshots do not embed contents.
 Unavailable or unsupported files use the system's own fallback presentation.
 
-Allocated size (**On disk**) is the default. The **Size** menu with a drive icon contains
-**File size** when logical bytes are needed. A single map click selects the exact
+Allocated size (**On disk**) is the default. Use the direct **On disk / File size** switch
+and its info button to understand the difference. A single map click selects the exact
 file or folder for the inspector, including nested rectangles, without changing
 the current directory. If the object is in the list below, the list scrolls to
 it, including nested search matches, while preserving the search and type filters.
@@ -135,7 +141,7 @@ A limited or stopped check is labelled **Only checked files are shown** when the
 view asks for more than was checked. **New check…** is separate: choose its scope,
 review an estimate, then explicitly start content comparison. Cancelling its
 options leaves the saved report intact. Reports reopen with history; filters do
-not replace them. The overview uses an explicit **Open duplicates** link.
+not replace them. The overview’s underlined **Files with copies** metric opens duplicates.
 
 ![Compact duplicate groups with locations, copy counts and expandable files](docs/images/duplicates-en.png)
 
@@ -171,7 +177,7 @@ bytes are not guaranteed reclaimable APFS space.
 
 The overview and folder inspector link to confirmed copies within that folder;
 no empty duplicate badge is shown before a result. Sort using table headings.
-The info button beside **Size** explains allocated blocks versus content length.
+The info button beside the size switch explains allocated blocks versus content length.
 
 <img src="docs/images/trash-review-en.png" width="600" alt="Mandatory review of selected duplicate paths and the copy that stays">
 

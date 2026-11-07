@@ -10,6 +10,9 @@ struct AtlasCommands: Commands {
     }
     private var workspace: some Commands {
         CommandGroup(after: .sidebar) {
+            Button(L10n.text("Вернуться к снимку")) { store.returnToWorkspace() }.keyboardShortcut(
+                "[", modifiers: .command
+            ).disabled(!store.canReturnToWorkspace)
             Button(L10n.text(store.sidebarVisible ? "Скрыть навигацию" : "Показать навигацию")) {
                 store.sidebarVisible.toggle()
             }.keyboardShortcut("b").disabled(store.snapshot == nil)
