@@ -73,7 +73,11 @@ public final class PresentationIndex: Sendable {
     }
 
     public func rows(folder: Int, logical: Bool, query: String, kind: FileKind?, filesOnly: Bool, limit: Int = 1000) -> (entries: [Entry], count: Int) {
-        if query.isEmpty && kind == nil && !filesOnly {
+        rows(folder: folder, logical: logical, query: query, kinds: kind.map { [$0] } ?? [], filesOnly: filesOnly, limit: limit)
+    }
+
+    public func rows(folder: Int, logical: Bool, query: String, kinds: Set<FileKind>, filesOnly: Bool, limit: Int = 1000) -> (entries: [Entry], count: Int) {
+        if query.isEmpty && kinds.isEmpty && !filesOnly {
             let ids = (logical ? logicalChildren[folder] : allocatedChildren[folder]) ?? []
             return (ids.prefix(limit).map { snapshot.entries[$0] }, ids.count)
         }
@@ -92,7 +96,7 @@ public final class PresentationIndex: Sendable {
             if offset % 1024 == 0 && Task.isCancelled { break }
             let entry = snapshot.entries[id]
             if filesOnly && entry.isDirectory { continue }
-            if let kind, entry.kind != kind { continue }
+            if !kinds.isEmpty && !kinds.contains(entry.kind) { continue }
             if !query.isEmpty && !entry.name.localizedCaseInsensitiveContains(query) { continue }
             count += 1
             if heap.count < limit {

@@ -108,10 +108,12 @@ struct MainView: View {
             HStack(spacing: 10) {
                 SectionLabel(text: store.largestFiles ? L10n.text("Крупные файлы") : L10n.text("Содержимое"))
                 Text("\(store.rowCount)").font(.system(size: 10, design: .monospaced)).foregroundStyle(Palette.sub)
-                if let kind = store.kind {
-                    Button { store.kind = nil } label: {
-                        HStack(spacing: 4) { Text(kind.title); Image(systemName: "xmark").font(.system(size: 8)) }
+                if !store.selectedKinds.isEmpty {
+                    Button { store.selectedKinds = [] } label: {
+                        HStack(spacing: 4) { Text(store.selectedKinds.count == 1 ? (store.selectedKinds.first?.title ?? "") : L10n.text("Типы: ") + String(store.selectedKinds.count)); Image(systemName: "xmark").font(.system(size: 8)) }
                     }.font(.system(size: 10)).buttonStyle(.bordered)
+                        .help(store.selectedKinds.map(\.title).sorted().joined(separator: ", "))
+                        .accessibilityLabel(L10n.text("Сбросить фильтр типов"))
                 }
                 Spacer()
                 HStack(spacing: 6) {
@@ -126,15 +128,15 @@ struct MainView: View {
             HStack(spacing: 0) {
                 Text(L10n.text("Имя"))
                 Spacer()
-                if showCreationDate { Text(L10n.text("Создан")).frame(width: 92, alignment: .leading) }
-                Text(L10n.text("Изменён")).frame(width: 92, alignment: .leading)
+                if showCreationDate { Text(L10n.text("Создан")).frame(width: 92, alignment: .leading).offset(x: 16) }
+                Text(L10n.text("Изменён")).frame(width: 92, alignment: .leading).offset(x: 16)
                 Text(L10n.text(store.logical ? "Размер ↓" : "На диске ↓")).frame(width: 100, alignment: .trailing)
                 Text(L10n.text("Доля")).frame(width: 65, alignment: .trailing)
             }.font(.system(size: 10, weight: .medium)).foregroundStyle(Palette.sub).padding(.horizontal, 12).padding(.vertical, 9)
             Divider().overlay(Palette.line)
             FileTable(rows: rows, logical: store.logical, folderBytes: store.folder.map(store.size) ?? 0,
                       revision: store.rowRevision, language: store.language,
-                      showPaths: store.largestFiles || !store.query.isEmpty || store.kind != nil,
+                      showPaths: store.largestFiles || !store.query.isEmpty || !store.selectedKinds.isEmpty,
                       showCreationDate: showCreationDate,
                       selection: $store.selection, open: store.activate, reveal: store.reveal, copyPath: store.copy)
                 .frame(minHeight: 130, idealHeight: 210, maxHeight: 245)

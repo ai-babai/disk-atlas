@@ -40,7 +40,7 @@ public enum L10n {
         ("Выбрано: ", "Selected: "), ("Ещё ", "More: "), ("Пропущено: ", "Skipped: "),
         ("Снимок · ", "Snapshot · "), (" объектов · ", " items · "),
         ("Анализ · ", "Scan · "),
-        ("Фильтр: ", "Filter: "), ("Убрать ", "Remove "), (" из анализа", " from analysis"),
+        ("Типы: ", "Types: "), ("Фильтр: ", "Filter: "), ("Убрать ", "Remove "), (" из анализа", " from analysis"),
         ("Выбери папку для сканирования: ", "Choose a directory to scan: "),
         ("Нет доступа к папке: ", "Cannot access directory: "),
         ("Путь отсутствует в снимке: ", "Path is not in this snapshot: "),
@@ -53,6 +53,8 @@ public enum L10n {
         ("\nДвойной щелчок — открыть папку", "\nDouble-click to open folder")
     ]
     private static let english: [String: String] = [
+        "Сбросить фильтр типов": "Clear file type filters",
+        "Фильтр списка · несколько типов": "List filter · choose multiple",
         "Последние сканы": "Recent scans", "Удалить снимок": "Delete snapshot",
         "Снимок": "Snapshot", "до сжатия": "before compression", "Снимок не сохранён": "Snapshot not saved",
         "Оценка несжатых метаданных. После сохранения появится точный размер сжатого снимка.": "Estimated uncompressed metadata. The exact compressed size appears after saving.",

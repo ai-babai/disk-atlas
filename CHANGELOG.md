@@ -5,6 +5,14 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.2.1 — 2026-11-07
+
+- Align history icons, titles, snapshot sizes and delete buttons on a shared top row.
+- Align the snapshot column heading and tighten recent-scan spacing.
+- Keep compact history titles readable and table cells aligned after resizing.
+- Make each file-type row clickable across its label, size and bar, with hover feedback.
+- Select multiple file types together, with checkmarks, a compact count and one-step reset.
+
 ## 0.2.0 — 2026-11-07
 
 - Show the estimated uncompressed snapshot size during scanning and exact compressed size after saving.

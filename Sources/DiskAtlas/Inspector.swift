@@ -3,6 +3,8 @@ import AtlasCore
 
 struct Inspector: View {
     @ObservedObject var store: AtlasStore
+    @State private var hoveredKind: FileKind?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
@@ -57,13 +59,16 @@ struct Inspector: View {
             HStack {
                 SectionLabel(text: L10n.text("Типы в папке"))
                 Spacer()
-                if store.kind != nil { Button(L10n.text("Все")) { store.kind = nil }.font(.system(size: 10)).buttonStyle(.plain) }
+                if !store.selectedKinds.isEmpty { Button(L10n.text("Все")) { store.selectedKinds = [] }.font(.system(size: 10)).buttonStyle(.plain) }
             }
+            Text(L10n.text("Фильтр списка · несколько типов")).font(.system(size: 9)).foregroundStyle(Palette.sub)
             ForEach(values, id: \.kind) { item in
-                Button { store.kind = store.kind == item.kind ? nil : item.kind } label: {
+                Button { store.toggleKind(item.kind) } label: {
                     VStack(spacing: 7) {
                         HStack(spacing: 6) {
-                            Circle().fill(item.kind.tint).frame(width: 6, height: 6)
+                            Image(systemName: store.selectedKinds.contains(item.kind) ? "checkmark.circle.fill" : "circle.fill")
+                                .font(.system(size: store.selectedKinds.contains(item.kind) ? 11 : 6))
+                                .foregroundStyle(item.kind.tint).frame(width: 12, height: 12)
                             Text(item.kind.title).font(.system(size: 11))
                             Spacer(minLength: 2)
                             Text(byteString(item.bytes)).font(.system(size: 10, design: .monospaced)).foregroundStyle(Palette.sub)
@@ -74,8 +79,15 @@ struct Inspector: View {
                                 Capsule().fill(item.kind.tint).frame(width: max(2, geo.size.width * Double(item.bytes) / Double(total)))
                             }
                         }.frame(height: 3)
-                    }.padding(4).background(store.kind == item.kind ? Palette.mark : .clear, in: RoundedRectangle(cornerRadius: 4))
-                }.buttonStyle(.plain).help(L10n.text("Фильтр: \(item.kind.title)"))
+                    }.padding(6).frame(maxWidth: .infinity, minHeight: 36)
+                        .background(store.selectedKinds.contains(item.kind) ? Palette.mark : hoveredKind == item.kind ? Palette.soft : .clear,
+                                    in: RoundedRectangle(cornerRadius: 6))
+                        .contentShape(Rectangle())
+                }.buttonStyle(.plain)
+                    .onHover { inside in hoveredKind = inside ? item.kind : nil }
+                    .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: hoveredKind)
+                    .accessibilityAddTraits(store.selectedKinds.contains(item.kind) ? .isSelected : [])
+                    .help(L10n.text("Фильтр: \(item.kind.title)"))
             }
             if values.isEmpty { Text(L10n.text("В папке пока нет файлов")).font(.caption).foregroundStyle(Palette.sub) }
         }

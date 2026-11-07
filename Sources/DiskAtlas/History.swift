@@ -11,7 +11,9 @@ struct HistoryRow: View {
         return record.roots.joined(separator: "\n") + "\n" + L10n.date(record.created) + "\n" + L10n.text("Снимок") + ": " + size
     }
     var body: some View {
-        HStack(spacing: 4) { openButton; deleteButton }
+        GeometryReader { geometry in
+            HStack(alignment: .top, spacing: 4) { openButton(compact: geometry.size.width < 180); deleteButton }
+        }.frame(height: 31)
             .padding(.horizontal, 8).padding(.vertical, 7)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(highlighted ? Palette.mark : .clear, in: RoundedRectangle(cornerRadius: 6))
@@ -21,18 +23,18 @@ struct HistoryRow: View {
                 Button(L10n.text("Удалить снимок…"), role: .destructive) { store.requestHistoryDeletion(record) }.disabled(store.historyBusy)
             }
     }
-    private var openButton: some View {
+    private func openButton(compact: Bool) -> some View {
         Button { store.openHistory(record) } label: {
-            HStack(spacing: 8) {
-                statusIcon.frame(width: 14)
+            HStack(alignment: .top, spacing: 8) {
+                if !compact { statusIcon.frame(width: 14, height: 16) }
                 VStack(alignment: .leading, spacing: 3) {
-                    HStack(spacing: 5) {
+                    HStack(alignment: .firstTextBaseline, spacing: 5) {
                         Text(store.historyTitle(record)).font(.system(size: 11, weight: highlighted ? .semibold : .medium)).lineLimit(1).truncationMode(.middle)
                         Spacer(minLength: 0)
                         if let bytes = record.archiveBytes {
-                            Text(byteString(bytes)).font(.system(size: 9)).foregroundStyle(Palette.sub).fixedSize()
+                            Text(byteString(bytes)).font(.system(size: 9)).monospacedDigit().foregroundStyle(Palette.sub).fixedSize()
                         }
-                    }
+                    }.frame(height: 16, alignment: .top)
                     Text(L10n.historyDate(record.created)).font(.system(size: 9)).foregroundStyle(Palette.sub).lineLimit(1)
                 }
             }.frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
@@ -44,7 +46,9 @@ struct HistoryRow: View {
     }
     private var deleteButton: some View {
         Button(role: .destructive) { store.requestHistoryDeletion(record) } label: {
-            Image(systemName: "trash").font(.system(size: 10)).foregroundStyle(Palette.sub).frame(width: 18, height: 26)
+            Image(systemName: "trash").font(.system(size: 10)).foregroundStyle(Palette.sub)
+                .frame(width: 24, height: 16)
+                .frame(height: 31, alignment: .top).contentShape(Rectangle())
         }.buttonStyle(.plain).disabled(store.historyBusy)
             .help(L10n.text("Удалить снимок…"))
             .accessibilityLabel(L10n.text("Удалить снимок") + " " + store.historyTitle(record) + " " + L10n.historyDate(record.created))
@@ -88,11 +92,11 @@ struct HistorySheet: View {
 struct RecentScans: View {
     @ObservedObject var store: AtlasStore
     var body: some View {
-        VStack(alignment: .leading, spacing: 9) {
+        VStack(alignment: .leading, spacing: 3) {
             HStack {
                 SectionLabel(text: L10n.text("Последние сканы"))
                 Spacer()
-                Text(L10n.text("Снимок")).font(.system(size: 9)).foregroundStyle(Palette.sub)
+                Text(L10n.text("Снимок")).font(.system(size: 9)).foregroundStyle(Palette.sub).padding(.trailing, 28)
             }.padding(.horizontal, 8).padding(.bottom, 3)
             ForEach(store.historyRecords.prefix(4)) { HistoryRow(store: store, record: $0) }
             Button(L10n.text("Вся история…")) { store.showHistory = true }

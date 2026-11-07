@@ -7,7 +7,7 @@ import AtlasCore
     @Published var folderID = 0 { didSet { refreshRows() } }
     @Published var selection: Int?
     @Published var query = "" { didSet { refreshRows() } }
-    @Published var kind: FileKind? { didSet { refreshRows() } }
+    @Published var selectedKinds: Set<FileKind> = [] { didSet { refreshRows() } }
     @Published var largestFiles = false { didSet { refreshRows() } }
     @Published var logical = false { didSet { refreshRows() } }
     @Published var scanning = false
@@ -120,7 +120,7 @@ import AtlasCore
         guard let activeHistoryID, !historyRecords.contains(where: { $0.id == activeHistoryID }) else { return }
         retire(index)
         index = nil; snapshot = nil; self.activeHistoryID = nil; snapshotArchiveBytes = nil; snapshotMetadataEstimate = nil
-        selection = nil; folderID = 0; query = ""; kind = nil; largestFiles = false
+        selection = nil; folderID = 0; query = ""; selectedKinds = []; largestFiles = false
     }
 
     func historyTitle(_ record: ScanHistoryRecord) -> String {
@@ -173,8 +173,8 @@ import AtlasCore
         rowGeneration += 1
         rowsLoading = false
         guard let index else { rows = []; rowCount = 0; return }
-        let folder = folderID, logical = logical, query = query, kind = kind, files = largestFiles
-        if query.isEmpty && kind == nil && !files {
+        let folder = folderID, logical = logical, query = query, kinds = selectedKinds, files = largestFiles
+        if query.isEmpty && kinds.isEmpty && !files {
             let result = index.rows(folder: folder, logical: logical, query: "", kind: nil, filesOnly: false)
             rows = result.entries; rowCount = result.count
             return
@@ -185,7 +185,7 @@ import AtlasCore
             if !query.isEmpty { try? await Task.sleep(for: .milliseconds(100)) }
             guard !Task.isCancelled else { return }
             let worker = Task.detached(priority: .userInitiated) {
-                index.rows(folder: folder, logical: logical, query: query, kind: kind, filesOnly: files)
+                index.rows(folder: folder, logical: logical, query: query, kinds: kinds, filesOnly: files)
             }
             rowWorker = worker
             let result = await worker.value
@@ -193,6 +193,11 @@ import AtlasCore
             rows = result.entries; rowCount = result.count
             rowsLoading = false
         }
+    }
+
+    func toggleKind(_ kind: FileKind) {
+        if selectedKinds.contains(kind) { selectedKinds.remove(kind) }
+        else { selectedKinds.insert(kind) }
     }
 
     var breadcrumbs: [Entry] {
@@ -320,7 +325,7 @@ import AtlasCore
         folderID = 0
         selection = nil
         query = ""
-        kind = nil
+        selectedKinds = []
         largestFiles = false
         activeHistoryID = historyID
         snapshotArchiveBytes = historyRecords.first { $0.id == historyID }?.archiveBytes
@@ -333,7 +338,7 @@ import AtlasCore
         folderID = id
         selection = nil
         query = ""
-        kind = nil
+        selectedKinds = []
     }
 
     func activate(_ id: Int) {

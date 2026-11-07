@@ -35,7 +35,7 @@ or find an item by name. Open an earlier scan whenever you need to return to it.
 ## Download & install
 
 1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Download **Disk-Atlas-0.2.0-universal.dmg**. The same app supports Apple Silicon
+2. Download **Disk-Atlas-0.2.1-universal.dmg**. The same app supports Apple Silicon
    and Intel Macs running **macOS 14 Sonoma or later**.
 3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
    then launch the app from Applications. A ZIP is also available.
@@ -71,7 +71,9 @@ shasum -a 256 -c SHA256SUMS.txt
 | ⇧⌘C | Copy the current scope as agent-friendly JSON |
 
 The list renders up to 1,000 matches and shows the total count. Search and type
-filters affect the list; the map keeps showing the whole current folder. Missing
+filters affect the list; the map keeps showing the whole current folder. Click any
+part of a file-type row to toggle it. Several types can be selected together;
+**All** or the compact filter badge clears the selection. Search narrows the selected types. Missing
 creation dates are omitted from the inspector, and the column hides when no
 visible row has that date. Dates describe the time of the scan, not live changes.
 

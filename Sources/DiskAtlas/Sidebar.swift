@@ -15,8 +15,8 @@ struct Sidebar: View {
             ScrollView {
               VStack(alignment: .leading, spacing: 0) {
             SectionLabel(text: L10n.text("Обзор")).padding(.bottom, 12)
-            nav(L10n.text("Карта пространства"), symbol: "square.grid.2x2", active: !store.largestFiles) { store.largestFiles = false; store.kind = nil }
-            nav(L10n.text("Крупные файлы"), symbol: "line.3.horizontal.decrease", active: store.largestFiles) { store.largestFiles = true; store.kind = nil }
+            nav(L10n.text("Карта пространства"), symbol: "square.grid.2x2", active: !store.largestFiles) { store.largestFiles = false; store.selectedKinds = [] }
+            nav(L10n.text("Крупные файлы"), symbol: "line.3.horizontal.decrease", active: store.largestFiles) { store.largestFiles = true; store.selectedKinds = [] }
             if let snapshot = store.snapshot {
                 SectionLabel(text: L10n.text("В этом анализе")).padding(.top, 31).padding(.bottom, 12)
                 let roots = snapshot.isComposite ? snapshot.rootEntry.children.map { snapshot.entries[$0] } : [snapshot.rootEntry]

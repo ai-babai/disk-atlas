@@ -160,8 +160,11 @@ private final class AtlasTableScrollView: NSScrollView {
         let fixedWidth = table.tableColumns.dropFirst().filter { !$0.isHidden }.reduce(CGFloat(0)) { $0 + $1.width }
         let width = max(0, contentView.bounds.width)
         let nameWidth = max(name.minWidth, width - fixedWidth)
-        if abs(name.width - nameWidth) > 0.5 { name.width = nameWidth }
-        if abs(table.frame.width - width) > 0.5 { table.setFrameSize(NSSize(width: width, height: table.frame.height)) }
+        if abs(name.width - nameWidth) > 0.5 || abs(table.frame.width - width) > 0.5 {
+            name.width = nameWidth
+            table.setFrameSize(NSSize(width: width, height: table.frame.height))
+            table.tile()
+        }
     }
 }
 
@@ -208,6 +211,10 @@ private final class AtlasCell: NSTableCellView {
         setAccessibilityElement(true)
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+    override func setFrameSize(_ newSize: NSSize) {
+        super.setFrameSize(newSize)
+        needsLayout = true
+    }
     override func layout() {
         super.layout()
         if isName {
