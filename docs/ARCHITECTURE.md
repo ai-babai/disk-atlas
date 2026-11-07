@@ -183,8 +183,19 @@ owns format support, preview loading/animation and missing-file presentation.
 
 Native NSSplitViewController items remain mounted when collapsed; their animator
 moves the divider in 220 ms. The inspector uses a resizable generic split item
-with an explicit 210–460 point range, rather than AppKit’s fixed-width inspector
-constructor. Separate AppKit autosave names retain navigation and inspector widths
+with a 210-point minimum and no fixed maximum, rather than AppKit’s fixed-width
+inspector constructor. The workspace minimum naturally limits the divider to the
+space available in the current window; the previous 460-point cap prevented
+continued expansion in larger windows. The representable's `sizeThatFits` accepts
+SwiftUI's finite proposal, including zero-size minimum probes, instead of feeding
+the split controller's fitting size back into the surrounding hosting view. AppKit
+remains responsible for column minima. This avoids outer sizing constraints that
+outrank native divider drags and leave stale widths. See Apple's
+[size proposal contract](https://developer.apple.com/documentation/swiftui/nsviewcontrollerrepresentable/sizethatfits(_:nsviewcontroller:context:))
+and a comparable [native split integration](https://github.com/TableProApp/TablePro/blob/main/apple/TablePro/Views/Components/AutosavingSplitView.swift).
+Regression review must physically drag the divider in both directions, inspect
+content alignment after release, and repeat through collapse/show, Home/Back and
+window resizing. Setting an accessibility divider value alone does not verify drag behavior. Separate AppKit autosave names retain navigation and inspector widths
 after dragging, collapse and returning from Home. Each split item has an AppKit
 container with four edge constraints around its SwiftUI hosting view, keeping
 rendered content tied to the viewport. The native file-table scroll view requests

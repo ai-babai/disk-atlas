@@ -16,6 +16,16 @@ struct CollapsiblePane<Pane: View, Content: View>: NSViewControllerRepresentable
         context.coordinator.update(self, environment: context.environment)
     }
 
+    // AppKit owns column minimums. SwiftUI must not promote the split's fitting width
+    // into an outer minimum that outranks native divider dragging.
+    func sizeThatFits(_ proposal: ProposedViewSize, nsViewController: NSSplitViewController, context: Context)
+        -> CGSize?
+    {
+        let size = proposal.replacingUnspecifiedDimensions(
+            by: NSSize(width: kind == .navigation ? 1380 : 1169, height: 800))
+        return size.width.isFinite && size.height.isFinite ? size : nil
+    }
+
     final class Coordinator {
         let controller = NSSplitViewController()
         private let paneHost: PaneHost<HostedPane<Pane>>
@@ -36,7 +46,7 @@ struct CollapsiblePane<Pane: View, Content: View>: NSViewControllerRepresentable
             item.canCollapse = true
             item.preferredThicknessFraction = NSSplitViewItem.unspecifiedDimension
             item.minimumThickness = navigation ? 180 : 210
-            item.maximumThickness = navigation ? 350 : 460
+            item.maximumThickness = navigation ? 350 : NSSplitViewItem.unspecifiedDimension
             item.canCollapseFromWindowResize = false
             item.collapseBehavior = .preferResizingSiblingsWithFixedSplitView
             item.holdingPriority = .init(260)

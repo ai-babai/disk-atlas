@@ -5,6 +5,11 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.11.2 — 2026-11-08
+
+- Fix the SwiftUI/AppKit sizing contract that could resist divider drags, leave stale content widths or snap the divider back after release.
+- Remove the inspector's fixed 460-point maximum. Drag its divider toward the center as far as the available window space allows, while preserving a usable minimum width for the workspace.
+
 ## 0.11.1 — 2026-11-08
 
 - Clear map/list highlights and temporary More groups by clicking empty workspace background, empty map gaps or the explicit Clear highlight action below the map.
