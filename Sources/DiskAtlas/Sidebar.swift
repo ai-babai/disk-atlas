@@ -72,7 +72,6 @@ struct Sidebar: View {
                 }.foregroundStyle(Palette.accent).padding(11)
                     .background(Palette.mark, in: RoundedRectangle(cornerRadius: 8))
             }.buttonStyle(.plain)
-            LanguagePicker(store: store).padding(.top, 12)
             HStack {
                 Text(L10n.text("Локально на твоём Mac")).font(.system(size: 10)).foregroundStyle(Palette.sub)
                 Spacer()

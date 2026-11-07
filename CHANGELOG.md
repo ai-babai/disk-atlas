@@ -5,6 +5,11 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.2.2 — 2026-11-07
+
+- Move language selection to one compact toolbar menu, available on the start screen and with sidebars hidden.
+- Remove duplicate language controls from the sidebar and welcome content.
+
 ## 0.2.1 — 2026-11-07
 
 - Align history icons, titles, snapshot sizes and delete buttons on a shared top row.

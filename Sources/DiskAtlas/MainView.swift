@@ -171,7 +171,6 @@ struct MainView: View {
                 AtlasMark()
                 Text("Disk Atlas").font(.system(size: 20, weight: .semibold))
                 Spacer()
-                LanguagePicker(store: store)
                 Menu {
                     Button(L10n.text("Как в системе")) { store.appearance = "system" }
                     Button(L10n.text("Светлая")) { store.appearance = "light" }

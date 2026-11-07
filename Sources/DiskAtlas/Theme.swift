@@ -70,10 +70,14 @@ struct AtlasMark: View {
 struct LanguagePicker: View {
     @ObservedObject var store: AtlasStore
     var body: some View {
-        Picker("Language / Язык", selection: $store.language) {
-            Text("RU").tag("ru")
-            Text("EN").tag("en")
-        }.pickerStyle(.segmented).labelsHidden().controlSize(.small).frame(width: 86)
+        Menu {
+            Picker("Language / Язык", selection: $store.language) {
+                Text("Русский").tag("ru")
+                Text("English").tag("en")
+            }.pickerStyle(.inline)
+        } label: {
+            Text(store.language.uppercased()).font(.system(size: 11, weight: .medium))
+        }.fixedSize().help("Language / Язык")
             .accessibilityLabel("Language / Язык")
     }
 }

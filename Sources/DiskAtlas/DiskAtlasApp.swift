@@ -51,6 +51,9 @@ import AtlasCore
                                 .accessibilityLabel(L10n.text(store.inspectorVisible ? "Скрыть подробности" : "Показать подробности"))
                         }
                     }
+                    ToolbarItem(placement: .primaryAction) {
+                        LanguagePicker(store: store)
+                    }
                 }
                 .onOpenURL { store.openSnapshot($0) }
                 .onAppear {

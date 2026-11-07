@@ -29,13 +29,14 @@ or find an item by name. Open an earlier scan whenever you need to return to it.
 - **History that remembers.** Local compressed results, dates and sizes; opening
   a snapshot does not rescan its folders. Reading and map preparation have visible stages.
 - **Native comfort.** Resizable and collapsible sidebars, one compact toolbar,
-  light/dark themes and English/Russian UI. Double-click a file to reveal it in Finder.
+  light/dark themes and English/Russian UI, with a compact language menu in the
+  toolbar. Double-click a file to reveal it in Finder.
 - **The same data for agents.** CLI, JSON output and an MCP server share the scan core.
 
 ## Download & install
 
 1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Download **Disk-Atlas-0.2.1-universal.dmg**. The same app supports Apple Silicon
+2. Download **Disk-Atlas-0.2.2-universal.dmg**. The same app supports Apple Silicon
    and Intel Macs running **macOS 14 Sonoma or later**.
 3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
    then launch the app from Applications. A ZIP is also available.
