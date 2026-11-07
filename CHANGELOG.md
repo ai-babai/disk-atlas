@@ -5,6 +5,14 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.7.0 — 2026-11-07
+
+- Replace ambiguous disclosure arrows in overview/inspector duplicate metrics with explicit Open links.
+- Scroll the file list to a selected map object after native layout, including nested search matches; preserve active search/type filters and honor Reduce Motion.
+- Separate duplicate result filters from new-check options. Filter saved metadata by size/type without rereading contents or replacing the report; retain every peer of a matching group and show full filtered totals.
+- Mark limited coverage honestly and offer an explicit new-check flow with metadata estimate before content-read opt-in. Cancelling its options preserves the existing report.
+- Add cached-result history, boundary, cancellation and generated monotonic-filter checks; retire the native table update’s legacy complexity exception without expanding thresholds.
+
 ## 0.6.1 — 2026-11-07
 
 - Align All groups and Options in a single, centered header action row with matching 28-point hit areas. Keep the return-to-all-groups action clear and prevent action labels from wrapping at narrow widths.

@@ -84,15 +84,6 @@
       "start": 197
     },
     {
-      "bodyHash": "c7d41515f860c3ff0f8be6f0becd185aa0a08068780c0c690e61ea43417ae85f",
-      "cognitive": 10,
-      "cyclomatic": 14,
-      "end": 117,
-      "file": "Sources/DiskAtlas/FileTable.swift",
-      "identity": "FileTable.updateNSView(_:NSScrollView,context:Context)",
-      "start": 70
-    },
-    {
       "bodyHash": "dedae9294c9d21c08e6ba0be4d6646ee97298644aee92f60c8eb449b014729a3",
       "cognitive": 16,
       "cyclomatic": 7,

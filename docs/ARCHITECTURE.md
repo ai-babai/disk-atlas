@@ -67,7 +67,24 @@ filesystem snapshot guarantee; reports are dated observations.
 groups are batched, keeping updates out of the main map store. Pause and cancel
 checkpoints occur between read chunks. Foreground scanning/indexing temporarily
 pauses the background job. Confirmed groups survive stop as a partial report.
-A path-to-group lookup is built off the main thread for file-list badges. Trash
+A path-to-group lookup is built off the main thread for file-list badges. Its
+immutable `DuplicateResultIndex` caches each confirmed copy’s extension-based kind.
+Result filters are independent of `DuplicateSession.options`, which describe a
+new content check. Size, kind and folder queries run on a cancellable worker and
+never open source files, reset evidence or write the canonical report. A matching
+copy supplies the group title; all its peers remain visible. Counts and repeated
+bytes describe the full filtered set before the 500-group presentation limit.
+Filter changes clear Trash selection. Saving/reloading the original report
+preserves the evidence across launches; rebuilding this metadata index requires
+no schema migration or source I/O.
+
+Original size/kind/date coverage and partial-result flags bound completeness.
+Widening a view beyond checked coverage displays an explicit notice instead of
+claiming that unchecked files have no duplicates. A separate new-check sheet
+estimates metadata cost before Start authorizes rereading contents. Cancelling
+that sheet preserves the report. It does not implement an incremental hash cache
+for future source checks; changed contents still require explicit revalidation.
+Trash
 selection marks mean Trash candidates. A mandatory review identifies selected paths and any unselected copies; fully selected groups are explicitly warned; confirmation starts off-main revalidation and native recoverable Trash moves. No permanent deletion or CLI/MCP cleanup exists. A check that finishes before its scan
 archive is attached persists its report when the history UUID becomes available.
 
@@ -84,8 +101,11 @@ dragging and commit once on release. Table headers and cells share native column
 geometry, with a trailing gutter for percentages. Nested canvas hit testing uses
 the same bounded layout as drawing. A single map click selects the exact hit for
 the inspector without changing the current directory, including nested folders
-and files. Direct-child selections are included in the bounded list and scrolled
-to; deeper selections remain highlighted in the map and inspector. Aggregate
+and files. Direct-child selections are included in the bounded list. Selecting
+any already-listed match, including a nested search/type result, preserves its
+filters and requests scrolling after native table layout. Scroll requests are
+generation-checked and animate for 160 ms, or immediately under Reduce Motion.
+Other deeper selections stay in the map and inspector. Aggregate
 tiles are inert. Inspector content is constrained to its viewport width so long
 paths cannot stretch or shift the panel.
 
@@ -137,7 +157,9 @@ a running duplicate job is stopped and its partial result saved.
 
 The shared 30-point status row observes duplicate updates separately from the map.
 Its compact result button contains the duplicate label, state/count and chevron;
-phase progress and pause/stop remain adjacent. Scan metadata and snapshot storage
+phase progress and pause/stop remain adjacent. Overview and inspector duplicate
+metrics use explicit Open labels rather than disclosure arrows, distinguishing
+workspace navigation from group expansion ([Apple disclosure guidance](https://developer.apple.com/design/human-interface-guidelines/disclosure-controls)). Scan metadata and snapshot storage
 size share the same row. Optional notices truncate before job controls, preserving
 the layout at the minimum window width. A decorative spinner is hidden from
 accessibility so the result action keeps its button role.

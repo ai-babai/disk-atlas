@@ -38,7 +38,7 @@ or find an item by name. Open an earlier scan whenever you need to return to it.
 ## Download & install
 
 1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Download **Disk-Atlas-0.6.1-universal.dmg**. The same app supports Apple Silicon
+2. Download **Disk-Atlas-0.7.0-universal.dmg**. The same app supports Apple Silicon
    and Intel Macs running **macOS 14 Sonoma or later**.
 3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
    then launch the app from Applications. A ZIP is also available.
@@ -97,8 +97,9 @@ Unavailable or unsupported files use the system's own fallback presentation.
 Allocated size (**On disk**) is the default. The **Size** menu with a drive icon contains
 **File size** when logical bytes are needed. A single map click selects the exact
 file or folder for the inspector, including nested rectangles, without changing
-the current directory. Direct children are also selected and scrolled into view
-in the list; nested selections stay in the map and inspector. Double-click a
+the current directory. If the object is in the list below, the list scrolls to
+it, including nested search matches, while preserving the search and type filters.
+Direct children are included even outside the first 1,000 rows. Double-click a
 folder or choose **Explore folder** to enter it. Aggregated **More…** tiles are inert.
 
 ## Check duplicates when you need them
@@ -117,6 +118,19 @@ Duplicate checking is **off by default** and separate from the storage map.
 For an existing scan that was not opted in, open **Duplicates**, review the
 candidates and read/time estimate, then press **Start comparison**. **Options**
 contains size bounds and optional file types.
+
+After a check, **Filters** applies size and type criteria to the saved results
+without reading files again. Resetting or widening these filters within the
+original checked scope restores those results. Every matching group keeps all
+its copies visible, including copies with another extension or outside the
+selected folder. Filtering clears Trash selection so hidden choices cannot be
+carried into cleanup.
+
+A limited or stopped check is labelled **Only checked files are shown** when the
+view asks for more than was checked. **New check…** is separate: choose its scope,
+review an estimate, then explicitly start content comparison. Cancelling its
+options leaves the saved report intact. Reports reopen with history; filters do
+not replace them. The overview uses an explicit **Open duplicates** link.
 
 ![Compact duplicate groups with locations, copy counts and expandable files](docs/images/duplicates-en.png)
 

@@ -20,10 +20,10 @@ struct DuplicateSummary: View {
                 store.openDuplicateScope(entry)
             } label: {
                 label.contentShape(Rectangle())
-            }.buttonStyle(.plain).foregroundStyle(Palette.accent).help(
-                L10n.text("Файлы с подтверждёнными копиями, включая вложенные папки")
-            ).accessibilityLabel(
-                L10n.text(entry.isDirectory ? "Файлов с копиями: " : "Других копий: ") + count.formatted())
+            }.buttonStyle(.plain).foregroundStyle(Palette.accent).help(L10n.text("Открыть дубликаты"))
+                .accessibilityLabel(
+                    L10n.text("Открыть дубликаты") + ". "
+                        + L10n.text(entry.isDirectory ? "Файлов с копиями: " : "Других копий: ") + count.formatted())
         }
     }
     @ViewBuilder private var label: some View {
@@ -31,18 +31,21 @@ struct DuplicateSummary: View {
         case .metric:
             VStack(alignment: .leading, spacing: 6) {
                 Text(count.formatted()).font(.system(size: 24, weight: .medium, design: .rounded)).monospacedDigit()
-                Label(L10n.text("Файлы с копиями"), systemImage: "chevron.right").font(.system(size: 10)).lineLimit(2)
+                Text(L10n.text("Файлов с копиями")).font(.system(size: 10)).foregroundStyle(Palette.sub)
+                Text(L10n.text("Открыть дубликаты")).font(.system(size: 10)).underline().lineLimit(1)
             }.frame(maxWidth: 130, alignment: .leading)
         case .detail:
             HStack {
                 Text(L10n.text(entry.isDirectory ? "Дубликаты внутри" : "Дубликаты"))
                 Spacer()
                 Text(count.formatted()).monospacedDigit()
-                Image(systemName: "chevron.right").font(.system(size: 8))
+                Text(L10n.text("Открыть")).font(.system(size: 9)).underline()
             }.font(.system(size: 10))
         case .inline:
-            Label(L10n.text("Файлов с копиями: ") + count.formatted(), systemImage: "doc.on.doc").font(
-                .system(size: 11))
+            HStack(spacing: 6) {
+                Label(L10n.text("Файлов с копиями: ") + count.formatted(), systemImage: "doc.on.doc")
+                Text(L10n.text("Открыть")).underline()
+            }.font(.system(size: 11))
         }
     }
 }

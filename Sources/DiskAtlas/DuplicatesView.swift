@@ -9,10 +9,14 @@ struct DuplicatesView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var settings: Binding<DuplicateOptions> {
         Binding(
-            get: { session.options },
+            get: { session.hasResultContext ? session.resultFilter : session.options },
             set: { value in
-                session.options = value
-                if !session.running { store.prepareDuplicates(debounce: true) }
+                if session.hasResultContext {
+                    session.resultFilter = value
+                } else {
+                    session.options = value
+                    store.prepareDuplicates(debounce: true)
+                }
             })
     }
     private var visibleGroups: [DuplicateGroup] {
@@ -32,14 +36,23 @@ struct DuplicatesView: View {
                     errorBanner
                     scopeSwitch
                     status
+                    coverageNotice
                     trashSelectionBar
                     results
                     reportFooter
                 }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
             }.onAppear { focus(reader) }.onChange(of: session.focusedGroupID) { _, _ in focus(reader) }
-        }.background(Palette.paper).sheet(item: $session.trashReview) { plan in
-            DuplicateTrashReview(plan: plan, cancel: { session.trashReview = nil }, confirm: { session.trash(plan) })
-        }
+        }.animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: session.sorting).background(Palette.paper)
+            .sheet(item: $session.trashReview) { plan in
+                DuplicateTrashReview(
+                    plan: plan, cancel: { session.trashReview = nil }, confirm: { session.trash(plan) })
+            }.sheet(isPresented: $store.showDuplicateSearch) {
+                NewDuplicateCheckSheet(
+                    title: store.snapshot.map {
+                        $0.scanRoots.map { URL(fileURLWithPath: $0).lastPathComponent }.joined(separator: " + ")
+                    } ?? session.title, options: session.hasResultContext ? session.resultFilter : session.options,
+                    confirm: store.prepareDuplicateCheck)
+            }
     }
     @ViewBuilder private var errorBanner: some View {
         if let error = session.error {
@@ -61,18 +74,43 @@ struct DuplicatesView: View {
         if let snapshot = store.snapshot { session.select(snapshot, id: store.activeHistoryID, prepareIfMissing: true) }
     }
     @ViewBuilder private var results: some View {
-        if !session.groups.isEmpty {
-            groupTable
+        if !visibleGroups.isEmpty {
+            groupTable.opacity(session.sorting ? 0.5 : 1).allowsHitTesting(!session.sorting)
             if session.orderedCount > 500 {
                 Text(L10n.text("Показаны первые 500 групп. Полный результат доступен в экспорте.")).font(
                     .system(size: 10)
                 ).foregroundStyle(Palette.sub)
             }
+        } else if session.sorting {
+            ProgressView(L10n.text("Фильтруем результаты…")).font(.system(size: 11)).padding(.vertical, 24)
         } else if session.report != nil {
+            emptyResults
+        }
+    }
+    private var emptyResults: some View {
+        VStack(spacing: 12) {
             ContentUnavailableView(
-                L10n.text(
-                    session.report?.cancelled == true ? "Совпадения ещё не подтверждены" : "Совпадений не найдено"),
-                systemImage: session.report?.cancelled == true ? "stop.circle" : "checkmark.circle")
+                emptyResultTitle,
+                systemImage: session.resultFilterActive ? "line.3.horizontal.decrease.circle" : "checkmark.circle")
+            if session.resultFilterActive {
+                Button(L10n.text("Сбросить фильтры")) { session.resultFilter = DuplicateOptions() }
+            }
+        }
+    }
+    private var emptyResultTitle: String {
+        if session.resultFilterActive { return L10n.text("Нет групп по этим фильтрам") }
+        if session.report?.cancelled == true || session.report?.inputPartial == true {
+            return L10n.text("Совпадения ещё не подтверждены")
+        }
+        return L10n.text("Совпадений не найдено")
+    }
+    @ViewBuilder private var coverageNotice: some View {
+        if session.limitedCoverage {
+            HStack {
+                Text(L10n.text("Показаны только проверенные файлы")).foregroundStyle(Palette.sub)
+                Button(L10n.text("Расширить проверку…")) { store.showDuplicateSearch = true }.buttonStyle(.plain)
+                    .disabled(session.busy)
+            }.font(.system(size: 10))
         }
     }
     private var groupTable: some View {
@@ -172,33 +210,37 @@ struct DuplicatesView: View {
         }.lineLimit(1).fixedSize(horizontal: true, vertical: false)
     }
     private var parametersButton: some View {
-        tool("slider.horizontal.3", "Параметры", disabled: !session.canChangeOptions) { parameters.toggle() }.popover(
-            isPresented: $parameters
-        ) {
+        tool(
+            session.hasResultContext ? "line.3.horizontal.decrease" : "slider.horizontal.3",
+            session.hasResultContext ? "Фильтры" : "Параметры",
+            disabled: session.hasResultContext ? !session.canFilterResults : !session.canChangeOptions,
+            active: session.hasResultContext && session.resultFilterActive
+        ) { parameters.toggle() }.popover(isPresented: $parameters) {
             VStack(alignment: .leading, spacing: 16) {
-                Text(L10n.text("Параметры поиска")).font(.system(size: 14, weight: .semibold))
-                FileSizeRange(options: settings)
-                HStack(spacing: 6) {
-                    ForEach([FileKind.video, .image, .audio, .document, .archive, .code, .other], id: \.self) { kind in
-                        Button {
-                            var value = session.options
-                            if value.kinds.contains(kind) { value.kinds.remove(kind) } else { value.kinds.insert(kind) }
-                            settings.wrappedValue = value
-                        } label: {
-                            Image(systemName: kind.symbol).frame(width: 28, height: 26).foregroundStyle(
-                                session.options.kinds.contains(kind) ? Palette.accent : Palette.sub
-                            ).background(
-                                session.options.kinds.contains(kind) ? Palette.mark : Palette.soft,
-                                in: RoundedRectangle(cornerRadius: 5))
-                        }.buttonStyle(.plain).help(kind.title).accessibilityLabel(kind.title).accessibilityAddTraits(
-                            session.options.kinds.contains(kind) ? .isSelected : [])
+                HStack {
+                    Text(L10n.text(session.hasResultContext ? "Фильтры результатов" : "Параметры поиска")).font(
+                        .system(size: 14, weight: .semibold))
+                    Spacer()
+                    if session.hasResultContext && session.resultFilterActive {
+                        Button(L10n.text("Сбросить")) { session.resultFilter = DuplicateOptions() }.buttonStyle(.plain)
+                            .font(.system(size: 10))
                     }
-                    Spacer(minLength: 0)
-                    Button(L10n.text("Все")) {
-                        var value = session.options
-                        value.kinds = []
-                        settings.wrappedValue = value
-                    }.buttonStyle(.plain).font(.system(size: 10))
+                }
+                DuplicateOptionsControls(options: settings)
+                if session.hasResultContext {
+                    if !session.resultFilter.kinds.isEmpty {
+                        Text(L10n.text("Все копии совпавшего файла остаются в группе.")).font(.system(size: 10))
+                            .foregroundStyle(Palette.sub)
+                    }
+                    Divider()
+                    HStack {
+                        Text(L10n.text("По сохранённой проверке")).font(.system(size: 10)).foregroundStyle(Palette.sub)
+                        Spacer()
+                        Button(L10n.text("Новая проверка…")) {
+                            parameters = false
+                            store.showDuplicateSearch = true
+                        }.buttonStyle(.plain).font(.system(size: 10)).disabled(session.busy)
+                    }
                 }
             }.padding(20).frame(width: 360).background(Palette.paper)
         }
@@ -213,11 +255,14 @@ struct DuplicatesView: View {
             ).contentShape(Rectangle())
         }.buttonStyle(.plain).help(L10n.text("Сортировка") + ": " + key.title)
     }
-    private func tool(_ icon: String, _ label: String, disabled: Bool, action: @escaping () -> Void) -> some View {
+    private func tool(
+        _ icon: String, _ label: String, disabled: Bool, active: Bool = false, action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
             Label(L10n.text(label), systemImage: icon).font(.system(size: 11)).padding(.horizontal, 10).frame(
                 height: 28
-            ).background(Palette.soft, in: RoundedRectangle(cornerRadius: 6))
+            ).foregroundStyle(active ? Palette.accent : Palette.ink).background(
+                active ? Palette.mark : Palette.soft, in: RoundedRectangle(cornerRadius: 6))
         }.buttonStyle(.plain).disabled(disabled).help(L10n.text(label)).accessibilityLabel(L10n.text(label))
     }
     @ViewBuilder private var status: some View {
@@ -274,19 +319,19 @@ struct DuplicatesView: View {
     private func finishedStatus(_ report: DuplicateReport) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 24) {
             VStack(alignment: .leading, spacing: 5) {
-                Text(byteString(session.scopePath == nil ? report.repeatedBytes : session.orderedRepeatedBytes)).font(
+                Text(byteString(session.orderedRepeatedBytes)).font(
                     .system(size: 28, weight: .medium, design: .rounded)
                 ).monospacedDigit()
                 Text(L10n.text("повторных копий")).font(.system(size: 10)).foregroundStyle(Palette.sub)
             }.help(
                 L10n.text("Повторный объём не равен гарантированно освобождаемому месту: APFS может разделять блоки."))
             VStack(alignment: .leading, spacing: 5) {
-                Text("\(session.scopePath == nil ? report.groups.count : session.orderedCount)").font(
-                    .system(size: 22, weight: .medium, design: .rounded)
-                ).monospacedDigit()
+                Text("\(session.orderedCount)").font(.system(size: 22, weight: .medium, design: .rounded))
+                    .monospacedDigit()
                 Text(L10n.text("групп")).font(.system(size: 10)).foregroundStyle(Palette.sub)
             }
             Spacer()
+            if session.sorting { ProgressView().controlSize(.small).help(L10n.text("Фильтруем результаты…")) }
             if report.cancelled || report.inputPartial == true {
                 Label(L10n.text("Неполный результат"), systemImage: "stop.circle").font(.system(size: 10))
                     .foregroundStyle(Palette.sub)

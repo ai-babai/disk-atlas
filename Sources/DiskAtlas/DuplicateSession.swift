@@ -3,6 +3,20 @@ import SwiftUI
 
 @MainActor final class DuplicateSession: ObservableObject {
     @Published var options = DuplicateOptions()
+    @Published var resultFilter = DuplicateOptions() {
+        didSet {
+            focusedGroupID = nil
+            trashSelection = DuplicateTrashSelection()
+            refreshOrder()
+        }
+    }
+    var hasResultContext: Bool { report != nil || running }
+    var resultFilterActive: Bool { resultFilter != DuplicateOptions() }
+    var limitedCoverage: Bool {
+        report.map { !$0.options.covers(resultFilter) || $0.cancelled || $0.inputPartial == true } ?? false
+    }
+    var canFilterResults: Bool { !loadingReport && !trashPreparing && !trashing }
+
     @Published private(set) var busy = false
     @Published private(set) var running = false
     @Published private(set) var preparing = false
@@ -21,7 +35,7 @@ import SwiftUI
     @Published var sort: DuplicateSort = .repeatedBytes { didSet { refreshOrder() } }
     @Published var sortDescending = true { didSet { refreshOrder() } }
     private var orderTask: Task<Void, Never>?
-    private var orderWorker: Task<(groups: [DuplicateGroup], count: Int, bytes: Int64), Error>?
+    private var orderWorker: Task<DuplicateResultPage, Error>?
     private var orderGeneration = 0
     @Published private(set) var metadataBytes: Int64 = 0
     @Published private(set) var roots: [String] = []
@@ -358,6 +372,7 @@ import SwiftUI
         let generation = orderGeneration
         let values = groups
         let key = sort
+        let filters = resultFilter
         let scope = scopePath
         let lookup = lookup
         let descending = sortDescending
@@ -365,19 +380,15 @@ import SwiftUI
         orderTask = Task {
             do {
                 let worker = Task.detached(priority: .userInitiated) {
-                    let candidates = scope.flatMap { lookup?.groups(in: $0) } ?? values
-                    let ordered = try key.ordered(candidates, descending: descending)
-                    return (
-                        groups: Array(ordered.prefix(500)), count: ordered.count,
-                        bytes: candidates.reduce(Int64(0)) { $0 + $1.repeatedBytes }
-                    )
+                    let index = lookup?.results ?? DuplicateResultIndex(values)
+                    return try index.query(options: filters, scope: scope, sort: key, descending: descending)
                 }
                 orderWorker = worker
                 let ordered = try await worker.value
                 guard !Task.isCancelled, orderGeneration == generation else { return }
                 orderedGroups = ordered.groups
                 orderedCount = ordered.count
-                orderedRepeatedBytes = ordered.bytes
+                orderedRepeatedBytes = ordered.repeatedBytes
                 sorting = false
             } catch is CancellationError {} catch {
                 if orderGeneration == generation {
@@ -392,6 +403,7 @@ import SwiftUI
     }
     private func clearTrashSelection() {
         trashSelection = DuplicateTrashSelection()
+        resultFilter = DuplicateOptions()
         trashReview = nil
         trashMovedCount = nil
         scopePath = nil

@@ -479,7 +479,9 @@ public final class DuplicateLookup: Sendable {
     public let groups: [String: DuplicateGroup]
     public let checkedAt: Date
     public let folderCounts: [String: Int]
+    public let results: DuplicateResultIndex
     public init(_ report: DuplicateReport) {
+        results = DuplicateResultIndex(report.groups)
         var counts: [String: Int] = [:]
         var paths: [String: String] = [:]
         var groups: [String: DuplicateGroup] = [:]

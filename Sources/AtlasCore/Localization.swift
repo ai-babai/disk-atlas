@@ -60,8 +60,17 @@ public enum L10n {
         (". Используй --help.", ". Use --help."), ("\nДвойной щелчок — открыть папку", "\nDouble-click to open folder"),
     ]
     private static let english: [String: String] = [
-        "Быстрый просмотр": "Quick Look", "Быстрый просмотр · Пробел": "Quick Look · Space",
-        "В корзину группу…": "Move group to Trash…", "В корзину копии группы": "Move group copies to Trash",
+        "Все копии совпавшего файла остаются в группе.": "Every copy of a matching file stays in its group.",
+        "Файлов с копиями": "Files with copies", "Открыть дубликаты": "Open duplicates", "Открыть": "Open",
+        "Новая проверка": "New check", "Новая проверка…": "New check…", "Оценить время": "Estimate time",
+        "Фильтры результатов": "Result filters", "По сохранённой проверке": "From saved check",
+        "Фильтруем результаты…": "Filtering results…", "Нет групп по этим фильтрам": "No groups match these filters",
+        "Сбросить фильтры": "Reset filters", "Показаны только проверенные файлы": "Only checked files are shown",
+        "Расширить проверку…": "Expand check…",
+        "Сначала оценим время. Чтение файлов — только после запуска.":
+            "Estimate first. Files are read only after you start.", "Быстрый просмотр": "Quick Look",
+        "Быстрый просмотр · Пробел": "Quick Look · Space", "В корзину группу…": "Move group to Trash…",
+        "В корзину копии группы": "Move group copies to Trash",
 
         "Все копии выбраны": "All copies selected",
         "В некоторых группах не останется копий": "Some groups will have no copies left",

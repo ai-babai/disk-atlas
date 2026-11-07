@@ -77,6 +77,7 @@ import UniformTypeIdentifiers
         }
     }
     @Published var showDuplicates = false
+    @Published var showDuplicateSearch = false
     @Published var prepareDuplicateSearch = false
     @Published var sort: EntrySort = .size { didSet { refreshRows() } }
     @Published var sortDescending = true { didSet { refreshRows() } }
@@ -304,6 +305,7 @@ import UniformTypeIdentifiers
     }
     func openDuplicateScope(_ entry: Entry) {
         guard duplicates.snapshotCreated == snapshot?.created, duplicates.lookup != nil else { return }
+        duplicates.resultFilter = DuplicateOptions()
         duplicates.scopePath = entry.isDirectory && !isVirtual(entry) ? entry.path : nil
         duplicates.focusedGroupID = entry.isDirectory ? nil : duplicates.lookup?.byPath[entry.path]
         showDuplicates = true
@@ -312,13 +314,24 @@ import UniformTypeIdentifiers
         guard duplicates.snapshotCreated == snapshot?.created, let groupID = duplicates.lookup?.byPath[path] else {
             return
         }
+        duplicates.resultFilter = DuplicateOptions()
         duplicates.scopePath = nil
         duplicates.focusedGroupID = groupID
         showDuplicates = true
     }
     func prepareDuplicates(debounce: Bool = false) {
         guard let snapshot else { return }
-        duplicates.prepare(snapshot, id: activeHistoryID, debounce: debounce)
+        if duplicates.hasResultContext {
+            showDuplicateSearch = true
+        } else {
+            duplicates.prepare(snapshot, id: activeHistoryID, debounce: debounce)
+        }
+    }
+    func prepareDuplicateCheck(_ options: DuplicateOptions) {
+        guard let snapshot, !duplicates.busy else { return }
+        showDuplicateSearch = false
+        duplicates.options = options
+        duplicates.prepare(snapshot, id: activeHistoryID)
     }
     func sortBy(_ field: EntrySort) {
         if sort == field {
@@ -528,11 +541,13 @@ import UniformTypeIdentifiers
 
     func selectFromMap(_ id: Int) {
         guard let snapshot = index?.snapshot, snapshot.entries.indices.contains(id) else { return }
-        // Inspect the exact hit without changing the map or list's directory scope.
-        query = ""
-        selectedKinds = []
+        let listed = rows.contains { $0.id == id }
+        if !listed {
+            query = ""
+            selectedKinds = []
+        }
         selection = id
-        if snapshot.entries[id].parent == folderID {
+        if listed || snapshot.entries[id].parent == folderID {
             mapSelectionID = id
             rowScrollRequest &+= 1
             refreshRows()

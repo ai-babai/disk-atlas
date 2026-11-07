@@ -23,6 +23,7 @@ struct FileTable: NSViewRepresentable {
     var copyPath: (String) -> Void
     var preview: (Entry) -> Void
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeNSView(context: Context) -> NSScrollView {
@@ -91,30 +92,9 @@ struct FileTable: NSViewRepresentable {
         table.headerView?.needsDisplay = true
         table.tableColumns.first { $0.identifier.rawValue == "created" }?.isHidden = !showCreationDate
         scroll.needsLayout = true
-        if coordinator.revision != revision || coordinator.language != language || coordinator.logical != logical
-            || coordinator.showPaths != showPaths || coordinator.duplicateID != duplicates?.id
-        {
-            coordinator.duplicateID = duplicates?.id
-            coordinator.revision = revision
-            coordinator.language = language
-            coordinator.dateFormatter.locale = Locale(identifier: language == "en" ? "en_US" : "ru_RU")
-            coordinator.dateFormatter.dateStyle = .short
-            coordinator.logical = logical
-            coordinator.showPaths = showPaths
-            coordinator.suppressSelection = true
-            table.reloadData()
-            coordinator.suppressSelection = false
-        }
-        let desired = selection.flatMap { id in rows.firstIndex { $0.id == id } } ?? -1
-        if desired != table.selectedRow {
-            coordinator.suppressSelection = true
-            table.selectRowIndexes(desired < 0 ? [] : IndexSet(integer: desired), byExtendingSelection: false)
-            coordinator.suppressSelection = false
-        }
-        if scrollRequest > 0 && desired >= 0 && coordinator.scrollRequest != scrollRequest {
-            table.scrollRowToVisible(desired)
-            coordinator.scrollRequest = scrollRequest
-        }
+        coordinator.reloadIfNeeded()
+        coordinator.updateSelection()
+        coordinator.scrollSelection(animated: !reduceMotion)
         table.needsDisplay = true
     }
 
@@ -130,6 +110,56 @@ struct FileTable: NSViewRepresentable {
         var suppressSelection = false
         let dateFormatter = DateFormatter()
         init(_ parent: FileTable) { self.parent = parent }
+        func reloadIfNeeded() {
+            guard let table else { return }
+            guard
+                revision != parent.revision || language != parent.language || logical != parent.logical
+                    || showPaths != parent.showPaths || duplicateID != parent.duplicates?.id
+            else { return }
+            duplicateID = parent.duplicates?.id
+            revision = parent.revision
+            language = parent.language
+            dateFormatter.locale = Locale(identifier: language == "en" ? "en_US" : "ru_RU")
+            dateFormatter.dateStyle = .short
+            logical = parent.logical
+            showPaths = parent.showPaths
+            suppressSelection = true
+            table.reloadData()
+            suppressSelection = false
+        }
+        func updateSelection() {
+            guard let table else { return }
+            let desired = parent.selection.flatMap { id in parent.rows.firstIndex { $0.id == id } } ?? -1
+            if desired != table.selectedRow {
+                suppressSelection = true
+                table.selectRowIndexes(desired < 0 ? [] : IndexSet(integer: desired), byExtendingSelection: false)
+                suppressSelection = false
+            }
+        }
+        func scrollSelection(animated: Bool) {
+            let request = parent.scrollRequest
+            guard request > 0, scrollRequest != request else { return }
+            DispatchQueue.main.async { [weak self] in self?.performScroll(request, animated: animated) }
+        }
+        private func performScroll(_ request: Int, animated: Bool) {
+            guard parent.scrollRequest == request, let table, let selection = parent.selection,
+                let row = parent.rows.firstIndex(where: { $0.id == selection }), let scroll = table.enclosingScrollView
+            else { return }
+            scroll.layoutSubtreeIfNeeded()
+            scrollRequest = request
+            let clip = scroll.contentView
+            let rect = table.rect(ofRow: row)
+            if clip.bounds.contains(rect) { return }
+            let y = rect.minY < clip.bounds.minY ? rect.minY : rect.maxY - clip.bounds.height
+            let proposed = NSRect(origin: NSPoint(x: clip.bounds.minX, y: max(0, y)), size: clip.bounds.size)
+            let origin = clip.constrainBoundsRect(proposed).origin
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = animated ? 0.16 : 0
+                clip.animator().setBoundsOrigin(origin)
+            } completionHandler: {
+                scroll.reflectScrolledClipView(clip)
+            }
+        }
         func numberOfRows(in tableView: NSTableView) -> Int { parent.rows.count }
         func tableView(_ tableView: NSTableView, sortDescriptorsDidChange oldDescriptors: [NSSortDescriptor]) {
             if let key = tableView.sortDescriptors.first?.key, let field = EntrySort(rawValue: key) {
