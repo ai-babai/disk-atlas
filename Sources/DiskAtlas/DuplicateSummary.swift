@@ -31,8 +31,7 @@ struct DuplicateSummary: View {
         case .metric:
             VStack(alignment: .leading, spacing: 6) {
                 Text(count.formatted()).font(.system(size: 24, weight: .medium, design: .rounded)).monospacedDigit()
-                Text(L10n.text("Файлов с копиями")).font(.system(size: 10)).foregroundStyle(Palette.sub)
-                Text(L10n.text("Открыть дубликаты")).font(.system(size: 10)).underline().lineLimit(1)
+                Text(L10n.text("Файлов с копиями")).font(.system(size: 10)).underline()
             }.frame(maxWidth: 130, alignment: .leading)
         case .detail:
             HStack {

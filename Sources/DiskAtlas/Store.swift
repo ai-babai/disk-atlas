@@ -55,6 +55,10 @@ import UniformTypeIdentifiers
     @Published var rowRevision = 0
     @Published var rowScrollRequest = 0
     private var mapSelectionID: Int?
+    var mapContextID: Int? {
+        guard let id = mapSelectionID, let index, index.snapshot.entries[id].parent != folderID else { return nil }
+        return id
+    }
     @Published var rowCount = 0
     @Published var preparing = false { didSet { updateDuplicatePriority() } }
     @Published var loadingTitle: String?
@@ -246,6 +250,10 @@ import UniformTypeIdentifiers
         guard let selection, let snapshot else { return folder }
         return index?.snapshot.entries[selection] ?? snapshot.entries[selection]
     }
+    private var usesDefaultRows: Bool {
+        mapSelectionID == nil && query.isEmpty && selectedKinds.isEmpty && !largestFiles
+            && (sort == .size || sort == .share) && sortDescending
+    }
     private func refreshRows() {
         rowTask?.cancel()
         rowWorker?.cancel()
@@ -264,9 +272,7 @@ import UniformTypeIdentifiers
         let sort = sort
         let descending = sortDescending
         let included = mapSelectionID
-        if included == nil && query.isEmpty && kinds.isEmpty && !files && (sort == .size || sort == .share)
-            && descending
-        {
+        if usesDefaultRows {
             let result = index.rows(folder: folder, logical: logical, query: "", kind: nil, filesOnly: false)
             rows = result.entries
             rowCount = result.count
@@ -278,9 +284,13 @@ import UniformTypeIdentifiers
             if !query.isEmpty { try? await Task.sleep(for: .milliseconds(100)) }
             guard !Task.isCancelled else { return }
             let worker = Task.detached(priority: .userInitiated) {
-                index.rows(
+                let result = index.rows(
                     folder: folder, logical: logical, query: query, kinds: kinds, filesOnly: files, sort: sort,
                     descending: descending, including: included)
+                return (
+                    entries: index.revealingMapSelection(included, folder: folder, in: result.entries),
+                    count: result.count
+                )
             }
             rowWorker = worker
             let result = await worker.value
@@ -541,17 +551,26 @@ import UniformTypeIdentifiers
 
     func selectFromMap(_ id: Int) {
         guard let snapshot = index?.snapshot, snapshot.entries.indices.contains(id) else { return }
-        let listed = rows.contains { $0.id == id }
-        if !listed {
-            query = ""
-            selectedKinds = []
-        }
         selection = id
-        if listed || snapshot.entries[id].parent == folderID {
-            mapSelectionID = id
-            rowScrollRequest &+= 1
-            refreshRows()
-        }
+        mapSelectionID = id
+        rowScrollRequest &+= 1
+        refreshRows()
+    }
+
+    var canGoHome: Bool { !scanning && !preparing && !deletingHistory && savingHistory == 0 }
+    func goHome() {
+        guard canGoHome else { return }
+        snapshot = nil
+        pendingPaths = []
+        prepareDuplicateSearch = false
+        showSourcePicker = false
+        showDuplicates = false
+        selection = nil
+        notice = nil
+    }
+    func showDuplicateActivity() {
+        if snapshot == nil { snapshot = baseIndex?.snapshot }
+        showDuplicates = true
     }
 
     func navigate(_ id: Int) {

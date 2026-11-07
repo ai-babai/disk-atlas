@@ -286,7 +286,7 @@ struct DuplicatesView: View {
                 ProgressView().controlSize(.small)
                 Text(session.phaseTitle)
                 Spacer()
-                Button(L10n.text("Остановить")) { session.stop() }.disabled(session.savingReport)
+                Button(L10n.text("Остановить")) { session.stop() }
             }
             if session.trashing && session.trashProgress.total > 0 {
                 ProgressView(value: Double(session.trashProgress.completed), total: Double(session.trashProgress.total))

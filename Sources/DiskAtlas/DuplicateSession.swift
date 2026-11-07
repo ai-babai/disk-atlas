@@ -17,7 +17,8 @@ import SwiftUI
     }
     var canFilterResults: Bool { !loadingReport && !trashPreparing && !trashing }
 
-    @Published private(set) var busy = false
+    @Published private(set) var busy = false { didSet { if !busy { stopping = false } } }
+    @Published private(set) var stopping = false
     @Published private(set) var running = false
     @Published private(set) var preparing = false
     @Published private(set) var loadingReport = false
@@ -60,12 +61,15 @@ import SwiftUI
     private let history: ScanHistory
     private var task: Task<Void, Never>?
     private var worker: Task<DuplicatePlan, Error>?
+    private var lookupWorker: Task<DuplicateLookup, Error>?
+    private var exportWorker: Task<Void, Error>?
     private var control: DuplicateControl?
     private var generation = UUID()
     init(history: ScanHistory) { self.history = history }
 
     var title: String { roots.map { URL(fileURLWithPath: $0).lastPathComponent }.joined(separator: " + ") }
     var phaseTitle: String {
+        if stopping { return L10n.text("Останавливаем…") }
         if let title = preparationTitle { return title }
         if let title = activityTitle { return title }
         switch progress.phase {
@@ -155,7 +159,7 @@ import SwiftUI
                 let saved = try await history.loadDuplicates(id: id)
                 guard generation == key, !Task.isCancelled else { return }
                 if let saved {
-                    let lookup = await Task.detached(priority: .utility) { DuplicateLookup(saved.0) }.value
+                    let lookup = try await buildLookup(saved.0)
                     guard generation == key, !Task.isCancelled else { return }
                     self.lookup = lookup
                     report = saved.0
@@ -176,7 +180,7 @@ import SwiftUI
         if let report, !busy {
             busy = true
             savingReport = true
-            Task {
+            task = Task {
                 defer {
                     busy = false
                     savingReport = false
@@ -285,27 +289,39 @@ import SwiftUI
                         plan, control: token,
                         progress: { [weak self] update in
                             Task { @MainActor in if self?.generation == key { self?.progress = update } }
-                        },
-                        found: { [weak self] group in
-                            Task { @MainActor in
-                                if self?.generation == key && self?.report == nil {
-                                    self?.groups.append(contentsOf: group)
-                                }
-                            }
-                        })
+                        }, found: { [weak self] group in Task { @MainActor in self?.receive(group, generation: key) } })
                 }.value
-                running = false
-                paused = false
-                foregroundPaused = false
-                savingReport = true
-                let lookup = await Task.detached(priority: .utility) { DuplicateLookup(result) }.value
-                self.lookup = lookup
-                retireResults()
-                report = result
-                groups = result.groups
-                if let ownerID { metadataBytes = try await history.saveDuplicates(result, id: ownerID) }
-            } catch { self.error = error.localizedDescription }
+                try await finish(result)
+            } catch is CancellationError { error = L10n.text("Сохранение отменено.") } catch {
+                self.error = error.localizedDescription
+            }
         }
+    }
+    private func receive(_ batch: [DuplicateGroup], generation key: UUID) {
+        guard generation == key, report == nil else { return }
+        groups.append(contentsOf: batch)
+    }
+    private func buildLookup(_ report: DuplicateReport) async throws -> DuplicateLookup {
+        let job = Task.detached(priority: .utility) { try DuplicateLookup(report) }
+        lookupWorker = job
+        defer { lookupWorker = nil }
+        return try await withTaskCancellationHandler {
+            try await job.value
+        } onCancel: {
+            job.cancel()
+        }
+    }
+    private func finish(_ result: DuplicateReport) async throws {
+        running = false
+        paused = false
+        foregroundPaused = false
+        savingReport = true
+        retireResults()
+        report = result
+        groups = result.groups
+        lookup = try await buildLookup(result)
+        try Task.checkCancellation()
+        if let ownerID { metadataBytes = try await history.saveDuplicates(result, id: ownerID) }
     }
     func togglePause() {
         guard running else { return }
@@ -318,7 +334,10 @@ import SwiftUI
         control?.pause(busy, foreground: true)
     }
     func stop() {
-        if trashPreparing { task?.cancel() }
+        if busy { stopping = true }
+        if trashPreparing || savingReport { task?.cancel() }
+        lookupWorker?.cancel()
+        exportWorker?.cancel()
         trashControl?.cancel()
         control?.cancel()
         if preparing || loadingReport {
@@ -458,14 +477,10 @@ import SwiftUI
     }
     private func applyTrash(_ outcome: DuplicateTrashOutcome, to original: DuplicateReport) async {
         if !outcome.moved.isEmpty {
-            let prepared = await Task.detached(priority: .utility) {
-                let updated = original.removing(outcome.moved)
-                return (updated, DuplicateLookup(updated))
-            }.value
-            let updated = prepared.0
+            let updated = await Task.detached(priority: .utility) { original.removing(outcome.moved) }.value
             retireResults()
             report = updated
-            lookup = prepared.1
+            lookup = try? await buildLookup(updated)
             groups = updated.groups
             trashSelection = DuplicateTrashSelection()
             trashMovedCount = outcome.moved.count
@@ -485,17 +500,28 @@ import SwiftUI
         if panel.runModal() == .OK, let url = panel.url {
             busy = true
             savingReport = true
-            Task {
+            task = Task {
                 defer {
                     busy = false
                     savingReport = false
                 }
                 do {
-                    try await Task.detached(priority: .utility) {
-                        try Snapshot.encoder.encode(report).write(to: url, options: .atomic)
+                    let job = Task.detached(priority: .utility) {
+                        let data = try Snapshot.encoder.encode(report)
+                        try Task.checkCancellation()
+                        try data.write(to: url, options: .atomic)
                         try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
-                    }.value
-                } catch { self.error = error.localizedDescription }
+                    }
+                    exportWorker = job
+                    defer { exportWorker = nil }
+                    try await withTaskCancellationHandler {
+                        try await job.value
+                    } onCancel: {
+                        job.cancel()
+                    }
+                } catch is CancellationError { error = L10n.text("Сохранение отменено.") } catch {
+                    self.error = error.localizedDescription
+                }
             }
         }
     }

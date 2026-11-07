@@ -1,4 +1,3 @@
-import CryptoKit
 import Darwin
 import Foundation
 
@@ -26,6 +25,23 @@ public struct DuplicateFile: Codable, Sendable, Identifiable {
     public var changedSeconds: Int64
     public var changedNanos: Int64
     public var id: String { path }
+    private enum CodingKeys: String, CodingKey {
+        case path, bytes, modified, created, device, inode, modifiedSeconds, modifiedNanos, changedSeconds, changedNanos
+    }
+    public func encode(to encoder: Encoder) throws {
+        try Task.checkCancellation()
+        var value = encoder.container(keyedBy: CodingKeys.self)
+        try value.encode(path, forKey: .path)
+        try value.encode(bytes, forKey: .bytes)
+        try value.encode(modified, forKey: .modified)
+        try value.encode(created, forKey: .created)
+        try value.encode(device, forKey: .device)
+        try value.encode(inode, forKey: .inode)
+        try value.encode(modifiedSeconds, forKey: .modifiedSeconds)
+        try value.encode(modifiedNanos, forKey: .modifiedNanos)
+        try value.encode(changedSeconds, forKey: .changedSeconds)
+        try value.encode(changedNanos, forKey: .changedNanos)
+    }
     fileprivate init(path: String, info: stat) {
         self.path = path
         bytes = info.st_size
@@ -136,7 +152,7 @@ public final class DuplicateControl: @unchecked Sendable {
         while !cancelled && (userPaused || foregroundPaused) { condition.wait() }
         if cancelled || Task<Never, Never>.isCancelled { throw CancellationError() }
     }
-    fileprivate func elapsed(since start: Date) -> Double {
+    func elapsed(since start: Date) -> Double {
         condition.lock()
         defer { condition.unlock() }
         return max(
@@ -147,7 +163,7 @@ public final class DuplicateControl: @unchecked Sendable {
 
 public struct DuplicateFinder: Sendable {
     public init() {}
-    private static func sampleReadBytes(_ bytes: Int64) -> Int64 { bytes <= 1_048_576 ? bytes : 131072 }
+    static func sampleReadBytes(_ bytes: Int64) -> Int64 { bytes <= 1_048_576 ? bytes : 131072 }
     /// Only current metadata is read. Age selects groups with at least one eligible copy;
     /// same-size peers of other ages remain eligible for comparison.
     public func prepare(
@@ -218,130 +234,7 @@ public struct DuplicateFinder: Sendable {
         progress: @escaping @Sendable (DuplicateProgress) -> Void = { _ in },
         found: @escaping @Sendable ([DuplicateGroup]) -> Void = { _ in }
     ) throws -> DuplicateReport {
-        let start = Date()
-        var value = DuplicateProgress()
-        value.phase = .sampling
-        value.phaseTotal = plan.buckets.reduce(0) { $0 + $1.reduce(0) { $0 + Self.sampleReadBytes($1.bytes) } }
-        value.futureReadBytes = plan.estimatedReadBytes
-        var last = Date.distantPast
-        var skipped = plan.skipped
-        var issues = plan.issues
-        var groups: [DuplicateGroup] = []
-        var pending: [DuplicateGroup] = []
-        func emit(force: Bool = false) {
-            if force || Date().timeIntervalSince(last) >= 0.15 {
-                if !pending.isEmpty {
-                    found(pending)
-                    pending.removeAll(keepingCapacity: true)
-                }
-                value.activeSeconds = control.elapsed(since: start)
-                value.groups = groups.count
-                progress(value)
-                last = Date()
-            }
-        }
-        func advanced(_ count: Int) {
-            value.phaseBytes += Int64(count)
-            value.readBytes += Int64(count)
-            emit()
-        }
-        func failed(_ file: DuplicateFile, _ error: Error) {
-            skipped += 1
-            if issues.count < 20 { issues.append(ScanIssue(path: file.path, message: error.localizedDescription)) }
-        }
-        var hashed: [String: [DuplicateFile]] = [:]
-        var stopped = false
-        do {
-            emit(force: true)
-            // Same-size buckets are sampled first. Unique beginnings/endings never
-            // incur a full-file hash. For <=1 MiB one complete read avoids an extra pass.
-            var sampled: [String: [(DuplicateFile, String?)]] = [:]
-            for bucket in plan.buckets {
-                for file in bucket {
-                    try control.checkpoint()
-                    do {
-                        let complete = file.bytes <= 1_048_576
-                        let sample =
-                            complete
-                            ? try digest(file, control: control, advanced: advanced)
-                            : try sample(file, control: control, advanced: advanced)
-                        sampled[String(file.bytes) + ":" + sample, default: []].append((file, complete ? sample : nil))
-                    } catch is CancellationError { throw CancellationError() } catch { failed(file, error) }
-                    value.examined += 1
-                    emit()
-                }
-            }
-            let survivors = sampled.values.filter {
-                $0.count > 1 && $0.contains { plan.options.matchesDate($0.0.modified) }
-            }.sorted { $0[0].0.bytes > $1[0].0.bytes }
-            value.phase = .hashing
-            value.phaseBytes = 0
-            value.phaseTotal = survivors.reduce(0) { $0 + $1.reduce(0) { $0 + ($1.1 == nil ? $1.0.bytes : 0) } }
-            value.futureReadBytes = survivors.reduce(0) { $0 + Int64($1.count - 1) * $1[0].0.bytes * 2 }
-            emit(force: true)
-            for bucket in survivors {
-                for (file, cached) in bucket {
-                    try control.checkpoint()
-                    do {
-                        let hash = try cached ?? digest(file, control: control, advanced: advanced)
-                        hashed[String(file.bytes) + ":" + hash, default: []].append(file)
-                    } catch is CancellationError { throw CancellationError() } catch { failed(file, error) }
-                }
-            }
-            let matches = hashed.filter {
-                $0.value.count > 1 && $0.value.contains { plan.options.matchesDate($0.modified) }
-            }.sorted { $0.value[0].bytes > $1.value[0].bytes }
-            value.phase = .verifying
-            value.phaseBytes = 0
-            value.futureReadBytes = 0
-            value.phaseTotal = matches.reduce(0) { $0 + Int64($1.value.count - 1) * $1.value[0].bytes * 2 }
-            emit(force: true)
-            for (digest, files) in matches {
-                try control.checkpoint()
-                var confirmed: [DuplicateFile] = []
-                for file in files {
-                    do {
-                        if confirmed.isEmpty {
-                            try validate(file)
-                            confirmed.append(file)
-                        } else if try equal(confirmed[0], file, control: control, advanced: advanced) {
-                            confirmed.append(file)
-                        }
-                    } catch is CancellationError { throw CancellationError() } catch { failed(file, error) }
-                }
-                // Revalidate every path after all reads; changed/unlinked files cannot be published.
-                confirmed = confirmed.filter { file in
-                    do {
-                        try validate(file)
-                        return true
-                    } catch {
-                        failed(file, error)
-                        return false
-                    }
-                }
-                if confirmed.count > 1 && confirmed.contains(where: { plan.options.matchesDate($0.modified) }) {
-                    var group = DuplicateGroup(id: digest, files: confirmed)
-                    let sample = Array(confirmed.prefix(200))
-                    group.displayName = sample.map { URL(fileURLWithPath: $0.path).lastPathComponent }.min {
-                        $0.count < $1.count
-                    }
-                    group.locations = Array(
-                        Set(sample.map { URL(fileURLWithPath: $0.path).deletingLastPathComponent().lastPathComponent })
-                    ).sorted().prefix(3).map { $0 }
-                    value.metadataBytes += group.files.reduce(160) { $0 + Int64($1.path.utf8.count + 240) }
-                    groups.append(group)
-                    pending.append(group)
-                    emit()
-                }
-            }
-        } catch is CancellationError { stopped = true }
-        value.phase = .finished
-        emit(force: true)
-        return DuplicateReport(
-            roots: plan.roots, snapshotCreated: plan.snapshotCreated, checkedAt: Date(), options: plan.options,
-            groups: groups.sorted { $0.repeatedBytes > $1.repeatedBytes }, skipped: skipped, hardLinks: plan.hardLinks,
-            issues: issues, readBytes: value.readBytes, elapsed: control.elapsed(since: start), cancelled: stopped,
-            inputPartial: plan.inputPartial)
+        try DuplicateRun(plan: plan, finder: self, control: control, progress: progress, found: found).run()
     }
 
     /// Open each path component without following symlinks. O_NONBLOCK avoids FIFO hangs.
@@ -373,10 +266,10 @@ public struct DuplicateFinder: Sendable {
         let fd = try openFile(file)
         close(fd)
     }
-    private func sample(_ file: DuplicateFile, control: DuplicateControl, advanced: (Int) -> Void) throws -> String {
+    func sample(_ file: DuplicateFile, control: DuplicateControl, advanced: (Int) -> Void) throws -> String {
         let fd = try openFile(file)
         defer { close(fd) }
-        var hasher = SHA256()
+        let hasher = try ContentFingerprint()
         var buffer = [UInt8](repeating: 0, count: 65536)
         for offset in [Int64(0), file.bytes - 65536] {
             var filled = 0
@@ -391,20 +284,20 @@ public struct DuplicateFinder: Sendable {
                 filled += count
                 advanced(count)
             }
-            buffer.withUnsafeBytes { hasher.update(bufferPointer: $0) }
+            buffer.withUnsafeBytes { hasher.update($0) }
         }
         var info = stat()
         guard fstat(fd, &info) == 0, file.matches(info) else {
             throw AtlasError.message("Файл изменился во время проверки.")
         }
         try validate(file)
-        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+        return hasher.finalize()
     }
 
-    private func digest(_ file: DuplicateFile, control: DuplicateControl, advanced: (Int) -> Void) throws -> String {
+    func digest(_ file: DuplicateFile, control: DuplicateControl, advanced: (Int) -> Void) throws -> String {
         let fd = try openFile(file)
         defer { close(fd) }
-        var hasher = SHA256()
+        let hasher = try ContentFingerprint()
         var buffer = [UInt8](repeating: 0, count: max(1, min(1024 * 1024, Int(file.bytes))))
         var remaining = file.bytes
         while remaining > 0 {
@@ -412,7 +305,7 @@ public struct DuplicateFinder: Sendable {
             let count = Darwin.read(fd, &buffer, min(buffer.count, Int(remaining)))
             if count < 0 && errno == EINTR { continue }
             guard count > 0 else { throw AtlasError.message("Не удалось прочитать файл полностью.") }
-            buffer.withUnsafeBytes { hasher.update(bufferPointer: UnsafeRawBufferPointer(rebasing: $0[..<count])) }
+            buffer.withUnsafeBytes { hasher.update(UnsafeRawBufferPointer(rebasing: $0[..<count])) }
             remaining -= Int64(count)
             advanced(count)
         }
@@ -421,10 +314,10 @@ public struct DuplicateFinder: Sendable {
             throw AtlasError.message("Файл изменился во время проверки.")
         }
         try validate(file)
-        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+        return hasher.finalize()
     }
-    private func equal(_ a: DuplicateFile, _ b: DuplicateFile, control: DuplicateControl, advanced: (Int) -> Void)
-        throws -> Bool
+    func equal(_ a: DuplicateFile, _ b: DuplicateFile, control: DuplicateControl, advanced: (Int) -> Void) throws
+        -> Bool
     {
         let left = try openFile(a)
         defer { close(left) }
@@ -480,27 +373,38 @@ public final class DuplicateLookup: Sendable {
     public let checkedAt: Date
     public let folderCounts: [String: Int]
     public let results: DuplicateResultIndex
-    public init(_ report: DuplicateReport) {
-        results = DuplicateResultIndex(report.groups)
-        var counts: [String: Int] = [:]
+    public init(_ report: DuplicateReport) throws {
+        var parents: [String: Int] = [:]
         var paths: [String: String] = [:]
         var groups: [String: DuplicateGroup] = [:]
         for group in report.groups {
+            try Task.checkCancellation()
             groups[group.id] = group
             for file in group.files {
+                try Task.checkCancellation()
                 paths[file.path] = group.id
-                var folder = URL(fileURLWithPath: file.path).deletingLastPathComponent()
-                while true {
-                    counts[folder.path, default: 0] += 1
-                    if folder.path == "/" { break }
-                    folder.deleteLastPathComponent()
-                }
+                let folder = URL(fileURLWithPath: file.path).deletingLastPathComponent().path
+                parents[folder, default: 0] += 1
             }
         }
+        folderCounts = try Self.ancestorCounts(parents)
+        results = DuplicateResultIndex(report.groups)
         byPath = paths
         self.groups = groups
         checkedAt = report.checkedAt
-        folderCounts = counts
+    }
+    private static func ancestorCounts(_ parents: [String: Int]) throws -> [String: Int] {
+        var counts: [String: Int] = [:]
+        for (parent, count) in parents {
+            try Task.checkCancellation()
+            var folder = URL(fileURLWithPath: parent)
+            while true {
+                counts[folder.path, default: 0] += count
+                if folder.path == "/" { break }
+                folder.deleteLastPathComponent()
+            }
+        }
+        return counts
     }
     public func count(in path: String, directory: Bool) -> Int {
         directory ? folderCounts[path] ?? 0 : byPath[path] == nil ? 0 : 1

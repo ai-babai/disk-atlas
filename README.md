@@ -38,7 +38,7 @@ or find an item by name. Open an earlier scan whenever you need to return to it.
 ## Download & install
 
 1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Download **Disk-Atlas-0.7.0-universal.dmg**. The same app supports Apple Silicon
+2. Download **Disk-Atlas-0.8.0-universal.dmg**. The same app supports Apple Silicon
    and Intel Macs running **macOS 14 Sonoma or later**.
 3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
    then launch the app from Applications. A ZIP is also available.
@@ -99,7 +99,12 @@ Allocated size (**On disk**) is the default. The **Size** menu with a drive icon
 file or folder for the inspector, including nested rectangles, without changing
 the current directory. If the object is in the list below, the list scrolls to
 it, including nested search matches, while preserving the search and type filters.
-Direct children are included even outside the first 1,000 rows. Double-click a
+Direct children are included even outside the first 1,000 rows. A nested object
+missing from the list appears as one temporary context row with its path, beside
+the nearest visible ancestor (or at the top when no ancestor is listed). The
+folder, filters and match count stay unchanged; the next map selection replaces
+that context row. Click the sidebar logo to return to the empty start screen;
+saved history remains available. Double-click a
 folder or choose **Explore folder** to enter it. Aggregated **More…** tiles are inert.
 
 ## Check duplicates when you need them
@@ -134,9 +139,12 @@ not replace them. The overview uses an explicit **Open duplicates** link.
 
 ![Compact duplicate groups with locations, copy counts and expandable files](docs/images/duplicates-en.png)
 
-Different sizes are never compared. The checker samples the first and last 64 KiB,
-fully hashes only surviving candidates with SHA-256, then confirms matches byte by
-byte. Files up to 1 MiB use one full hash instead of an extra sampling pass.
+Different sizes are never compared. The checker samples the first and last 64 KiB.
+For exactly two surviving large files it goes straight to byte comparison,
+skipping a redundant full-file hash pass. Larger candidate buckets use fast
+**XXH3-128** fingerprints, then byte verification; fingerprint collisions are
+partitioned by actual content. Files up to 1 MiB use one full fingerprint instead
+of an extra sampling pass. [Measured changes and dependency provenance](docs/PERFORMANCE.md#duplicate-checking-in-080).
 Hard-link aliases count once; symlinks, special files and cloud-only placeholders
 are skipped. Changed or replaced files are rejected.
 
@@ -145,6 +153,11 @@ and matching content affect the result. The GUI compares files of any age;
 advanced date criteria remain available through CLI/MCP. A check uses files known
 to the source scan; rescan to include newly added files. Results carry their check
 date and can become stale. Stopping preserves confirmed groups as a partial report.
+Stop is available during checking, indexing and report saving; cancellation keeps
+the previous saved report intact until a new complete atomic write. Quitting
+interrupts background work without waiting indefinitely. Unsaved current results
+may be lost; existing history is retained.
+
 Checkboxes select copies for **Trash**. A group checkbox selects **every copy**. Individual checkboxes have no hidden
 keep-one restriction. Fully selected groups show **All copies selected**, even
 when collapsed, and the review warns that no copy will remain. Row/group trash buttons

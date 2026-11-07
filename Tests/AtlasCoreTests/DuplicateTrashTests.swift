@@ -92,7 +92,7 @@ final class DuplicateTrashTests: XCTestCase {
         first.preferredPath = first.files[0].path
         let sibling = try group("project-other", copies: 2)
         let source = report([first, sibling])
-        let lookup = DuplicateLookup(source)
+        let lookup = try DuplicateLookup(source)
         XCTAssertEqual(lookup.count(in: "/Volumes/Synthetic/project", directory: true), 3)
         XCTAssertEqual(lookup.count(in: "/Volumes/Synthetic", directory: true), 5)
         XCTAssertEqual(lookup.count(in: "/", directory: true), 5)
@@ -109,7 +109,7 @@ final class DuplicateTrashTests: XCTestCase {
         XCTAssertEqual(remaining.repeatedBytes, 200)
         let final = remaining.removing([first.files[1].path])
         XCTAssertEqual(final.groups.map(\.id), [sibling.id])
-        XCTAssertEqual(DuplicateLookup(final).count(in: "/Volumes/Synthetic/project", directory: true), 0)
+        XCTAssertEqual(try DuplicateLookup(final).count(in: "/Volumes/Synthetic/project", directory: true), 0)
         XCTAssertEqual(source.groups[0].files.count, 3)
     }
     func testReconfirmationRejectsChangedFilesAndCancellationWithoutWrites() throws {

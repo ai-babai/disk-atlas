@@ -5,6 +5,14 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.8.0 — 2026-11-07
+
+- Reveal nested map selections in one temporary list row, without navigating or clearing filters; use AppKit’s native scroll destination so the first row is not hidden by the header.
+- Underline Files with copies directly and remove the extra Open duplicates line. Make the sidebar brand return to the empty start screen, preserving history and background duplicate controls.
+- Replace SHA-256 candidate fingerprints with vendored XXH3-128, retain byte/identity verification, partition fingerprint collisions, and skip full hashing for exactly two large sample survivors.
+- Aggregate duplicate ancestor counts by distinct parent and defer unused type classification. Add cooperative cancellation to indexing and per-file report encoding; keep Stop enabled while saving and quit without indefinite background-write waits.
+- Add regression checks for nested context rows, standard hash vectors/streaming, redundant read avoidance, collision partitioning and cancellation preserving a committed report. Retire five touched legacy complexity exceptions without changing thresholds.
+
 ## 0.7.0 — 2026-11-07
 
 - Replace ambiguous disclosure arrows in overview/inspector duplicate metrics with explicit Open links.

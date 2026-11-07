@@ -10,6 +10,7 @@ struct FileTable: NSViewRepresentable {
     var revision: Int
     var language: String
     var showPaths: Bool
+    var contextID: Int? = nil
     var showCreationDate: Bool
     var sort: EntrySort = .size
     var descending = true
@@ -148,19 +149,22 @@ struct FileTable: NSViewRepresentable {
             scroll.layoutSubtreeIfNeeded()
             scrollRequest = request
             let clip = scroll.contentView
-            let rect = table.rect(ofRow: row)
-            if clip.bounds.contains(rect) { return }
-            let y = rect.minY < clip.bounds.minY ? rect.minY : rect.maxY - clip.bounds.height
-            let proposed = NSRect(origin: NSPoint(x: clip.bounds.minX, y: max(0, y)), size: clip.bounds.size)
-            let origin = clip.constrainBoundsRect(proposed).origin
+            let origin = clip.bounds.origin
+            table.scrollRowToVisible(row)
+            let destination = clip.bounds.origin
+            guard animated, origin != destination else { return }
+            clip.scroll(to: origin)
             NSAnimationContext.runAnimationGroup { context in
-                context.duration = animated ? 0.16 : 0
-                clip.animator().setBoundsOrigin(origin)
+                context.duration = 0.16
+                clip.animator().setBoundsOrigin(destination)
             } completionHandler: {
                 scroll.reflectScrolledClipView(clip)
             }
         }
         func numberOfRows(in tableView: NSTableView) -> Int { parent.rows.count }
+        func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
+            parent.showPaths || parent.rows[row].id == parent.contextID ? 43 : 33
+        }
         func tableView(_ tableView: NSTableView, sortDescriptorsDidChange oldDescriptors: [NSSortDescriptor]) {
             if let key = tableView.sortDescriptors.first?.key, let field = EntrySort(rawValue: key) {
                 parent.sortBy(field)
@@ -181,7 +185,7 @@ struct FileTable: NSViewRepresentable {
             switch key.rawValue {
             case "name":
                 cell.title.stringValue = entry.name
-                cell.subtitle.stringValue = parent.showPaths ? entry.path : ""
+                cell.subtitle.stringValue = parent.showPaths || entry.id == parent.contextID ? entry.path : ""
                 cell.icon.image = NSImage(systemSymbolName: entry.kind.symbol, accessibilityDescription: nil)
                 cell.icon.contentTintColor = NSColor(entry.kind.tint)
                 cell.toolTip = entry.path

@@ -12,15 +12,6 @@
       "start": 156
     },
     {
-      "bodyHash": "dbb6c0a72bc4383f13831717bd1658481ca2edd4ad118982ebf133d1181c8abf",
-      "cognitive": 40,
-      "cyclomatic": 21,
-      "end": 345,
-      "file": "Sources/AtlasCore/Duplicates.swift",
-      "identity": "DuplicateFinder.run(_:DuplicatePlan,control:DuplicateControl,progress:@escaping @Sendable (DuplicateProgress) -> Void,found:@escaping @Sendable ([DuplicateGroup]) -> Void)",
-      "start": 220
-    },
-    {
       "bodyHash": "a7bc2ef766d0e1ece26ef57a99b5c8a31bcd89d8de75a7be7bd91f67b6107aa1",
       "cognitive": 16,
       "cyclomatic": 16,
@@ -66,24 +57,6 @@
       "start": 132
     },
     {
-      "bodyHash": "a03259f8293e915699745f964bef72772f169158f18aaca9080f956f97105c20",
-      "cognitive": 80,
-      "cyclomatic": 28,
-      "end": 158,
-      "file": "Sources/DiskAtlas/DiskAtlasApp.swift",
-      "identity": "DiskAtlasApp.property:body",
-      "start": 8
-    },
-    {
-      "bodyHash": "170d30e714e8f486001d66efef4e85d86d742f3626355c40d73f871ab730186e",
-      "cognitive": 16,
-      "cyclomatic": 7,
-      "end": 248,
-      "file": "Sources/DiskAtlas/DuplicateSession.swift",
-      "identity": "DuplicateSession.start()",
-      "start": 197
-    },
-    {
       "bodyHash": "dedae9294c9d21c08e6ba0be4d6646ee97298644aee92f60c8eb449b014729a3",
       "cognitive": 16,
       "cyclomatic": 7,
@@ -91,24 +64,6 @@
       "file": "Sources/DiskAtlas/ScanSetup.swift",
       "identity": "ScanSetup.property:body",
       "start": 16
-    },
-    {
-      "bodyHash": "c160a0f0a14f22429cec00ca55f802cd049163093dc491af316f4b76639653ad",
-      "cognitive": 38,
-      "cyclomatic": 11,
-      "end": 109,
-      "file": "Sources/DiskAtlas/Sidebar.swift",
-      "identity": "Sidebar.property:body",
-      "start": 6
-    },
-    {
-      "bodyHash": "ac828668f8137c3aea6d1837374f26811956c620b9200a47b2ce3d67a8b8081e",
-      "cognitive": 8,
-      "cyclomatic": 12,
-      "end": 291,
-      "file": "Sources/DiskAtlas/Store.swift",
-      "identity": "AtlasStore.refreshRows()",
-      "start": 248
     },
     {
       "bodyHash": "a54fb4e2bfb8d3e402053e6f1a06b9071c136cf95fdfd6538f89035c4bc6de93",

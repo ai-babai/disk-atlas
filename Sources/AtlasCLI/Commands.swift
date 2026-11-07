@@ -92,7 +92,7 @@ struct DuplicatesCommand: AsyncParsableCommand {
         commandName: "duplicates", abstract: "Estimate by metadata; explicitly opt in to expensive content comparison.",
         discussion: "Without --read-contents this only estimates work. Estimates are rough, not a time guarantee.")
     @Argument(help: "Directories to examine.") var paths: [String]
-    @Flag(help: "Authorize content reads: size buckets → edge samples → SHA-256 → byte comparison.") var readContents =
+    @Flag(help: "Authorize content reads: size buckets → edge samples → XXH3-128 → byte comparison.") var readContents =
         false
     @Option(help: "Minimum logical bytes, inclusive.") var minBytes: Int64 = 0
     @Option(help: "Maximum logical bytes, inclusive.") var maxBytes: Int64?

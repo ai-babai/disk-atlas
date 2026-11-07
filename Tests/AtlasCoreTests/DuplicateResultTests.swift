@@ -19,7 +19,7 @@ final class DuplicateResultTests: XCTestCase {
         _ = try await history.saveDuplicates(original, id: record.id)
         let saved = try await history.loadDuplicates(id: record.id)
         let report = try XCTUnwrap(saved?.0)
-        let lookup = DuplicateLookup(report)
+        let lookup = try DuplicateLookup(report)
         var filter = DuplicateOptions()
         filter.kinds = [.image]
         XCTAssertEqual(try lookup.results.query(options: filter).count, 1)

@@ -1,9 +1,9 @@
 ---
 type: Performance Notes
-description: Scope, reproducible workload and limits of the native panel and map profiling performed for 0.4.0.
+description: Measured map, panel and duplicate-check performance, reproducible workloads, dependency provenance and limits.
 created: "2026-11-07"
 ---
-# Map and panel profiling
+# Runtime performance
 
 Measured on macOS 15.8.1, Apple Silicon, optimized Swift 6.1.2 builds. The synthetic
 snapshot has 998,400 files and 409 folders; no user file contents were profiled.
@@ -47,3 +47,56 @@ Run `scripts/check.sh` for the maintained behavior/quality suite. Manual perform
 comparisons should use release builds, the same synthetic tree and window size,
 separate warm-up from measurement and distinguish preparation from presentation.
 The temporary profiling harness is not a new permanent benchmark framework.
+
+## Duplicate checking in 0.8.0
+
+Measured on the same Mac, release builds of 0.7.0 and the working 0.8.0 code,
+three alternating trials per version, synthetic files only. Values are medians;
+GB/MiB use their stated units. These are warm-cache tests, not a cold-drive or
+external-HDD benchmark. `F_NOCACHE` is a hint, not proof that caches were cold.
+
+| Workload | 0.7.0 elapsed / CPU | 0.8.0 elapsed / CPU | Logical content read |
+| --- | ---: | ---: | ---: |
+| Two identical 512 MiB files | 0.869 / 0.866 s | 0.520 / 0.495 s | 2,147,745,792 → 1,074,003,968 B |
+| Three identical 512 MiB files | 1.532 / 1.521 s | 1.114 / 1.109 s | 3,758,489,600 B in both |
+
+The pair avoids one whole-file hashing pass: size and edge samples already
+establish the candidate pair, so byte comparison is sufficient. Larger buckets
+still fingerprint every survivor to avoid quadratic comparison work. XXH3-128
+replaces SHA-256 for candidate fingerprints. Exact byte comparison and the
+existing descriptor/path identity checks remain mandatory; collisions split into
+separate byte-equal groups. Small files retain the one-full-fingerprint path.
+
+An isolated 1 MiB streaming buffer, repeated for 1 GiB of CPU work, measured
+SHA-256/CryptoKit at 3.32 GB/s and XXH3-128 at 19.87 GB/s. That sixfold hash-only
+throughput increase is not a sixfold application speed claim. A separate cached
+streaming experiment with two workers improved wall time, but does not establish
+cold-device behavior or lower energy. Production keeps one utility-priority
+worker and foreground pause, rather than assuming that concurrent I/O helps every
+device. CPU time fell about 43% for the pair and 27% for the triple. Power and
+battery consumption were not measured; no watt-hour improvement is claimed.
+
+Result-index preparation aggregates immediate parent counts before traversing
+ancestors, and defers extension classification until a type filter requires it.
+Index construction and per-copy JSON encoding have cancellation checkpoints.
+Stop stays available during report saving. Atomic report replacement preserves
+the previous committed report when cancellation occurs before commit. Quit
+cancels jobs and terminates immediately; unsaved current results may be lost,
+while committed history remains available.
+
+### Hash dependency and audit boundary
+
+CXXHash statically compiles the unmodified [xxHash 0.8.3 header](https://github.com/Cyan4973/xxHash/blob/v0.8.3/xxhash.h).
+Header SHA-256: `17973c0dc49d9854ca26caa191f0e12f7a424b68858d9a78de3860d959d85e4b`.
+The [BSD-2-Clause license](../Resources/ThirdParty/xxHash-LICENSE.txt) is bundled
+with app and standalone CLI. The three-line C translation unit enables the
+upstream implementation; handwritten ownership remains in the small Swift
+ContentFingerprint adapter. No runtime package installation or network is needed.
+See [upstream algorithm documentation](https://xxhash.com/doc/v0.8.3/group___x_x_h3__family.html).
+
+The existing numerical complexity/coverage gate analyzes first-party Swift and
+maintenance Python, not vendored upstream C. C compilation uses `-Wall -Wextra
+-Werror` for both release architectures. Behavior tests verify reference vectors,
+streaming boundaries, actual duplicate groups, byte-read counts, collision
+partitioning and cancellation. Passing these checks is not a claim of full
+upstream C coverage or a formal proof of the hash algorithm.

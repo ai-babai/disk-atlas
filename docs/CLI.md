@@ -82,7 +82,7 @@ disk-atlas history duplicates latest --limit 20
 ```
 
 Different sizes are eliminated first. Remaining candidates get first/last samples,
-then SHA-256 and byte verification. Symlinks, hard-link aliases and cloud-only
+then XXH3-128 and byte verification. Symlinks, hard-link aliases and cloud-only
 placeholders are skipped. Size limits are inclusive **logical bytes**. Optional
 `--max-bytes`, `--types` and ISO 8601 `--modified-after` / `--modified-before` are
 available; age selects groups containing at least one eligible copy, so peers

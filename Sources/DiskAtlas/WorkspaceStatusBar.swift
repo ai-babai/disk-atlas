@@ -7,7 +7,7 @@ struct WorkspaceStatusBar: View {
     @ObservedObject var session: DuplicateSession
     private var showsDuplicates: Bool {
         !session.roots.isEmpty && (session.busy || session.plan != nil || session.report != nil)
-            && (!store.showDuplicates || session.running)
+            && (store.snapshot != nil || session.busy) && (!store.showDuplicates || session.running)
     }
     var body: some View {
         HStack(spacing: 12) {
@@ -79,7 +79,7 @@ private struct DuplicateActivity: View {
     var body: some View {
         HStack(spacing: 8) {
             Button {
-                store.showDuplicates = true
+                store.showDuplicateActivity()
             } label: {
                 HStack(spacing: 6) {
                     activityIcon
@@ -132,7 +132,7 @@ private struct DuplicateActivityControls: View {
                 L10n.text(session.paused ? "Продолжить" : "Пауза")
             ).disabled(session.foregroundPaused)
         }
-        if session.busy && !session.savingReport {
+        if session.busy {
             Button {
                 session.stop()
             } label: {

@@ -19,7 +19,7 @@ let toolDefinitions: [[String: Any]] = [
     [
         "name": "find_duplicates",
         "description":
-            "Expensive explicit content read: same size, first/last 64 KiB, SHA-256, then byte verification. No source writes/deletion. Ignores symlinks, hardlink aliases and dataless cloud files. Returns at most 50 groups/20 paths per group; optional output saves full private report without overwriting.",
+            "Expensive explicit content read: same size, first/last 64 KiB, XXH3-128, then byte verification. No source writes/deletion. Ignores symlinks, hardlink aliases and dataless cloud files. Returns at most 50 groups/20 paths per group; optional output saves full private report without overwriting.",
         "inputSchema": [
             "type": "object",
             "properties": duplicateProperties.merging([

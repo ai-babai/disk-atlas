@@ -10,15 +10,14 @@ public struct DuplicateResultPage: Sendable {
 public final class DuplicateResultIndex: Sendable {
     private struct Item: Sendable {
         let group: DuplicateGroup
-        let kinds: [FileKind]
-        init(_ group: DuplicateGroup) {
-            self.group = group
-            kinds = group.files.map { FileKind.classify(URL(fileURLWithPath: $0.path)) }
-        }
+        init(_ group: DuplicateGroup) { self.group = group }
         func match(_ options: DuplicateOptions, scope: String?) throws -> Int? {
             for (index, file) in group.files.enumerated() {
                 if index % 1024 == 0 { try Task.checkCancellation() }
-                if !options.kinds.isEmpty && !options.kinds.contains(kinds[index]) { continue }
+                if !options.kinds.isEmpty && !options.kinds.contains(FileKind.classify(URL(fileURLWithPath: file.path)))
+                {
+                    continue
+                }
                 if !options.matchesDate(file.modified) { continue }
                 if let scope, file.path != scope, !file.path.hasPrefix(scope == "/" ? "/" : scope + "/") { continue }
                 return index

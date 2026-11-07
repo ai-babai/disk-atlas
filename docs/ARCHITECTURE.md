@@ -55,8 +55,10 @@ Only `run` reads contents: GUI opt-in before Analyze authorizes automatic
 background start after the map is ready; an existing scan uses Start comparison.
 CLI requires `--read-contents`, MCP requires `readContents: true`. The GUI has no
 date restriction; CLI/MCP retain optional date criteria. Equal-size buckets first receive 64 KiB prefix/suffix
-samples; files up to 1 MiB receive a complete SHA-256 once. Only sample survivors
-are fully hashed, then same-hash files are compared byte by byte. Buffers are at
+samples; files up to 1 MiB receive a complete XXH3-128 fingerprint once. Exactly
+two large sample survivors bypass full hashing and go straight to byte comparison.
+Other survivors are fully fingerprinted, then partitioned by actual byte equality
+so a fingerprint collision cannot hide a distinct matching group. Buffers are at
 most 1 MiB; reads bypass normal caching with `F_NOCACHE`. Files are opened with
 `openat` and `O_NOFOLLOW` on every path component; the final descriptor also uses
 `O_NONBLOCK`, and device/inode/size/mtime/ctime are checked before and after reads.
@@ -68,7 +70,10 @@ groups are batched, keeping updates out of the main map store. Pause and cancel
 checkpoints occur between read chunks. Foreground scanning/indexing temporarily
 pauses the background job. Confirmed groups survive stop as a partial report.
 A path-to-group lookup is built off the main thread for file-list badges. Its
-immutable `DuplicateResultIndex` caches each confirmed copy’s extension-based kind.
+immutable `DuplicateResultIndex` retains confirmed groups; extension classification
+is deferred until a type filter needs it, avoiding unnecessary work on load.
+The cancellable ancestor-count index aggregates immediate parent counts first,
+then propagates each distinct folder once, avoiding repeated ancestor URL walks.
 Result filters are independent of `DuplicateSession.options`, which describe a
 new content check. Size, kind and folder queries run on a cancellable worker and
 never open source files, reset evidence or write the canonical report. A matching
@@ -105,7 +110,11 @@ and files. Direct-child selections are included in the bounded list. Selecting
 any already-listed match, including a nested search/type result, preserves its
 filters and requests scrolling after native table layout. Scroll requests are
 generation-checked and animate for 160 ms, or immediately under Reduce Motion.
-Other deeper selections stay in the map and inspector. Aggregate
+Missing nested hits are represented by one extra context row, with its full path,
+after the nearest listed ancestor or at the top. This projection leaves the
+folder’s bounded matches, ordering, filters and count intact. The next map hit
+replaces the context row; navigation or filter changes clear it. AppKit computes
+the scroll destination, including header insets, before the short animation. Aggregate
 tiles are inert. Inspector content is constrained to its viewport width so long
 paths cannot stretch or shift the panel.
 
@@ -145,20 +154,25 @@ transition and released in a background task to reduce main-thread deallocation.
 
 History stores lightweight records separately from LZFSE-compressed snapshots in
 `~/Library/Application Support/Disk Atlas/History`. Directory mode is 0700; files
-are 0600. Opening history never rescans source folders. Normal app termination
-waits for an in-progress history write. History has no automatic pruning yet. Users can delete a snapshot or clear history
+are 0600. Opening history never rescans source folders. Quitting cancels foreground/background jobs and terminates without waiting for
+completion; a newly unsaved scan/report may be lost. Existing committed history
+and reports remain available. History manifests and duplicate reports use atomic
+replacement; cancellation checks before report commit and on every encoded file
+keep the prior report intact when saving is cancelled. History has no automatic pruning yet. Users can delete a snapshot or clear history
 after the configured confirmation. Cleanup unlinks only UUID-named app archives
 and UUID-named duplicate-report JSON sidecars plus the history manifest; source paths and exported snapshots are never targets.
 The scanner maintains a cheap running estimate of uncompressed metadata; history
 records report compressed archive size plus the saved duplicate-report size.
 Duplicate reports are limited to 256 MiB on read/write, use mode 0600, and are
-removed together with the owning history record. Termination waits for writes;
-a running duplicate job is stopped and its partial result saved.
+removed together with the owning history record. Report encoding and index construction check cancellation; Stop remains available
+while saving, with a Stopping state. Quitting may discard an unsaved partial result
+rather than holding application exit indefinitely.
 
 The shared 30-point status row observes duplicate updates separately from the map.
 Its compact result button contains the duplicate label, state/count and chevron;
 phase progress and pause/stop remain adjacent. Overview and inspector duplicate
-metrics use explicit Open labels rather than disclosure arrows, distinguishing
+overview metric underlines its existing Files with copies label, while inspector
+metrics use an Open label rather than disclosure arrows, distinguishing
 workspace navigation from group expansion ([Apple disclosure guidance](https://developer.apple.com/design/human-interface-guidelines/disclosure-controls)). Scan metadata and snapshot storage
 size share the same row. Optional notices truncate before job controls, preserving
 the layout at the minimum window width. A decorative spinner is hidden from
@@ -167,7 +181,9 @@ accessibility so the result action keeps its button role.
 ## Build and validation
 
 Swift 6 / Xcode Command Line Tools, macOS 14+ deployment target. The CLI statically links Apple Swift Argument Parser
-1.8.2 (pinned with its lockfile and license); AtlasCore and GUI have no external package dependencies. `scripts/build.sh` builds locally; `scripts/release.sh` compiles arm64
+1.8.2 (pinned with its lockfile and license). AtlasCore statically links vendored
+xxHash 0.8.3 through CXXHash; its unmodified upstream header, source hash, BSD
+license and audit boundary are documented in [PERFORMANCE.md](PERFORMANCE.md#duplicate-checking-in-080). `scripts/build.sh` builds locally; `scripts/release.sh` compiles arm64
 and x86_64, combines executables, signs ad hoc and packages DMG/ZIP with checksums.
 
 The project uses [the shared quality gate](QUALITY.md), behavior/property tests,

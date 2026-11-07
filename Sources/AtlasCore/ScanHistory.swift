@@ -91,11 +91,13 @@ public actor ScanHistory {
     }
 
     public func saveDuplicates(_ report: DuplicateReport, id: UUID) throws -> Int64 {
+        try Task.checkCancellation()
         var current = try list()
         guard let index = current.firstIndex(where: { $0.id == id }) else {
             throw AtlasError.message("Снимок больше не сохранён в истории.")
         }
         let data = try Snapshot.encoder.encode(report)
+        try Task.checkCancellation()
         guard data.count <= 256 * 1024 * 1024 else { throw AtlasError.message("Слишком большой отчёт дубликатов.") }
         let target = duplicateURL(id)
         try data.write(to: target, options: .atomic)

@@ -7,7 +7,9 @@ let package = Package(
         .executable(name: "DiskAtlas", targets: ["DiskAtlas"]), .executable(name: "disk-atlas", targets: ["AtlasCLI"]),
     ], dependencies: [.package(url: "https://github.com/apple/swift-argument-parser", exact: "1.8.2")],
     targets: [
-        .target(name: "AtlasCore"), .executableTarget(name: "DiskAtlas", dependencies: ["AtlasCore"]),
+        .target(name: "CXXHash", cSettings: [.unsafeFlags(["-Wall", "-Wextra", "-Werror"])]),
+        .target(name: "AtlasCore", dependencies: ["CXXHash"]),
+        .executableTarget(name: "DiskAtlas", dependencies: ["AtlasCore"]),
         .executableTarget(
             name: "AtlasCLI",
             dependencies: ["AtlasCore", .product(name: "ArgumentParser", package: "swift-argument-parser")]),

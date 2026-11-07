@@ -80,7 +80,7 @@ disk-atlas report duplicates.json --group GROUP_ID --limit 20
 disk-atlas history duplicates latest --limit 20
 ```
 
-Сначала исключаются разные размеры, затем сравниваются начало/конец, SHA-256 и
+Сначала исключаются разные размеры, затем сравниваются начало/конец, XXH3-128 и
 байты. Symlinks, повторы hard links и облачные placeholders пропускаются.
 Границы размера включительные, в **логических байтах**. Доступны `--max-bytes`,
 `--types`, `--modified-after` и `--modified-before` в ISO 8601. Критерий даты
