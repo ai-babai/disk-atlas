@@ -170,7 +170,7 @@ rather than holding application exit indefinitely.
 
 The shared 30-point status row observes duplicate updates separately from the map.
 Its compact result button contains the duplicate label, state/count and chevron;
-phase progress and pause/stop remain adjacent. Overview and inspector duplicate
+phase progress and pause/stop remain adjacent. The duplicate
 overview metric underlines its existing Files with copies label, while inspector
 metrics use an Open label rather than disclosure arrows, distinguishing
 workspace navigation from group expansion ([Apple disclosure guidance](https://developer.apple.com/design/human-interface-guidelines/disclosure-controls)). Scan metadata and snapshot storage
