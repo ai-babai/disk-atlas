@@ -93,15 +93,6 @@
       "start": 70
     },
     {
-      "bodyHash": "5580da6deaf7cd301c5c076a59aea28c7b85326f9301734214fa5fec6cc5ba1d",
-      "cognitive": 17,
-      "cyclomatic": 8,
-      "end": 227,
-      "file": "Sources/DiskAtlas/MainView.swift",
-      "identity": "MainView.property:fileList",
-      "start": 164
-    },
-    {
       "bodyHash": "dedae9294c9d21c08e6ba0be4d6646ee97298644aee92f60c8eb449b014729a3",
       "cognitive": 16,
       "cyclomatic": 7,

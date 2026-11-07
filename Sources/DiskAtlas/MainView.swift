@@ -1,8 +1,10 @@
 import AtlasCore
+import QuickLook
 import SwiftUI
 
 struct MainView: View {
     @ObservedObject var store: AtlasStore
+    @State private var previewURL: URL?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
         Group {
@@ -185,68 +187,96 @@ struct MainView: View {
     }
 
     private var fileList: some View {
-        let rows = store.rows
-        let showCreationDate = rows.contains { $0.created != nil }
-        return VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                SectionLabel(text: store.largestFiles ? L10n.text("Крупные файлы") : L10n.text("Содержимое"))
-                Text("\(store.rowCount)").font(.system(size: 10, design: .monospaced)).foregroundStyle(Palette.sub)
-                if !store.selectedKinds.isEmpty {
-                    Button {
-                        store.selectedKinds = []
-                    } label: {
-                        HStack(spacing: 4) {
-                            Text(
-                                store.selectedKinds.count == 1
-                                    ? (store.selectedKinds.first?.title ?? "")
-                                    : L10n.text("Типы: ") + String(store.selectedKinds.count))
-                            Image(systemName: "xmark").font(.system(size: 8))
-                        }
-                    }.font(.system(size: 10)).buttonStyle(.bordered).help(
-                        store.selectedKinds.map(\.title).sorted().joined(separator: ", ")
-                    ).accessibilityLabel(L10n.text("Сбросить фильтр типов"))
-                }
-                Spacer()
-                HStack(spacing: 6) {
-                    if store.rowsLoading {
-                        ProgressView().controlSize(.mini).help(L10n.text("Ищем…"))
-                    } else {
-                        Image(systemName: "magnifyingglass").foregroundStyle(Palette.sub)
-                    }
-                    TextField(L10n.text("Найти файл или папку"), text: $store.query).textFieldStyle(.plain)
-                        .accessibilityLabel(L10n.text("Поиск по имени в текущей папке и вложенных папках"))
-                    if !store.query.isEmpty {
-                        Button {
-                            store.query = ""
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                        }.buttonStyle(.plain)
-                    }
-                }.font(.system(size: 11)).padding(7).frame(width: 214).background(
-                    Palette.soft, in: RoundedRectangle(cornerRadius: 6))
-            }.padding(.bottom, 11)
-            FileTable(
-                rows: rows, logical: store.logical, folderBytes: store.folder.map(store.size) ?? 0,
-                revision: store.rowRevision, language: store.language,
-                showPaths: store.largestFiles || !store.query.isEmpty || !store.selectedKinds.isEmpty,
-                showCreationDate: showCreationDate, sort: store.sort, descending: store.sortDescending,
-                sortBy: store.sortBy,
-                duplicates: store.duplicates.snapshotCreated == store.snapshot?.created ? store.duplicates.lookup : nil,
-                showDuplicates: store.showDuplicateGroup, scrollRequest: store.rowsLoading ? 0 : store.rowScrollRequest,
-                selection: $store.selection, open: store.activate, reveal: store.reveal, copyPath: store.copy
-            ).frame(
-                minHeight: store.largestFiles ? 260 : 130, idealHeight: store.largestFiles ? 600 : 210,
-                maxHeight: store.largestFiles ? .infinity : 245
-            ).opacity(store.rowsLoading ? 0.5 : 1).disabled(store.rowsLoading).animation(
-                reduceMotion ? nil : .easeOut(duration: 0.12), value: store.rowsLoading)
+        VStack(spacing: 0) {
+            fileListHeader
+            fileTable
             if store.rowCount > 1000 {
                 Text(L10n.text("Показаны 1 000 объектов. Уточни поиск для остальных.")).font(.system(size: 10))
                     .foregroundStyle(Palette.sub).padding(.top, 5)
             }
-            if rows.isEmpty {
+            if store.rows.isEmpty {
                 Text(L10n.text("Ничего не найдено")).font(.system(size: 11)).foregroundStyle(Palette.sub).padding(8)
             }
         }
+    }
+
+    private var fileListHeader: some View {
+        HStack(spacing: 10) {
+            SectionLabel(text: store.largestFiles ? L10n.text("Крупные файлы") : L10n.text("Содержимое"))
+            Text("\(store.rowCount)").font(.system(size: 10, design: .monospaced)).foregroundStyle(Palette.sub)
+            if !store.selectedKinds.isEmpty {
+                Button {
+                    store.selectedKinds = []
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(
+                            store.selectedKinds.count == 1
+                                ? (store.selectedKinds.first?.title ?? "")
+                                : L10n.text("Типы: ") + String(store.selectedKinds.count))
+                        Image(systemName: "xmark").font(.system(size: 8))
+                    }
+                }.font(.system(size: 10)).buttonStyle(.bordered).help(
+                    store.selectedKinds.map(\.title).sorted().joined(separator: ", ")
+                ).accessibilityLabel(L10n.text("Сбросить фильтр типов"))
+            }
+            Spacer()
+            HStack(spacing: 6) {
+                if store.rowsLoading {
+                    ProgressView().controlSize(.mini).help(L10n.text("Ищем…"))
+                } else {
+                    Image(systemName: "magnifyingglass").foregroundStyle(Palette.sub)
+                }
+                TextField(L10n.text("Найти файл или папку"), text: $store.query).textFieldStyle(.plain)
+                    .accessibilityLabel(L10n.text("Поиск по имени в текущей папке и вложенных папках"))
+                if !store.query.isEmpty {
+                    Button {
+                        store.query = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                    }.buttonStyle(.plain)
+                }
+            }.font(.system(size: 11)).padding(7).frame(width: 214).background(
+                Palette.soft, in: RoundedRectangle(cornerRadius: 6))
+        }.padding(.bottom, 11)
+    }
+
+    private var fileTable: some View {
+        let rows = store.rows
+        return FileTable(
+            rows: rows, logical: store.logical, folderBytes: store.folder.map(store.size) ?? 0,
+            revision: store.rowRevision, language: store.language,
+            showPaths: store.largestFiles || !store.query.isEmpty || !store.selectedKinds.isEmpty,
+            showCreationDate: rows.contains { $0.created != nil }, sort: store.sort, descending: store.sortDescending,
+            sortBy: store.sortBy,
+            duplicates: store.duplicates.snapshotCreated == store.snapshot?.created ? store.duplicates.lookup : nil,
+            showDuplicates: store.showDuplicateGroup, scrollRequest: store.rowsLoading ? 0 : store.rowScrollRequest,
+            selection: $store.selection, open: store.activate, reveal: store.reveal, copyPath: store.copy,
+            preview: preview
+        ).frame(
+            minHeight: store.largestFiles ? 260 : 130, idealHeight: store.largestFiles ? 600 : 210,
+            maxHeight: store.largestFiles ? .infinity : 245
+        ).opacity(store.rowsLoading ? 0.5 : 1).disabled(store.rowsLoading).animation(
+            reduceMotion ? nil : .easeOut(duration: 0.12), value: store.rowsLoading
+        ).quickLookPreview($previewURL, in: rows.map { URL(fileURLWithPath: $0.path) }).onChange(of: previewURL) {
+            _, url in selectPreview(url)
+        }.onChange(of: store.selection) { _, _ in updatePreview() }.onChange(of: store.rowRevision) { _, _ in
+            updatePreview()
+        }.onDisappear { previewURL = nil }
+    }
+
+    private func preview(_ entry: Entry) {
+        let url = URL(fileURLWithPath: entry.path)
+        previewURL = previewURL == url ? nil : url
+    }
+
+    private func selectPreview(_ url: URL?) {
+        guard let url, let entry = store.rows.first(where: { $0.path == url.path }) else { return }
+        store.selection = entry.id
+    }
+
+    private func updatePreview() {
+        guard previewURL != nil else { return }
+        previewURL = store.rows.first(where: { $0.id == store.selection }).map { URL(fileURLWithPath: $0.path) }
     }
 
     private var progressBanner: some View {

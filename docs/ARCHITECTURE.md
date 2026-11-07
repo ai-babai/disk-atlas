@@ -89,6 +89,16 @@ to; deeper selections remain highlighted in the map and inspector. Aggregate
 tiles are inert. Inspector content is constrained to its viewport width so long
 paths cannot stretch or shift the panel.
 
+File tables and expanded duplicate groups use SwiftUI's native Quick Look panel.
+Only an explicit Space/context-menu/eye action supplies a selected file URL;
+no contents are prefetched or embedded in snapshots. Preview item collections are
+bounded by the rendered list (1,000 files, or 200 copies in a group). Panel arrows
+update table selection or duplicate-row focus, independently of Trash checkboxes.
+A small AppKit key responder keeps Space local to a copy's label and restores it
+after dismissal; text fields and Trash checkbox keys keep their own behavior.
+Leaving the list or collapsing a duplicate group dismisses its preview. The system
+owns format support, preview loading/animation and missing-file presentation.
+
 Native NSSplitViewController items remain mounted when collapsed; their animator
 moves the divider in 220 ms, preserving resized pane widths. SwiftUI environment
 values cross hosting boundaries, including Reduce Motion, appearance and disabled

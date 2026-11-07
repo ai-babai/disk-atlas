@@ -1,4 +1,5 @@
 import AtlasCore
+import QuickLook
 import SwiftUI
 
 struct DuplicateTrashReview: View {
@@ -70,6 +71,8 @@ struct DuplicateGroupRow: View {
     let group: DuplicateGroup
     @ObservedObject var session: DuplicateSession
     @Binding var expanded: Bool
+    @State private var previewURL: URL?
+    @State private var focusedFile: String?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var selectedCount: Int { session.trashSelection.count(in: group) }
     private var representative: DuplicateFile? { group.files.first }
@@ -96,6 +99,17 @@ struct DuplicateGroupRow: View {
             }.padding(.horizontal, 12)
             if expanded { files }
             Divider().overlay(Palette.line)
+        }.quickLookPreview($previewURL, in: group.files.prefix(200).map { URL(fileURLWithPath: $0.path) }).onChange(
+            of: previewURL
+        ) { previous, current in restorePreviewFocus(previous, current: current) }.onChange(of: expanded) { _, value in
+            if !value { previewURL = nil }
+        }.onDisappear { previewURL = nil }
+    }
+    private func restorePreviewFocus(_ previous: URL?, current: URL?) {
+        guard current == nil, let previous, expanded else { return }
+        Task { @MainActor in
+            await Task.yield()
+            if expanded { focusedFile = previous.path }
         }
     }
     private var expandButton: some View {
@@ -134,7 +148,11 @@ struct DuplicateGroupRow: View {
     }
     private var files: some View {
         VStack(spacing: 0) {
-            ForEach(group.files.prefix(200)) { file in DuplicateFileRow(file: file, group: group, session: session) }
+            ForEach(group.files.prefix(200)) { file in
+                DuplicateFileRow(file: file, group: group, session: session, focusedFile: $focusedFile) {
+                    previewURL = URL(fileURLWithPath: file.path)
+                }
+            }
             if group.files.count > 200 {
                 Text(L10n.text("Остальные копии доступны в экспорте.")).font(.caption).foregroundStyle(Palette.sub)
             }
@@ -146,15 +164,21 @@ private struct DuplicateFileRow: View {
     let file: DuplicateFile
     let group: DuplicateGroup
     @ObservedObject var session: DuplicateSession
+    @Binding var focusedFile: String?
+    let preview: () -> Void
+    @FocusState private var checkboxFocused: Bool
+    private var focused: Bool { focusedFile == file.path }
     private var selected: Bool { session.trashSelection.paths.contains(file.path) }
     private var keeper: Bool { !selected && session.trashSelection.count(in: group) > 0 }
     var body: some View {
         HStack(spacing: 10) {
             Toggle(
-                L10n.text("Выбрать для корзины"),
-                isOn: Binding(get: { selected }, set: { _ in session.trashSelection.toggle(file, in: group) })
-            ).labelsHidden().toggleStyle(.checkbox).disabled(session.busy).help(L10n.text("Выбрать для корзины"))
-                .accessibilityLabel(
+                L10n.text("Выбрать для корзины"), isOn: Binding(get: { selected }, set: { _ in toggleTrashSelection() })
+            ).labelsHidden().toggleStyle(.checkbox).focusable().focusEffectDisabled().focused($checkboxFocused)
+                .onKeyPress(.space) {
+                    toggleTrashSelection()
+                    return .handled
+                }.disabled(session.busy).help(L10n.text("Выбрать для корзины")).accessibilityLabel(
                     L10n.text("Выбрать для корзины") + ": " + URL(fileURLWithPath: file.path).lastPathComponent)
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
@@ -163,12 +187,17 @@ private struct DuplicateFileRow: View {
                     if keeper { Text(L10n.text("Останется")).font(.system(size: 9)).foregroundStyle(Palette.accent) }
                 }
                 Text(file.path).font(.system(size: 9)).foregroundStyle(Palette.sub).lineLimit(1).truncationMode(.middle)
-            }
-            Spacer(minLength: 4)
+            }.frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle()).simultaneousGesture(
+                TapGesture().onEnded { focusedFile = file.path }
+            ).background(
+                PreviewKeyboard(active: focused, preview: openPreview, blurred: { if focused { focusedFile = nil } }))
             VStack(alignment: .trailing, spacing: 4) {
                 Text(byteString(file.bytes)).font(.system(size: 10)).monospacedDigit()
                 Text(L10n.date(file.modified, time: false)).font(.system(size: 9)).foregroundStyle(Palette.sub)
             }
+            Button(action: openPreview) { Image(systemName: "eye").frame(width: 24, height: 28) }.buttonStyle(.plain)
+                .help(L10n.text("Быстрый просмотр · Пробел")).accessibilityLabel(
+                    L10n.text("Быстрый просмотр") + ": " + URL(fileURLWithPath: file.path).lastPathComponent)
             Button {
                 session.reveal(file)
             } label: {
@@ -180,9 +209,10 @@ private struct DuplicateFileRow: View {
                 Image(systemName: "trash").frame(width: 24, height: 28)
             }.buttonStyle(.plain).disabled(session.busy).help(L10n.text("В корзину…")).accessibilityLabel(
                 L10n.text("В корзину") + ": " + URL(fileURLWithPath: file.path).lastPathComponent)
-        }.padding(.leading, 44).padding(.trailing, 12).padding(.vertical, 10).contentShape(Rectangle()).onTapGesture(
-            count: 2
-        ) { session.reveal(file) }.contextMenu {
+        }.padding(.leading, 44).padding(.trailing, 12).padding(.vertical, 10).background(
+            focused ? Palette.mark.opacity(0.5) : .clear
+        ).contentShape(Rectangle()).onTapGesture(count: 2) { session.reveal(file) }.contextMenu {
+            Button(L10n.text("Быстрый просмотр"), action: openPreview)
             Button(L10n.text("Показать в Finder")) { session.reveal(file) }
             Button(L10n.text("Скопировать путь")) {
                 NSPasteboard.general.clearContents()
@@ -190,4 +220,17 @@ private struct DuplicateFileRow: View {
             }
         }
     }
+    private func toggleTrashSelection() {
+        guard !session.busy else { return }
+        focusedFile = nil
+        checkboxFocused = true
+        session.trashSelection.toggle(file, in: group)
+    }
+
+    private func openPreview() {
+        checkboxFocused = false
+        focusedFile = file.path
+        preview()
+    }
+
 }

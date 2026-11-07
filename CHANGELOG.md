@@ -5,6 +5,13 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.6.0 — 2026-11-07
+
+- Add native Quick Look to folder contents, largest-file/search results and expanded duplicate groups: Space, row context menu, and a compact eye button for copies.
+- Browse neighboring visible items inside the system preview panel; keep file-table selection and duplicate-row focus aligned, and close preview with Space/Escape or when leaving its list.
+- Keep preview focus separate from Trash checkboxes and preserve their keyboard interaction. Read current file contents only after an explicit preview request; snapshots remain metadata-only.
+- Extract file-list controls from presentation, removing one frozen complexity exception; the shared gate now also audits maintenance scripts and their tests.
+
 ## 0.5.2 — 2026-11-07
 
 - Single-click a map rectangle to inspect the exact file or folder without changing the current directory, including nested folders and files.

@@ -60,6 +60,7 @@ public enum L10n {
         (". Используй --help.", ". Use --help."), ("\nДвойной щелчок — открыть папку", "\nDouble-click to open folder"),
     ]
     private static let english: [String: String] = [
+        "Быстрый просмотр": "Quick Look", "Быстрый просмотр · Пробел": "Quick Look · Space",
         "В корзину группу…": "Move group to Trash…", "В корзину копии группы": "Move group copies to Trash",
 
         "Все копии выбраны": "All copies selected",

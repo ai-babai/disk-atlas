@@ -21,6 +21,7 @@ struct FileTable: NSViewRepresentable {
     var open: (Int) -> Void
     var reveal: (Entry) -> Void
     var copyPath: (String) -> Void
+    var preview: (Entry) -> Void
     @Environment(\.colorScheme) private var scheme
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -44,6 +45,7 @@ struct FileTable: NSViewRepresentable {
         table.target = context.coordinator
         table.doubleAction = #selector(Coordinator.openRow)
         table.returnAction = { [weak coordinator = context.coordinator] in coordinator?.openRow() }
+        table.previewAction = { [weak coordinator = context.coordinator] in coordinator?.previewRow() }
         for (name, width) in [("name", 260.0), ("created", 92.0), ("modified", 92.0), ("size", 100.0), ("share", 65.0)]
         {
             let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier(name))
@@ -185,6 +187,7 @@ struct FileTable: NSViewRepresentable {
             guard row >= 0, row < parent.rows.count else { return }
             table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
             let entry = parent.rows[row]
+            add(menu, L10n.text("Быстрый просмотр"), #selector(previewRow))
             if entry.isDirectory { add(menu, L10n.text("Открыть папку"), #selector(openRow)) }
             add(menu, L10n.text("Показать в Finder"), #selector(revealRow))
             add(menu, L10n.text("Скопировать путь"), #selector(copyRow))
@@ -197,6 +200,10 @@ struct FileTable: NSViewRepresentable {
         @objc private func revealRow() {
             guard let table, table.selectedRow >= 0 else { return }
             parent.reveal(parent.rows[table.selectedRow])
+        }
+        @objc func previewRow() {
+            guard let table, table.selectedRow >= 0, table.selectedRow < parent.rows.count else { return }
+            parent.preview(parent.rows[table.selectedRow])
         }
         @objc private func copyRow() {
             guard let table, table.selectedRow >= 0 else { return }
@@ -267,7 +274,12 @@ private final class AtlasTableScrollView: NSScrollView {
 
 private final class AtlasTableView: NSTableView {
     var returnAction: (() -> Void)?
+    var previewAction: (() -> Void)?
     override func keyDown(with event: NSEvent) {
+        if event.isQuickLookKey {
+            if !event.isARepeat { previewAction?() }
+            return
+        }
         if event.keyCode == 36 { returnAction?() } else { super.keyDown(with: event) }
     }
 }
