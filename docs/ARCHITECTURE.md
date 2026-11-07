@@ -142,7 +142,13 @@ Native NSSplitViewController items remain mounted when collapsed; their animator
 moves the divider in 220 ms. The inspector uses a resizable generic split item
 with an explicit 210–460 point range, rather than AppKit’s fixed-width inspector
 constructor. Separate AppKit autosave names retain navigation and inspector widths
-after dragging, collapse and returning from Home. SwiftUI environment
+after dragging, collapse and returning from Home. Each split item has an AppKit
+container with four edge constraints around its SwiftUI hosting view, keeping
+rendered content tied to the viewport. The native file-table scroll view requests
+column layout when its frame size actually changes; an unchanged size does not
+invalidate layout. This prevents stale intermediate column widths and layout loops.
+See [Apple’s split controller layout contract](https://developer.apple.com/documentation/appkit/nssplitviewcontroller).
+SwiftUI environment
 values cross hosting boundaries, including Reduce Motion, appearance and disabled
 state. Map state is isolated from unrelated observable-store updates; only the
 selected branch invalidates nested Canvas artwork. Single clicks are immediate;

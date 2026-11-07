@@ -293,6 +293,11 @@ private final class AtlasHeaderView: NSTableHeaderView {
 }
 
 private final class AtlasTableScrollView: NSScrollView {
+    override func setFrameSize(_ newSize: NSSize) {
+        let changed = frame.size != newSize
+        super.setFrameSize(newSize)
+        if changed { needsLayout = true }
+    }
     override func layout() {
         super.layout()
         guard let table = documentView as? NSTableView, let name = table.tableColumns.first else { return }

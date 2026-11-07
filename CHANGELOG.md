@@ -5,6 +5,11 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.9.1 — 2026-11-07
+
+- Fix inspector resizing that could leave content outside the viewport. Pin each SwiftUI host to all four edges of an AppKit split-item container.
+- Recalculate native table columns when its frame size changes, so dragging a sidebar does not leave the center table using a temporary narrow layout. Invalidate only on actual size changes to avoid repeated layout cycles.
+
 ## 0.9.0 — 2026-11-07
 
 - Explain the two stages explicitly: calculate file sizes, then find duplicates in the background.

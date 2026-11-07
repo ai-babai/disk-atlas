@@ -51,3 +51,12 @@ minimum window size, keyboard navigation and empty/error states.
 
 Explain the user-visible change and how it was validated. Keep behavior tests meaningful and PRs narrow. The shared quality suite is approved;
 discuss unrelated test/fixture expansion with the maintainer first.
+
+## Sidebar layout checks
+
+For pane or table layout changes, use synthetic scan data in a separate app/history:
+
+- Drag the inspector wider and narrower, release, then hide/show it and return from Home.
+- Check the content as well as the divider: inspector values and actions stay inside its edges; the table name column grows and shrinks with the center and headers stay aligned with cells.
+- Repeat without another click or store update, with long names, an active search, both themes and a 1080×768 window. Narrow tables must retain access to all columns by horizontal scrolling.
+- Check for repeated-layout warnings; resizing must settle without polling or a forced refresh timer. Keep diagnostics and synthetic paths out of production builds and public screenshots.

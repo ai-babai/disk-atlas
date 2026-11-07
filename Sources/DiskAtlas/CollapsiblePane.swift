@@ -18,8 +18,8 @@ struct CollapsiblePane<Pane: View, Content: View>: NSViewControllerRepresentable
 
     final class Coordinator {
         let controller = NSSplitViewController()
-        private let paneHost: NSHostingController<HostedPane<Pane>>
-        private let contentHost: NSHostingController<HostedPane<Content>>
+        private let paneHost: PaneHost<HostedPane<Pane>>
+        private let contentHost: PaneHost<HostedPane<Content>>
         private let item: NSSplitViewItem
         private var parent: CollapsiblePane
         private var observation: NSKeyValueObservation?
@@ -27,10 +27,8 @@ struct CollapsiblePane<Pane: View, Content: View>: NSViewControllerRepresentable
 
         init(_ parent: CollapsiblePane, environment: EnvironmentValues) {
             self.parent = parent
-            paneHost = NSHostingController(rootView: HostedPane(root: parent.pane, environment: environment))
-            contentHost = NSHostingController(rootView: HostedPane(root: parent.content, environment: environment))
-            paneHost.sizingOptions = []
-            contentHost.sizingOptions = []
+            paneHost = PaneHost(rootView: HostedPane(root: parent.pane, environment: environment))
+            contentHost = PaneHost(rootView: HostedPane(root: parent.content, environment: environment))
             let navigation = parent.kind == .navigation
             item =
                 navigation
@@ -88,4 +86,32 @@ private struct HostedPane<Root: View>: View {
     let root: Root
     let environment: EnvironmentValues
     var body: some View { root.environment(\.self, environment).foregroundStyle(Palette.ink).tint(Palette.accent) }
+}
+
+/// Split items own the viewport; edge constraints keep SwiftUI tied to its actual size.
+private final class PaneHost<Root: View>: NSViewController {
+    private let host: NSHostingController<Root>
+    var rootView: Root {
+        get { host.rootView }
+        set { host.rootView = newValue }
+    }
+    init(rootView: Root) {
+        host = NSHostingController(rootView: rootView)
+        host.sizingOptions = []
+        super.init(nibName: nil, bundle: nil)
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+    override func loadView() {
+        view = NSView()
+        addChild(host)
+        let hosted = host.view
+        hosted.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(hosted)
+        NSLayoutConstraint.activate([
+            hosted.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            hosted.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            hosted.topAnchor.constraint(equalTo: view.topAnchor),
+            hosted.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+        ])
+    }
 }
