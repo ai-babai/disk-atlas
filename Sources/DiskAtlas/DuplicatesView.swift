@@ -154,45 +154,56 @@ struct DuplicatesView: View {
                         ))
             }
             Spacer()
-            if session.scopePath != nil {
-                Button(L10n.text("Все группы")) { session.scopePath = nil }.font(.system(size: 11)).buttonStyle(.plain)
-            }
-            tool("slider.horizontal.3", "Параметры", disabled: !session.canChangeOptions) { parameters.toggle() }
-                .popover(isPresented: $parameters) {
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text(L10n.text("Параметры поиска")).font(.system(size: 14, weight: .semibold))
-                        FileSizeRange(options: settings)
-                        HStack(spacing: 6) {
-                            ForEach([FileKind.video, .image, .audio, .document, .archive, .code, .other], id: \.self) {
-                                kind in
-                                Button {
-                                    var value = session.options
-                                    if value.kinds.contains(kind) {
-                                        value.kinds.remove(kind)
-                                    } else {
-                                        value.kinds.insert(kind)
-                                    }
-                                    settings.wrappedValue = value
-                                } label: {
-                                    Image(systemName: kind.symbol).frame(width: 28, height: 26).foregroundStyle(
-                                        session.options.kinds.contains(kind) ? Palette.accent : Palette.sub
-                                    ).background(
-                                        session.options.kinds.contains(kind) ? Palette.mark : Palette.soft,
-                                        in: RoundedRectangle(cornerRadius: 5))
-                                }.buttonStyle(.plain).help(kind.title).accessibilityLabel(kind.title)
-                                    .accessibilityAddTraits(session.options.kinds.contains(kind) ? .isSelected : [])
-                            }
-                            Spacer(minLength: 0)
-                            Button(L10n.text("Все")) {
-                                var value = session.options
-                                value.kinds = []
-                                settings.wrappedValue = value
-                            }.buttonStyle(.plain).font(.system(size: 10))
-                        }
-                    }.padding(20).frame(width: 360).background(Palette.paper)
-                }
+            headerActions
         }
     }
+    private var headerActions: some View {
+        HStack(alignment: .center, spacing: 8) {
+            if session.scopePath != nil {
+                Button {
+                    session.scopePath = nil
+                } label: {
+                    Label(L10n.text("Все группы"), systemImage: "chevron.left").font(.system(size: 11)).padding(
+                        .horizontal, 8
+                    ).frame(height: 28).contentShape(Rectangle())
+                }.buttonStyle(.plain).help(L10n.text("Все группы"))
+            }
+            parametersButton
+        }.lineLimit(1).fixedSize(horizontal: true, vertical: false)
+    }
+    private var parametersButton: some View {
+        tool("slider.horizontal.3", "Параметры", disabled: !session.canChangeOptions) { parameters.toggle() }.popover(
+            isPresented: $parameters
+        ) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text(L10n.text("Параметры поиска")).font(.system(size: 14, weight: .semibold))
+                FileSizeRange(options: settings)
+                HStack(spacing: 6) {
+                    ForEach([FileKind.video, .image, .audio, .document, .archive, .code, .other], id: \.self) { kind in
+                        Button {
+                            var value = session.options
+                            if value.kinds.contains(kind) { value.kinds.remove(kind) } else { value.kinds.insert(kind) }
+                            settings.wrappedValue = value
+                        } label: {
+                            Image(systemName: kind.symbol).frame(width: 28, height: 26).foregroundStyle(
+                                session.options.kinds.contains(kind) ? Palette.accent : Palette.sub
+                            ).background(
+                                session.options.kinds.contains(kind) ? Palette.mark : Palette.soft,
+                                in: RoundedRectangle(cornerRadius: 5))
+                        }.buttonStyle(.plain).help(kind.title).accessibilityLabel(kind.title).accessibilityAddTraits(
+                            session.options.kinds.contains(kind) ? .isSelected : [])
+                    }
+                    Spacer(minLength: 0)
+                    Button(L10n.text("Все")) {
+                        var value = session.options
+                        value.kinds = []
+                        settings.wrappedValue = value
+                    }.buttonStyle(.plain).font(.system(size: 10))
+                }
+            }.padding(20).frame(width: 360).background(Palette.paper)
+        }
+    }
+
     private func sortHeading(_ label: String, key: DuplicateSort) -> some View {
         Button {
             session.sortBy(key)

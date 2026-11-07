@@ -5,6 +5,10 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.6.1 — 2026-11-07
+
+- Align All groups and Options in a single, centered header action row with matching 28-point hit areas. Keep the return-to-all-groups action clear and prevent action labels from wrapping at narrow widths.
+
 ## 0.6.0 — 2026-11-07
 
 - Add native Quick Look to folder contents, largest-file/search results and expanded duplicate groups: Space, row context menu, and a compact eye button for copies.

@@ -37,7 +37,7 @@ created: "2026-11-07"
 ## Скачать и установить
 
 1. Открой [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Скачай **Disk-Atlas-0.6.0-universal.dmg**. Одна сборка подходит для Apple Silicon
+2. Скачай **Disk-Atlas-0.6.1-universal.dmg**. Одна сборка подходит для Apple Silicon
    и Intel с **macOS 14 Sonoma или новее**.
 3. Открой DMG, перетащи **Disk Atlas.app** в **Applications («Программы»)**,
    извлеки образ и запусти приложение из «Программ». Также доступен ZIP.
