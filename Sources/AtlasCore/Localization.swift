@@ -16,7 +16,7 @@ public enum L10n {
         // Dynamic messages retain paths and values verbatim; only their UI phrases change.
         var result = source
         for (ru, en) in fragments { result = result.replacingOccurrences(of: ru, with: en) }
-        if result.hasPrefix("Snapshot ·"), result.hasSuffix(" с") { result = String(result.dropLast(2)) + " s" }
+        if (result.hasPrefix("Snapshot ·") || result.hasPrefix("Scan ·")), result.hasSuffix(" с") { result = String(result.dropLast(2)) + " s" }
         return result
     }
     public static func date(_ date: Date, time: Bool = true) -> String {
@@ -39,6 +39,7 @@ public enum L10n {
     private static let fragments: [(String, String)] = [
         ("Выбрано: ", "Selected: "), ("Ещё ", "More: "), ("Пропущено: ", "Skipped: "),
         ("Снимок · ", "Snapshot · "), (" объектов · ", " items · "),
+        ("Анализ · ", "Scan · "),
         ("Фильтр: ", "Filter: "), ("Убрать ", "Remove "), (" из анализа", " from analysis"),
         ("Выбери папку для сканирования: ", "Choose a directory to scan: "),
         ("Нет доступа к папке: ", "Cannot access directory: "),
@@ -52,6 +53,15 @@ public enum L10n {
         ("\nДвойной щелчок — открыть папку", "\nDouble-click to open folder")
     ]
     private static let english: [String: String] = [
+        "Последние сканы": "Recent scans", "Удалить снимок": "Delete snapshot",
+        "Снимок": "Snapshot", "до сжатия": "before compression", "Снимок не сохранён": "Snapshot not saved",
+        "Оценка несжатых метаданных. После сохранения появится точный размер сжатого снимка.": "Estimated uncompressed metadata. The exact compressed size appears after saving.",
+        "Размер сжатого файла снимка на диске. Исходные файлы в этот размер не входят.": "Size of the compressed snapshot file on disk. Source files are not included.",
+        "Очистить историю?": "Clear scan history?", "Удалить снимок?": "Delete snapshot?", "Все снимки": "All snapshots",
+        "Снимки и их метаданные будут удалены безвозвратно. Исходные файлы останутся на месте.": "Snapshots and their metadata will be permanently deleted. Your source files will stay in place.",
+        "Удалить": "Delete", "Больше не спрашивать": "Don't ask again", "Подтверждать удаление": "Confirm deletion",
+        "Удалить снимок…": "Delete snapshot…", "Очистить историю…": "Clear history…", "История очищена": "History cleared",
+        "Снимок удалён": "Snapshot deleted", "История пуста": "No scans yet", "Снимков: ": "Snapshots: ", "Действия с историей": "History actions",
         "Сегодня": "Today", "Вчера": "Yesterday", "Читаем снимок…": "Reading snapshot…",
         "Готовим карту…": "Preparing the map…", "Сохраняем снимок…": "Saving snapshot…",
         "Открываем снимок": "Opening snapshot", "Сохранённые данные · без повторного анализа": "Saved data · no rescan",

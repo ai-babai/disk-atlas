@@ -16,12 +16,14 @@ for atlas_binary in DiskAtlas disk-atlas; do
         -output "$atlas_app/Contents/MacOS/$atlas_binary"
 done
 cp Resources/Info.plist "$atlas_app/Contents/Info.plist"
+cp LICENSE "$atlas_app/Contents/Resources/LICENSE.txt"
 swift scripts/icon.swift "$atlas_app/Contents/Resources"
 codesign --force --deep --sign - "$atlas_app"
 codesign --verify --deep --strict "$atlas_app"
 ditto "$atlas_app" "$atlas_stage/Disk Atlas.app"
 ln -s /Applications "$atlas_stage/Applications"
 cp docs/INSTALL.txt "$atlas_stage/INSTALL.txt"
+cp LICENSE "$atlas_stage/LICENSE.txt"
 
 atlas_name="Disk-Atlas-${atlas_version}-universal"
 hdiutil create -volname "Disk Atlas" -srcfolder "$atlas_stage" -format UDZO -ov "$atlas_release/$atlas_name.dmg"

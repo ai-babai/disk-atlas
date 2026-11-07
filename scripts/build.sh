@@ -6,6 +6,7 @@ app="dist/Disk Atlas.app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp .build/release/DiskAtlas .build/release/disk-atlas "$app/Contents/MacOS/"
 cp Resources/Info.plist "$app/Contents/Info.plist"
+cp LICENSE "$app/Contents/Resources/LICENSE.txt"
 swift scripts/icon.swift "$app/Contents/Resources"
 codesign --force --deep --sign - "$app"
 if [[ "${1:-}" == "--install" ]]; then

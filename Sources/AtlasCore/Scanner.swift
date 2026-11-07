@@ -76,9 +76,11 @@ public struct DiskScanner: Sendable {
             if cancellation.isCancelled { break }
             let baseCount = combined.entries.count
             let baseBytes = combined.rootEntry.bytes
+            let baseMetadata = combined.entries.reduce(Int64(512)) { $0 + $1.estimatedMetadataBytes }
             do {
                 let part = try scanOne(path: path, seenLinks: &seenLinks, cancellation: cancellation) { update in
-                    progress(ScanProgress(entries: baseCount + update.entries, bytes: baseBytes + update.bytes, currentPath: update.currentPath))
+                    progress(ScanProgress(entries: baseCount + update.entries, bytes: baseBytes + update.bytes, currentPath: update.currentPath,
+                                          metadataBytes: baseMetadata + update.metadataBytes))
                 }
                 combined.entries[0].children.append(baseCount)
                 for var node in part.entries {
@@ -121,6 +123,7 @@ public struct DiskScanner: Sendable {
         var issues: [ScanIssue] = []
         var issueCount = 0
         var scannedBytes: Int64 = 0
+        var metadataBytes = Int64(512) + nodes[0].estimatedMetadataBytes
         var lastProgress = start
         func issue(_ path: String, _ message: String) {
             issueCount += 1
@@ -168,13 +171,14 @@ public struct DiskScanner: Sendable {
                     nodes.append(node)
                     nodes[parent].children.append(id)
                     scannedBytes += node.bytes
+                    metadataBytes += node.estimatedMetadataBytes
                 } catch {
                     walker.skipDescendants()
                     issue(url.path, error.localizedDescription)
                 }
             }
             if Date().timeIntervalSince(lastProgress) > 0.15 {
-                progress(ScanProgress(entries: nodes.count, bytes: scannedBytes, currentPath: url.path))
+                progress(ScanProgress(entries: nodes.count, bytes: scannedBytes, currentPath: url.path, metadataBytes: metadataBytes))
                 lastProgress = Date()
             }
         }
@@ -189,7 +193,7 @@ public struct DiskScanner: Sendable {
             }
         }
         let volume = try? manager.attributesOfFileSystem(forPath: root.path)
-        progress(ScanProgress(entries: nodes.count, bytes: scannedBytes, currentPath: root.path))
+        progress(ScanProgress(entries: nodes.count, bytes: scannedBytes, currentPath: root.path, metadataBytes: metadataBytes))
         return Snapshot(root: root.path, created: start, elapsed: Date().timeIntervalSince(start),
                         volumeTotal: (volume?[.systemSize] as? NSNumber)?.int64Value ?? 0,
                         volumeFree: (volume?[.systemFreeSize] as? NSNumber)?.int64Value ?? 0,

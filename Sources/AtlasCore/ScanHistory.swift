@@ -1,4 +1,5 @@
 import Foundation
+import Darwin
 
 public struct ScanHistoryRecord: Codable, Identifiable, Sendable {
     public var id: UUID
@@ -9,6 +10,7 @@ public struct ScanHistoryRecord: Codable, Identifiable, Sendable {
     public var entryCount: Int
     public var elapsed: Double
     public var cancelled: Bool
+    public var archiveBytes: Int64? = nil
 
     func matches(_ snapshot: Snapshot) -> Bool {
         roots == snapshot.scanRoots && created.timeIntervalSince1970.rounded(.down) == snapshot.created.timeIntervalSince1970.rounded(.down)
@@ -34,7 +36,11 @@ public actor ScanHistory {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let decoded = try decoder.decode([ScanHistoryRecord].self, from: Data(contentsOf: manifest))
-        records = decoded.sorted { $0.created > $1.created }
+        records = decoded.map { record in
+            var record = record
+            record.archiveBytes = (try? FileManager.default.attributesOfItem(atPath: url(for: record).path)[.size] as? NSNumber)?.int64Value
+            return record
+        }.sorted { $0.created > $1.created }
         return records!
     }
 
@@ -44,7 +50,7 @@ public actor ScanHistory {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
                                                attributes: [.posixPermissions: 0o700])
         try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
-        let record = ScanHistoryRecord(id: UUID(), roots: snapshot.scanRoots, created: snapshot.created,
+        var record = ScanHistoryRecord(id: UUID(), roots: snapshot.scanRoots, created: snapshot.created,
                                        bytes: snapshot.rootEntry.bytes, logicalBytes: snapshot.rootEntry.logicalBytes,
                                        entryCount: snapshot.entries.count, elapsed: snapshot.elapsed, cancelled: snapshot.cancelled)
         let encoded = try Snapshot.encoder.encode(snapshot)
@@ -55,6 +61,7 @@ public actor ScanHistory {
         let target = url(for: record)
         try compressed.write(to: target, options: .withoutOverwriting)
         try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: target.path)
+        record.archiveBytes = Int64(compressed.count)
         current.append(record)
         current.sort { $0.created > $1.created }
         do { try saveManifest(current) }
@@ -67,6 +74,52 @@ public actor ScanHistory {
         let data = try Data(contentsOf: url(for: record))
         let decoded = try (data as NSData).decompressed(using: .lzfse) as Data
         return try Snapshot.decode(decoded)
+    }
+
+    public func storageBytes() throws -> Int64 {
+        guard FileManager.default.fileExists(atPath: directory.path) else { return 0 }
+        return try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
+            .filter { $0.lastPathComponent == "index.json" || archiveID($0) != nil }
+            .reduce(Int64(0)) { total, url in
+                total + ((try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber)?.int64Value ?? 0)
+            }
+    }
+
+    /// Deletes only UUID-named, app-owned archives and the history index.
+    /// Source folders and user-exported snapshots are never targets.
+    public func remove(ids: Set<UUID>, all: Bool = false) throws {
+        var current = all ? ((try? list()) ?? []) : try list()
+        let targets: [URL]
+        if all, FileManager.default.fileExists(atPath: directory.path) {
+            targets = try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil).filter { archiveID($0) != nil }
+        } else { targets = current.filter { ids.contains($0.id) }.map { url(for: $0) } }
+        var failure: Error?
+        var removed = Set<UUID>()
+        for target in targets {
+            do {
+                try removeFile(target)
+                if let id = archiveID(target) { removed.insert(id) }
+            } catch { if failure == nil { failure = error } }
+        }
+        // Also forget records whose archive was already removed outside the app.
+        current.removeAll { removed.contains($0.id) || ((all || ids.contains($0.id)) && !FileManager.default.fileExists(atPath: url(for: $0).path)) }
+        if current.isEmpty {
+            let manifest = directory.appendingPathComponent("index.json")
+            try removeFile(manifest)
+        } else { try saveManifest(current) }
+        records = current
+        if let failure { throw failure }
+    }
+
+    private func removeFile(_ url: URL) throws {
+        let result = url.withUnsafeFileSystemRepresentation { unlink($0!) }
+        if result != 0 && errno != ENOENT { throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno)) }
+    }
+
+    private nonisolated func archiveID(_ url: URL) -> UUID? {
+        let suffix = ".atlas.lzfse"
+        guard url.lastPathComponent.hasSuffix(suffix) else { return nil }
+        return UUID(uuidString: String(url.lastPathComponent.dropLast(suffix.count)))
     }
 
     private nonisolated func url(for record: ScanHistoryRecord) -> URL {

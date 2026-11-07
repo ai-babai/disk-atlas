@@ -34,9 +34,8 @@ or find an item by name. Open an earlier scan whenever you need to return to it.
 
 ## Download & install
 
-1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases) while signed in
-   to a GitHub account with access to this private repository.
-2. Download **Disk-Atlas-0.1.0-universal.dmg**. The same app supports Apple Silicon
+1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases).
+2. Download **Disk-Atlas-0.2.0-universal.dmg**. The same app supports Apple Silicon
    and Intel Macs running **macOS 14 Sonoma or later**.
 3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
    then launch the app from Applications. A ZIP is also available.
@@ -53,6 +52,8 @@ Optional integrity check, with both downloaded artifacts beside the checksum fil
 ```sh
 shasum -a 256 -c SHA256SUMS.txt
 ```
+
+![Folder selection with visible recent scans and snapshot sizes](docs/images/start-en.png)
 
 ## A quiet, deliberate workflow
 
@@ -122,9 +123,19 @@ operations. Protected directories can be skipped and appear in the issue list.
 - This is a scan over time, not an atomic filesystem snapshot; changing files
   can affect totals. The first 200 read errors are retained.
 
+**Snapshot size** appears in scan progress as an approximate uncompressed metadata
+size, then in the status bar as the exact compressed file size. Recent scans are visible on the start screen. Every history row shows the
+compressed snapshot size and a delete button; the history window also shows total
+local storage used.
+
+<img src="docs/images/history-en.png" width="440" alt="Scan history with snapshot sizes, deletion buttons and confirmation preference">
+
 History is stored in `~/Library/Application Support/Disk Atlas/History`, compressed
 with LZFSE. The directory uses mode 0700 and files use 0600. Old history is not
-pruned automatically. GUI history and requested exports are local writes; scanned
+pruned automatically. Delete one scan with its trash button or context menu, or use **Clear history**
+to remove all app-owned snapshots and metadata. A confirmation includes **Don’t ask
+again**; turn confirmations back on in the history window. Deleting history never
+deletes source files or separately exported snapshots. GUI history and requested exports are local writes; scanned
 source files remain untouched. Exported snapshots contain **private paths and names**:
 review them before sharing. Imports validate structure and totals, up to 2 GiB.
 
@@ -133,7 +144,7 @@ review them before sharing. Imports validate structure and totals, up to 2 GiB.
 Requires Swift 6 / Xcode Command Line Tools on macOS. No external package dependencies.
 
 ```sh
-git clone git@github.com:ai-babai/disk-atlas.git
+git clone https://github.com/ai-babai/disk-atlas.git
 cd disk-atlas
 scripts/build.sh --install
 ```
@@ -155,4 +166,4 @@ and manual UI review; no committed test suite or CI is included yet.
 
 Independent software inspired by the local-first, human-and-agent workflow of
 [Artcraft](https://getartcraft.com/). Not affiliated with Artcraft or WinDirStat.
-Private project. [All rights reserved](LICENSE).
+Open source under the [MIT License](LICENSE).

@@ -45,6 +45,8 @@ public struct Entry: Codable, Identifiable, Sendable {
     public var sharedLink: Bool
     public var children: [Int]
     public var isDirectory: Bool { kind == .folder }
+    // Running estimate of the uncompressed snapshot, not RAM or source-file size.
+    public var estimatedMetadataBytes: Int64 { Int64(220 + name.utf8.count + path.utf8.count) }
 }
 
 public struct ScanIssue: Codable, Sendable {
@@ -56,6 +58,7 @@ public struct ScanProgress: Sendable {
     public var entries: Int
     public var bytes: Int64
     public var currentPath: String
+    public var metadataBytes: Int64 = 0
 }
 
 public struct Snapshot: Codable, Sendable {

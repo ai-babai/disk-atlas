@@ -155,6 +155,9 @@ struct MainView: View {
                 Text(L10n.text("\(store.progressCount.formatted()) объектов · \(byteString(store.progressBytes))")).font(.system(size: 10, design: .monospaced))
             }
             ProgressView().progressViewStyle(.linear)
+            Text(L10n.text("Снимок") + " ≈ " + byteString(store.progressMetadataBytes) + " · " + L10n.text("до сжатия"))
+                .font(.system(size: 10)).monospacedDigit().foregroundStyle(Palette.sub)
+                .help(L10n.text("Оценка несжатых метаданных. После сохранения появится точный размер сжатого снимка."))
             Text(store.progressPath).font(.system(size: 9, design: .monospaced)).lineLimit(1).truncationMode(.middle).foregroundStyle(Palette.sub)
         }.padding(12).background(Palette.soft, in: RoundedRectangle(cornerRadius: 8))
     }
@@ -180,12 +183,15 @@ struct MainView: View {
                 progressBanner.frame(maxWidth: 620)
                 Button(L10n.text("Остановить анализ")) { store.cancel() }.buttonStyle(.bordered)
             } else {
-                ScanSetup(store: store)
-                Button(L10n.text("Открыть сохранённый снимок…")) { store.importSnapshot() }.buttonStyle(.plain).foregroundStyle(Palette.accent).font(.system(size: 12))
-                if !store.historyRecords.isEmpty {
-                    Button(L10n.text("История сканов…"), systemImage: "clock.arrow.circlepath") { store.showHistory = true }
-                        .buttonStyle(.plain).foregroundStyle(Palette.accent).font(.system(size: 12))
+                HStack(alignment: .top, spacing: 26) {
+                    VStack(alignment: .leading, spacing: 24) {
+                        ScanSetup(store: store)
+                        Button(L10n.text("Открыть сохранённый снимок…")) { store.importSnapshot() }
+                            .buttonStyle(.plain).foregroundStyle(Palette.accent).font(.system(size: 12))
+                    }.frame(maxWidth: .infinity, alignment: .leading)
+                    if !store.historyRecords.isEmpty { RecentScans(store: store).frame(width: 250) }
                 }
+
             }
             Spacer()
             HStack(spacing: 25) {
@@ -193,7 +199,7 @@ struct MainView: View {
                 Label(L10n.text("Только метаданные"), systemImage: "doc.text.magnifyingglass")
                 Label("CLI + MCP", systemImage: "terminal")
             }.font(.system(size: 11)).foregroundStyle(Palette.sub).padding(.bottom, 32)
-        }.frame(maxWidth: 650, alignment: .leading).padding(.horizontal, 32)
+        }.frame(maxWidth: store.historyRecords.isEmpty || store.scanning ? 650 : 960, alignment: .leading).padding(.horizontal, 32)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -203,7 +209,7 @@ struct MainView: View {
             if store.preparing { Text(L10n.text("Подготовка снимка…")); ProgressView().controlSize(.mini) }
             else if store.scanning { Text(L10n.text("Сканирование")) }
             else if let snapshot = store.snapshot {
-                Text(snapshot.cancelled ? L10n.text("Остановлено · неполный снимок") : L10n.text("Снимок · \(String(format: "%.2f", snapshot.elapsed)) с"))
+                Text(snapshot.cancelled ? L10n.text("Остановлено · неполный снимок") : L10n.text("Анализ · \(String(format: "%.2f", snapshot.elapsed)) с"))
                 if snapshot.issueCount > 0 {
                     Button(L10n.text("Пропущено: \(snapshot.issueCount)")) { store.showIssues = true }.buttonStyle(.plain).foregroundStyle(.orange)
                 }
@@ -212,8 +218,19 @@ struct MainView: View {
                 Text("· " + L10n.text("Сохранение истории…"))
                 ProgressView().controlSize(.mini)
             }
+            if !store.scanning, store.snapshot != nil {
+                if let bytes = store.snapshotArchiveBytes {
+                    Label(L10n.text("Снимок") + " " + byteString(bytes), systemImage: "archivebox")
+                        .help(L10n.text("Размер сжатого файла снимка на диске. Исходные файлы в этот размер не входят."))
+                } else if store.savingHistory > 0, let estimate = store.snapshotMetadataEstimate {
+                    Text(L10n.text("Снимок") + " ≈ " + byteString(estimate) + " · " + L10n.text("до сжатия"))
+                        .help(L10n.text("Оценка несжатых метаданных. После сохранения появится точный размер сжатого снимка."))
+                } else if store.savingHistory == 0 {
+                    Text(L10n.text("Снимок не сохранён"))
+                }
+            }
             Spacer()
-            Text(store.notice ?? L10n.text("Файлы остаются на своих местах"))
+            Text(store.notice ?? L10n.text("Файлы остаются на своих местах")).lineLimit(1)
         }.font(.system(size: 10)).foregroundStyle(Palette.sub).padding(.horizontal, 24).frame(height: 30)
             .background(Palette.soft)
     }

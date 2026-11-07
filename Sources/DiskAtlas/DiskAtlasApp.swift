@@ -93,8 +93,8 @@ import AtlasCore
     weak var store: AtlasStore?
     private var termination: AnyCancellable?
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard let store, store.savingHistory > 0 else { return .terminateNow }
-        termination = store.$savingHistory.filter { $0 == 0 }.first().sink { _ in
+        guard let store, store.savingHistory > 0 || store.deletingHistory else { return .terminateNow }
+        termination = store.$savingHistory.combineLatest(store.$deletingHistory).filter { $0 == 0 && !$1 }.first().sink { _ in
             sender.reply(toApplicationShouldTerminate: true)
         }
         return .terminateLater

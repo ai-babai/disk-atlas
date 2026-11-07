@@ -19,7 +19,7 @@ struct FileTable: NSViewRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeNSView(context: Context) -> NSScrollView {
-        let scroll = NSScrollView()
+        let scroll = AtlasTableScrollView()
         scroll.hasVerticalScroller = true
         scroll.autohidesScrollers = true
         scroll.drawsBackground = false
@@ -28,7 +28,7 @@ struct FileTable: NSViewRepresentable {
         table.intercellSpacing = NSSize(width: 0, height: 1)
         table.allowsMultipleSelection = false
         table.usesAlternatingRowBackgroundColors = false
-        table.columnAutoresizingStyle = .firstColumnOnlyAutoresizingStyle
+        table.columnAutoresizingStyle = .noColumnAutoresizing
         table.selectionHighlightStyle = .regular
         table.focusRingType = .none
         table.delegate = context.coordinator
@@ -59,6 +59,7 @@ struct FileTable: NSViewRepresentable {
         table.backgroundColor = NSColor(Palette.paper)
         table.rowHeight = showPaths ? 43 : 33
         table.tableColumns.first { $0.identifier.rawValue == "created" }?.isHidden = !showCreationDate
+        scroll.needsLayout = true
         if coordinator.revision != revision || coordinator.language != language || coordinator.logical != logical || coordinator.showPaths != showPaths {
             coordinator.revision = revision
             coordinator.language = language
@@ -149,6 +150,18 @@ struct FileTable: NSViewRepresentable {
             guard let table, table.selectedRow >= 0 else { return }
             parent.copyPath(parent.rows[table.selectedRow].path)
         }
+    }
+}
+
+private final class AtlasTableScrollView: NSScrollView {
+    override func layout() {
+        super.layout()
+        guard let table = documentView as? NSTableView, let name = table.tableColumns.first else { return }
+        let fixedWidth = table.tableColumns.dropFirst().filter { !$0.isHidden }.reduce(CGFloat(0)) { $0 + $1.width }
+        let width = max(0, contentView.bounds.width)
+        let nameWidth = max(name.minWidth, width - fixedWidth)
+        if abs(name.width - nameWidth) > 0.5 { name.width = nameWidth }
+        if abs(table.frame.width - width) > 0.5 { table.setFrameSize(NSSize(width: width, height: table.frame.height)) }
     }
 }
 

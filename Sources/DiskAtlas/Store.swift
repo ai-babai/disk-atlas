@@ -13,6 +13,7 @@ import AtlasCore
     @Published var scanning = false
     @Published var progressCount = 0
     @Published var progressBytes: Int64 = 0
+    @Published var progressMetadataBytes: Int64 = 0
     @Published var progressPath = ""
     @Published var error: String?
     @Published var notice: String?
@@ -43,17 +44,83 @@ import AtlasCore
     @Published var activeHistoryID: UUID?
     @Published var savingHistory = 0
     @Published var showHistory = false
-    private let history = ScanHistory()
+    @Published var snapshotArchiveBytes: Int64?
+    @Published var snapshotMetadataEstimate: Int64?
+    @Published var historyStorageBytes: Int64 = 0
+    @Published var deletingHistory = false
+    @Published var skipHistoryDeleteConfirmation = UserDefaults.standard.bool(forKey: "atlas.skipHistoryDeleteConfirmation") {
+        didSet { UserDefaults.standard.set(skipHistoryDeleteConfirmation, forKey: "atlas.skipHistoryDeleteConfirmation") }
+    }
+    private let history: ScanHistory
     private var rowTask: Task<Void, Never>?
     private var rowWorker: Task<(entries: [Entry], count: Int), Never>?
     private var rowGeneration = 0
     private var cancellation: ScanCancellation?
 
-    init() {
+    init(history: ScanHistory = ScanHistory()) {
+        self.history = history
         Task {
-            do { historyRecords = try await history.list() }
+            do { try await refreshHistory() }
             catch { self.error = L10n.text("Не удалось открыть историю: ") + error.localizedDescription }
         }
+    }
+
+    private func refreshHistory() async throws {
+        historyStorageBytes = try await history.storageBytes()
+        historyRecords = try await history.list()
+    }
+
+    var historyBusy: Bool { scanning || preparing || savingHistory > 0 || deletingHistory }
+
+    func requestHistoryDeletion(_ record: ScanHistoryRecord? = nil) {
+        guard !historyBusy, record != nil || !historyRecords.isEmpty || historyStorageBytes > 0 else { return }
+        let targets = record.map { [$0] } ?? historyRecords
+        let all = record == nil
+        let ids = Set(targets.map(\.id))
+        if skipHistoryDeleteConfirmation { deleteHistory(ids: ids, all: all); return }
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = L10n.text(all ? "Очистить историю?" : "Удалить снимок?")
+        let size = all ? historyStorageBytes : (record?.archiveBytes ?? 0)
+        let label = record.map { historyTitle($0) + "\n" + L10n.date($0.created) } ?? L10n.text("Все снимки")
+        alert.informativeText = label + (size > 0 ? " · " + byteString(size) : "") + "\n\n" + L10n.text("Снимки и их метаданные будут удалены безвозвратно. Исходные файлы останутся на месте.")
+        alert.addButton(withTitle: L10n.text("Отмена"))
+        alert.addButton(withTitle: L10n.text("Удалить")).hasDestructiveAction = true
+        alert.showsSuppressionButton = true
+        alert.suppressionButton?.title = L10n.text("Больше не спрашивать")
+        guard let window = NSApp.keyWindow ?? NSApp.mainWindow else { return }
+        alert.beginSheetModal(for: window) { [weak self] response in
+            Task { @MainActor in
+                guard response == .alertSecondButtonReturn, let self else { return }
+                self.skipHistoryDeleteConfirmation = alert.suppressionButton?.state == .on
+                self.deleteHistory(ids: ids, all: all)
+            }
+        }
+    }
+
+    private func deleteHistory(ids: Set<UUID>, all: Bool) {
+        guard !historyBusy else { return }
+        deletingHistory = true
+        Task {
+            defer { deletingHistory = false }
+            do {
+                try await history.remove(ids: ids, all: all)
+                try await refreshHistory()
+                clearDeletedSnapshot()
+                notice = L10n.text(all ? "История очищена" : "Снимок удалён")
+            } catch {
+                try? await refreshHistory()
+                clearDeletedSnapshot()
+                self.error = error.localizedDescription
+            }
+        }
+    }
+
+    private func clearDeletedSnapshot() {
+        guard let activeHistoryID, !historyRecords.contains(where: { $0.id == activeHistoryID }) else { return }
+        retire(index)
+        index = nil; snapshot = nil; self.activeHistoryID = nil; snapshotArchiveBytes = nil; snapshotMetadataEstimate = nil
+        selection = nil; folderID = 0; query = ""; kind = nil; largestFiles = false
     }
 
     func historyTitle(_ record: ScanHistoryRecord) -> String {
@@ -66,14 +133,16 @@ import AtlasCore
             defer { savingHistory -= 1 }
             do {
                 let record = try await history.archive(value)
-                historyRecords = try await history.list()
-                if snapshot?.created == value.created && snapshot?.scanRoots == value.scanRoots { activeHistoryID = record.id }
+                try await refreshHistory()
+                if snapshot?.created == value.created && snapshot?.scanRoots == value.scanRoots {
+                    activeHistoryID = record.id; snapshotArchiveBytes = record.archiveBytes
+                }
             } catch { self.error = L10n.text("Не удалось сохранить историю: ") + error.localizedDescription }
         }
     }
 
     func openHistory(_ record: ScanHistoryRecord) {
-        guard !scanning && !preparing else { return }
+        guard !scanning && !preparing && !deletingHistory else { return }
         if activeHistoryID == record.id { largestFiles = false; navigate(0); showHistory = false; return }
         preparing = true
         loadingTitle = historyTitle(record)
@@ -153,7 +222,7 @@ import AtlasCore
     }
 
     func beginSelection() {
-        guard !scanning && !preparing else { return }
+        guard !scanning && !preparing && !deletingHistory else { return }
         showSourcePicker = true
     }
 
@@ -200,10 +269,11 @@ import AtlasCore
     }
 
     func scan(_ paths: [String]) {
-        guard !scanning && !preparing else { return }
+        guard !scanning && !preparing && !deletingHistory else { return }
         scanning = true
         progressCount = 0
         progressBytes = 0
+        progressMetadataBytes = 0
         progressPath = paths.joined(separator: " · ")
         notice = nil
         let token = ScanCancellation()
@@ -215,6 +285,7 @@ import AtlasCore
                         Task { @MainActor in
                             self?.progressCount = update.entries
                             self?.progressBytes = update.bytes
+                            self?.progressMetadataBytes = update.metadataBytes
                             self?.progressPath = update.currentPath
                         }
                     }
@@ -223,7 +294,7 @@ import AtlasCore
                 let result = prepared.0
                 if result.cancelled, snapshot != nil {
                     notice = L10n.text("Анализ остановлен · предыдущий снимок сохранён")
-                } else { apply(result, index: prepared.1) }
+                } else { apply(result, index: prepared.1, metadataEstimate: progressMetadataBytes) }
             } catch { self.error = error.localizedDescription }
             scanning = false
             cancellation = nil
@@ -232,14 +303,17 @@ import AtlasCore
 
     func cancel() { cancellation?.cancel() }
 
-    func apply(_ value: Snapshot, index: PresentationIndex, historyID: UUID? = nil) {
-        let previousIndex = self.index
+    private func retire(_ previousIndex: PresentationIndex?) {
         // Hold the old tree past SwiftUI's transition, then release millions of
         // paths off the main thread instead of blocking the first new frame.
         Task.detached(priority: .utility) {
             try? await Task.sleep(for: .seconds(1))
             withExtendedLifetime(previousIndex) {}
         }
+    }
+
+    func apply(_ value: Snapshot, index: PresentationIndex, historyID: UUID? = nil, metadataEstimate: Int64? = nil) {
+        retire(self.index)
         self.index = index
         snapshot = value
         pendingPaths = value.scanRoots
@@ -249,6 +323,8 @@ import AtlasCore
         kind = nil
         largestFiles = false
         activeHistoryID = historyID
+        snapshotArchiveBytes = historyRecords.first { $0.id == historyID }?.archiveBytes
+        snapshotMetadataEstimate = metadataEstimate
         if historyID == nil { remember(value) }
     }
 
@@ -272,7 +348,7 @@ import AtlasCore
     }
 
     func openSnapshot(_ url: URL) {
-        guard !scanning && !preparing else { error = L10n.text("Дождись завершения сканирования или останови его."); return }
+        guard !scanning && !preparing && !deletingHistory else { error = L10n.text("Дождись завершения сканирования или останови его."); return }
         preparing = true
         loadingTitle = url.deletingPathExtension().lastPathComponent
         loadingStage = "Читаем снимок…"
@@ -290,14 +366,14 @@ import AtlasCore
     }
 
     func importSnapshot() {
-        guard !scanning && !preparing else { return }
+        guard !scanning && !preparing && !deletingHistory else { return }
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.json, UTType(filenameExtension: "atlas") ?? .data]
         if panel.runModal() == .OK, let url = panel.url { openSnapshot(url) }
     }
 
     func exportSnapshot() {
-        guard !scanning && !preparing, let snapshot else { return }
+        guard !scanning && !preparing && !deletingHistory, let snapshot else { return }
         let panel = NSSavePanel()
         panel.nameFieldStringValue = "\(snapshot.rootEntry.name).atlas"
         panel.allowedContentTypes = [UTType(filenameExtension: "atlas") ?? .data]

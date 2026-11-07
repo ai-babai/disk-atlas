@@ -6,13 +6,13 @@
 <key>CFBundleIdentifier</key><string>local.diskatlas.app</string>
 <key>CFBundleExecutable</key><string>DiskAtlas</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>0.1.0</string>
-<key>CFBundleVersion</key><string>1</string>
+<key>CFBundleShortVersionString</key><string>0.2.0</string>
+<key>CFBundleVersion</key><string>2</string>
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSHighResolutionCapable</key><true/>
 <key>NSPrincipalClass</key><string>NSApplication</string>
-<key>NSHumanReadableCopyright</key><string>Disk Atlas</string>
+<key>NSHumanReadableCopyright</key><string>© 2026 ai-babai · MIT License</string>
 <key>CFBundleDocumentTypes</key><array><dict>
 <key>CFBundleTypeName</key><string>Disk Atlas Snapshot</string>
 <key>CFBundleTypeRole</key><string>Viewer</string>

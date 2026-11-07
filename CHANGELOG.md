@@ -5,6 +5,17 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.2.0 — 2026-11-07
+
+- Show the estimated uncompressed snapshot size during scanning and exact compressed size after saving.
+- Show snapshot sizes and visible deletion buttons in the sidebar and directly on the start screen.
+- Show total history storage in the history window.
+- Delete individual scans or clear history together with app-owned metadata.
+- Confirm deletion, optionally remember “Don’t ask again”, and allow confirmations to be re-enabled.
+- Preserve source files and user exports; never recursively delete directories during history cleanup.
+- Keep file columns within the available width when resizing sidebars.
+- Publish the project under the MIT License with public downloads.
+
 ## 0.1.0 — 2026-11-07
 
 First early access release for macOS 14+.

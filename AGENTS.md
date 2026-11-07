@@ -9,7 +9,7 @@ Start with [README.md](README.md), or [README.ru.md](README.ru.md).
 Component map and validation: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 - Source of truth: this repository. SwiftUI app and CLI share AtlasCore.
-- Scan metadata only. No file deletion, moving, cleanup, shell evaluation, network or permission escalation in app/CLI/MCP.
+- Scan metadata only. Never delete, move, clean up or execute scanned source files. No network or permission escalation. History deletion may remove only app-owned UUID archives and the history index, after the configured user confirmation.
 - Folder selection, including drag and drop, must never start scanning. Require the separate Analyze action.
 - Support multiple selected roots without double counting overlapping paths or hard links.
 - Start screen and first scan have no sidebar; results have native window controls, navigation and inspector.
@@ -18,5 +18,5 @@ Component map and validation: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - Do not add durable tests/fixtures/CI without owner approval. Temporary checks outside the repo are allowed.
 - Local build: `scripts/build.sh`; install: `scripts/build.sh --install`. Close the running app before replacing its bundle.
 - Universal packaging: `scripts/release.sh`. Distribution is ad hoc signed, without Apple notarization.
-- Keep the GitHub repository private. Do not publish source or artifacts publicly without explicit permission.
+- The owner authorized public visibility and MIT licensing on 2026-11-07. Never commit real snapshots, private scan history, credentials or personal file paths.
 - Documentation images must use illustrative data, never real user paths or scan history.

@@ -51,7 +51,11 @@ transition and released in a background task to reduce main-thread deallocation.
 History stores lightweight records separately from LZFSE-compressed snapshots in
 `~/Library/Application Support/Disk Atlas/History`. Directory mode is 0700; files
 are 0600. Opening history never rescans source folders. Normal app termination
-waits for an in-progress history write. History has no automatic pruning yet.
+waits for an in-progress history write. History has no automatic pruning yet. Users can delete a snapshot or clear history
+after the configured confirmation. Cleanup unlinks only UUID-named app archives
+and the history manifest; source paths and exported snapshots are never targets.
+The scanner maintains a cheap running estimate of uncompressed metadata; history
+records report the exact compressed archive file size.
 
 ## Build and validation
 

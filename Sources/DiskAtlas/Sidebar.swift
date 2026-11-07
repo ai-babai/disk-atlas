@@ -27,6 +27,14 @@ struct Sidebar: View {
                     SectionLabel(text: L10n.text("История сканов"))
                     Spacer()
                     if store.savingHistory > 0 { ProgressView().controlSize(.mini) }
+                    Menu {
+                        Button(L10n.text("Вся история…")) { store.showHistory = true }
+                        Divider()
+                        Button(L10n.text("Очистить историю…"), role: .destructive) { store.requestHistoryDeletion() }
+                            .disabled(store.historyBusy || (store.historyRecords.isEmpty && store.historyStorageBytes == 0))
+                    } label: { Image(systemName: "ellipsis") }
+                        .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                        .accessibilityLabel(L10n.text("Действия с историей"))
                 }.padding(.top, 24).padding(.bottom, 8)
                 ForEach(store.historyRecords.prefix(5)) { record in
                     HistoryRow(store: store, record: record)
