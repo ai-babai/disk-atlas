@@ -5,6 +5,12 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.5.1 — 2026-11-07
+
+- Combine scan metadata and duplicate activity into one stable 30-point status row, replacing the two stacked bars.
+- Keep the duplicate count and result chevron in one clickable group; pause, stop and phase progress stay beside that job instead of separating its action across the window.
+- Preserve snapshot storage size, partial/stopped state, accessibility labels and reduced-motion behavior; omit the repeated default notice and redundant current-folder title.
+
 ## 0.5.0 — 2026-11-07
 
 - Make CLI the primary agent interface: per-command help, version, generated command/effect discovery, selected doctor diagnostics, safe idempotent installation and shell completion.

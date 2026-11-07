@@ -121,6 +121,13 @@ Duplicate reports are limited to 256 MiB on read/write, use mode 0600, and are
 removed together with the owning history record. Termination waits for writes;
 a running duplicate job is stopped and its partial result saved.
 
+The shared 30-point status row observes duplicate updates separately from the map.
+Its compact result button contains the duplicate label, state/count and chevron;
+phase progress and pause/stop remain adjacent. Scan metadata and snapshot storage
+size share the same row. Optional notices truncate before job controls, preserving
+the layout at the minimum window width. A decorative spinner is hidden from
+accessibility so the result action keeps its button role.
+
 ## Build and validation
 
 Swift 6 / Xcode Command Line Tools, macOS 14+ deployment target. The CLI statically links Apple Swift Argument Parser

@@ -77,8 +77,8 @@ behavior tests and an explicit contract update.
 ## Existing debt is visible
 
 The first audit of revision `e5f7721` found 29 functions/accessor blocks over the
-complexity limits. Thirteen responsibilities have since been removed or refactored, including
-map tiles, inspector sections, preparation/status and CLI/MCP dispatch, leaving **16**
+complexity limits. Fourteen responsibilities have since been removed or refactored, including
+map tiles, inspector sections, preparation/status and CLI/MCP dispatch, leaving **15**
 frozen historical exceptions.
 [legacy.json](../quality/legacy.json) records only those pre-existing bodies and
 exact hashes. An edited body loses its exception even if its score did not grow;

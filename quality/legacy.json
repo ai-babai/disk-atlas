@@ -84,15 +84,6 @@
       "start": 197
     },
     {
-      "bodyHash": "8621a06f302aef25fd49b1efbde23e4d0a82d20d2d6c0d7ec30f2f240fc78c16",
-      "cognitive": 28,
-      "cyclomatic": 16,
-      "end": 399,
-      "file": "Sources/DiskAtlas/DuplicatesView.swift",
-      "identity": "DuplicateActivity.property:body",
-      "start": 349
-    },
-    {
       "bodyHash": "c7d41515f860c3ff0f8be6f0becd185aa0a08068780c0c690e61ea43417ae85f",
       "cognitive": 10,
       "cyclomatic": 14,

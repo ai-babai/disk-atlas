@@ -22,7 +22,7 @@ disk-atlas help
 
 Use the app's actual path if installed elsewhere (including `~/Applications`).
 **For agents** in the app copies commands with that path. Alternatively download
-`disk-atlas-cli-0.5.0-universal.zip` from [Releases](https://github.com/ai-babai/disk-atlas/releases/latest),
+`disk-atlas-cli-0.5.1-universal.zip` from [Releases](https://github.com/ai-babai/disk-atlas/releases/latest),
 unzip into a permanent folder, then run `./disk-atlas install`.
 
 `install` creates a symlink in `~/.local/bin`, is idempotent for that same binary,

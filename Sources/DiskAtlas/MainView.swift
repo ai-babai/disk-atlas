@@ -61,7 +61,6 @@ struct MainView: View {
                             workspace
                         }
                     })
-                DuplicateActivity(store: store, session: store.duplicates)
                 footer
             })
     }
@@ -317,52 +316,7 @@ struct MainView: View {
         ).frame(maxWidth: .infinity)
     }
 
-    private var footer: some View {
-        HStack(spacing: 7) {
-            Circle().fill(store.scanning ? Color.orange : Palette.accent).frame(width: 5, height: 5)
-            if store.preparing {
-                Text(L10n.text("Подготовка снимка…"))
-                ProgressView().controlSize(.mini)
-            } else if store.scanning {
-                Text(L10n.text("Сканирование"))
-            } else if let snapshot = store.snapshot {
-                Text(
-                    snapshot.cancelled
-                        ? L10n.text("Остановлено · неполный снимок")
-                        : L10n.text("Анализ · \(String(format: "%.2f", snapshot.elapsed)) с"))
-                if snapshot.issueCount > 0 {
-                    Button(L10n.text("Пропущено: \(snapshot.issueCount)")) { store.showIssues = true }.buttonStyle(
-                        .plain
-                    ).foregroundStyle(.orange)
-                }
-            } else {
-                Text(L10n.text("Готово к сканированию"))
-            }
-            if store.savingHistory > 0 {
-                Text("· " + L10n.text("Сохранение истории…"))
-                ProgressView().controlSize(.mini)
-            }
-            snapshotFootnote
-            Spacer()
-            Text(store.notice ?? store.duplicates.trashNotice ?? L10n.text("Файлы остаются на своих местах")).lineLimit(
-                1)
-        }.font(.system(size: 10)).foregroundStyle(Palette.sub).padding(.horizontal, 24).frame(height: 30).background(
-            Palette.soft)
-    }
-
-    @ViewBuilder private var snapshotFootnote: some View {
-        if !store.scanning, store.snapshot != nil {
-            if let bytes = store.snapshotArchiveBytes {
-                Label(L10n.text("Снимок") + " " + byteString(bytes), systemImage: "archivebox").help(
-                    L10n.text("Размер сжатого файла снимка на диске. Исходные файлы в этот размер не входят."))
-            } else if store.savingHistory > 0, let estimate = store.snapshotMetadataEstimate {
-                Text(L10n.text("Снимок") + " ≈ " + byteString(estimate) + " · " + L10n.text("до сжатия")).help(
-                    L10n.text("Оценка несжатых метаданных. После сохранения появится точный размер сжатого снимка."))
-            } else if store.savingHistory == 0 {
-                Text(L10n.text("Снимок не сохранён"))
-            }
-        }
-    }
+    private var footer: some View { WorkspaceStatusBar(store: store, session: store.duplicates) }
 
     private var issuesSheet: some View {
         VStack(alignment: .leading, spacing: 18) {
