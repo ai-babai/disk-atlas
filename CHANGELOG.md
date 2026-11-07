@@ -5,6 +5,19 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.3.0 — 2026-11-07
+
+- Add an optional, explicitly started duplicate check with metadata-only preparation, read-volume/time estimates, background phases, pause/resume and stop.
+- Prune by equal size and first/last samples, hash only survivors, then verify bytes; skip hard-link aliases, symlinks, special and cloud-only files, and reject changed files.
+- Add compact duplicate groups, Finder reveal, report-only Keep marks, JSON export and file-list badges that open the exact group.
+- Save duplicate reports with scan history, show their storage size and remove them when the history item is deleted.
+- Add size-range presets, two-handle logarithmic sliders, exact bounds and modification-date criteria; commit costly changes after dragging ends.
+- Add optional size/date view filters for both map and list; preserve original scan data.
+- Separate Disk usage and Duplicates workspaces; keep Map / Largest files as local display modes and align sidebar selections.
+- Add sortable native table headings and preserve the complete percentage column beside the inspector.
+- Add explicit duplicate CLI/MCP actions; keep ordinary scanning metadata-only.
+- Update English/Russian documentation and illustrative images.
+
 ## 0.2.2 — 2026-11-07
 
 - Move language selection to one compact toolbar menu, available on the start screen and with sidebars hidden.

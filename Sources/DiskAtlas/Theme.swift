@@ -51,7 +51,7 @@ extension FileKind {
 struct SectionLabel: View {
     let text: String
     var body: some View {
-        Text(text.uppercased()).font(.system(size: 10, weight: .semibold)).tracking(1.4).foregroundStyle(Palette.sub)
+        Text(text.uppercased()).font(.system(size: 10, weight: .semibold)).tracking(1.4).foregroundStyle(Palette.sub).lineLimit(1).minimumScaleFactor(0.75)
     }
 }
 

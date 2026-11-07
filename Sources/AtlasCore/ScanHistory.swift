@@ -11,6 +11,8 @@ public struct ScanHistoryRecord: Codable, Identifiable, Sendable {
     public var elapsed: Double
     public var cancelled: Bool
     public var archiveBytes: Int64? = nil
+    public var duplicateBytes: Int64? = nil
+    public var storedBytes: Int64? { archiveBytes.map { $0 + (duplicateBytes ?? 0) } }
 
     func matches(_ snapshot: Snapshot) -> Bool {
         roots == snapshot.scanRoots && created.timeIntervalSince1970.rounded(.down) == snapshot.created.timeIntervalSince1970.rounded(.down)
@@ -39,6 +41,7 @@ public actor ScanHistory {
         records = decoded.map { record in
             var record = record
             record.archiveBytes = (try? FileManager.default.attributesOfItem(atPath: url(for: record).path)[.size] as? NSNumber)?.int64Value
+            record.duplicateBytes = (try? FileManager.default.attributesOfItem(atPath: duplicateURL(record.id).path)[.size] as? NSNumber)?.int64Value
             return record
         }.sorted { $0.created > $1.created }
         return records!
@@ -76,6 +79,32 @@ public actor ScanHistory {
         return try Snapshot.decode(decoded)
     }
 
+    public func saveDuplicates(_ report: DuplicateReport, id: UUID) throws -> Int64 {
+        var current = try list()
+        guard let index = current.firstIndex(where: { $0.id == id }) else { throw AtlasError.message("Снимок больше не сохранён в истории.") }
+        let data = try Snapshot.encoder.encode(report)
+        guard data.count <= 256 * 1024 * 1024 else { throw AtlasError.message("Слишком большой отчёт дубликатов.") }
+        let target = duplicateURL(id)
+        try data.write(to: target, options: .atomic)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: target.path)
+        current[index].duplicateBytes = Int64(data.count)
+        try saveManifest(current); records = current
+        return Int64(data.count)
+    }
+
+    public nonisolated func loadDuplicates(id: UUID) async throws -> (DuplicateReport, Int64)? {
+        let target = duplicateURL(id)
+        guard FileManager.default.fileExists(atPath: target.path) else { return nil }
+        let size = try target.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? Int.max
+        guard size <= 256 * 1024 * 1024 else { throw AtlasError.message("Слишком большой отчёт дубликатов.") }
+        let data = try Data(contentsOf: target)
+        let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
+        let report = try decoder.decode(DuplicateReport.self, from: data)
+        return (report, Int64(data.count))
+    }
+
+    private nonisolated func duplicateURL(_ id: UUID) -> URL { directory.appendingPathComponent(id.uuidString + ".duplicates.json") }
+
     public func storageBytes() throws -> Int64 {
         guard FileManager.default.fileExists(atPath: directory.path) else { return 0 }
         return try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
@@ -92,13 +121,13 @@ public actor ScanHistory {
         let targets: [URL]
         if all, FileManager.default.fileExists(atPath: directory.path) {
             targets = try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil).filter { archiveID($0) != nil }
-        } else { targets = current.filter { ids.contains($0.id) }.map { url(for: $0) } }
+        } else { targets = current.filter { ids.contains($0.id) }.flatMap { [url(for: $0), duplicateURL($0.id)] } }
         var failure: Error?
         var removed = Set<UUID>()
         for target in targets {
             do {
                 try removeFile(target)
-                if let id = archiveID(target) { removed.insert(id) }
+                if target.lastPathComponent.hasSuffix(".atlas.lzfse"), let id = archiveID(target) { removed.insert(id) }
             } catch { if failure == nil { failure = error } }
         }
         // Also forget records whose archive was already removed outside the app.
@@ -117,9 +146,10 @@ public actor ScanHistory {
     }
 
     private nonisolated func archiveID(_ url: URL) -> UUID? {
-        let suffix = ".atlas.lzfse"
-        guard url.lastPathComponent.hasSuffix(suffix) else { return nil }
-        return UUID(uuidString: String(url.lastPathComponent.dropLast(suffix.count)))
+        for suffix in [".atlas.lzfse", ".duplicates.json"] where url.lastPathComponent.hasSuffix(suffix) {
+            return UUID(uuidString: String(url.lastPathComponent.dropLast(suffix.count)))
+        }
+        return nil
     }
 
     private nonisolated func url(for record: ScanHistoryRecord) -> URL {

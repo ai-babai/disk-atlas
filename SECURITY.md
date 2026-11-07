@@ -12,11 +12,13 @@ You can also contact the maintainer privately via Telegram [@SkifMax](https://t.
 
 Do not attach a real `.atlas` snapshot, history archive, absolute personal paths or
 file listings without reviewing their contents. Snapshots contain names, paths,
-sizes and dates even though file contents are not read.
+sizes and dates. Duplicate reports also contain copy relationships and content
+digests. Ordinary scans read metadata only; duplicate checking reads contents
+locally only after a separate explicit action. No file content is included in reports.
 
 Only download release artifacts from this repository. Check `SHA256SUMS.txt`.
 These releases are ad hoc signed and are not notarized by Apple; it does not carry
 a verified Developer ID identity. See [Apple's opening guidance](https://support.apple.com/102445).
 
-See [the architecture guide](docs/ARCHITECTURE.md) for the metadata-only boundary,
+See [the architecture guide](docs/ARCHITECTURE.md) for the metadata/content-reading boundary,
 local storage permissions and APFS accounting limitations.

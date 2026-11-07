@@ -14,7 +14,7 @@ struct Inspector: View {
                         Image(systemName: entry.kind.symbol).font(.system(size: 29, weight: .light)).foregroundStyle(entry.kind.tint)
                             .frame(width: 58, height: 58).background(Palette.soft, in: RoundedRectangle(cornerRadius: 13))
                         Text(store.name(entry)).font(.system(size: 18, weight: .semibold)).lineLimit(3).textSelection(.enabled)
-                        Text(store.displayPath(entry)).font(.system(size: 10, design: .monospaced)).foregroundStyle(Palette.sub)
+                        Text(store.displayPath(entry)).font(.system(size: 10, design: .monospaced)).foregroundStyle(Palette.sub).fixedSize()
                             .textSelection(.enabled).lineLimit(5).truncationMode(.middle)
                     }
                     VStack(spacing: 13) {
@@ -69,9 +69,9 @@ struct Inspector: View {
                             Image(systemName: store.selectedKinds.contains(item.kind) ? "checkmark.circle.fill" : "circle.fill")
                                 .font(.system(size: store.selectedKinds.contains(item.kind) ? 11 : 6))
                                 .foregroundStyle(item.kind.tint).frame(width: 12, height: 12)
-                            Text(item.kind.title).font(.system(size: 11))
-                            Spacer(minLength: 2)
-                            Text(byteString(item.bytes)).font(.system(size: 10, design: .monospaced)).foregroundStyle(Palette.sub)
+                            Text(item.kind.title).font(.system(size: 11)).lineLimit(1).minimumScaleFactor(0.8)
+                            Spacer(minLength: 8)
+                            Text(byteString(item.bytes)).font(.system(size: 10, design: .monospaced)).foregroundStyle(Palette.sub).fixedSize()
                         }
                         GeometryReader { geo in
                             ZStack(alignment: .leading) {
@@ -138,8 +138,10 @@ struct AgentSheet: View {
                 operation("scan_directory", L10n.text("Просканировать папку и сохранить снимок"))
                 operation("inspect_snapshot", L10n.text("Найти крупные файлы и исследовать папки"))
                 operation("show_snapshot", L10n.text("Открыть результат в приложении"))
+                operation("plan_duplicates", L10n.text("Оценить поиск дубликатов"))
+                operation("find_duplicates", L10n.text("Проверить копии · явное readContents: true"))
             }
-            Text(L10n.text("Снимки содержат имена, пути, размеры и даты. Содержимое файлов не читается. Команд удаления нет."))
+            Text(L10n.text("Снимки содержат имена, пути, размеры и даты. Чтение содержимого для дубликатов требует отдельного запуска. Команд удаления нет."))
                 .font(.system(size: 11)).foregroundStyle(Palette.sub)
             HStack { Spacer(); Button(L10n.text("Готово")) { store.showAgent = false }.keyboardShortcut(.defaultAction) }
         }.padding(30).frame(width: 660).background(Palette.paper).foregroundStyle(Palette.ink)

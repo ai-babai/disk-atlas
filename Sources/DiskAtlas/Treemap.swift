@@ -69,7 +69,8 @@ struct TreemapView: View {
     @ObservedObject var store: AtlasStore
     var body: some View {
         GeometryReader { geometry in
-            if let snapshot = store.snapshot, let index = store.index {
+            if let index = store.index {
+                let snapshot = index.snapshot
                 let children = index.children(of: store.folderID, logical: store.logical, limit: 60)
                 let tiles = TreemapLayout.tiles(children, logical: store.logical,
                                                 in: CGRect(origin: .zero, size: geometry.size), totalCount: snapshot.entries[store.folderID].children.count, totalBytes: store.size(snapshot.entries[store.folderID]))

@@ -14,18 +14,18 @@ struct Sidebar: View {
             }.padding(.top, 20).padding(.bottom, 24)
             ScrollView {
               VStack(alignment: .leading, spacing: 0) {
-            SectionLabel(text: L10n.text("Обзор")).padding(.bottom, 12)
-            nav(L10n.text("Карта пространства"), symbol: "square.grid.2x2", active: !store.largestFiles) { store.largestFiles = false; store.selectedKinds = [] }
-            nav(L10n.text("Крупные файлы"), symbol: "line.3.horizontal.decrease", active: store.largestFiles) { store.largestFiles = true; store.selectedKinds = [] }
-            if let snapshot = store.snapshot {
+            SectionLabel(text: L10n.text("Анализ")).padding(.bottom, 12)
+            nav(L10n.text("Место на диске"), symbol: "chart.pie", active: !store.showDuplicates) { store.showDuplicates = false }
+            nav(L10n.text("Дубликаты"), symbol: "doc.on.doc", active: store.showDuplicates) { store.openDuplicates() }
+            if let snapshot = store.index?.snapshot {
                 SectionLabel(text: L10n.text("В этом анализе")).padding(.top, 31).padding(.bottom, 12)
                 let roots = snapshot.isComposite ? snapshot.rootEntry.children.map { snapshot.entries[$0] } : [snapshot.rootEntry]
                 ForEach(roots) { entry in
                     nav(entry.name, symbol: "folder", active: store.folderID == entry.id) { store.navigate(entry.id) }
                 }
-                HStack {
+                HStack(spacing: 6) {
                     SectionLabel(text: L10n.text("История сканов"))
-                    Spacer()
+                    Spacer(minLength: 4)
                     if store.savingHistory > 0 { ProgressView().controlSize(.mini) }
                     Menu {
                         Button(L10n.text("Вся история…")) { store.showHistory = true }
@@ -89,15 +89,15 @@ struct Sidebar: View {
 
     private func nav(_ title: String, symbol: String, active: Bool, add: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 10) {
-                Image(systemName: symbol).frame(width: 17)
+            HStack(spacing: 8) {
+                Image(systemName: symbol).frame(width: 14)
                 Text(title).font(.system(size: 12, weight: active ? .semibold : .regular))
                 Spacer(minLength: 0)
                 if add { Image(systemName: "plus").font(.system(size: 9, weight: .semibold)) }
-            }.padding(.horizontal, 10).padding(.vertical, 10)
+            }.padding(.horizontal, 8).padding(.vertical, 10)
                 .foregroundStyle(active ? Palette.accent : Palette.sub)
-                .background(active ? Palette.mark : .clear, in: RoundedRectangle(cornerRadius: 7))
-        }.buttonStyle(.plain).padding(.horizontal, -8)
+                .background(active ? Palette.mark : .clear, in: RoundedRectangle(cornerRadius: 6))
+        }.buttonStyle(.plain)
     }
 
 }

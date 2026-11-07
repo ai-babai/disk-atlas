@@ -9,7 +9,7 @@ Start with [README.md](README.md), or [README.ru.md](README.ru.md).
 Component map and validation: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 - Source of truth: this repository. SwiftUI app and CLI share AtlasCore.
-- Scan metadata only. Never delete, move, clean up or execute scanned source files. No network or permission escalation. History deletion may remove only app-owned UUID archives and the history index, after the configured user confirmation.
+- Ordinary scans read metadata only. Duplicate preparation also reads only metadata; reading file contents requires the separate explicit duplicate-check action. Never delete, move, clean up or execute scanned source files. No network or permission escalation. History deletion may remove only app-owned UUID archives and the history index, after the configured user confirmation.
 - Folder selection, including drag and drop, must never start scanning. Require the separate Analyze action.
 - Support multiple selected roots without double counting overlapping paths or hard links.
 - Start screen and first scan have no sidebar; results have native window controls, navigation and inspector.
@@ -20,3 +20,5 @@ Component map and validation: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - Universal packaging: `scripts/release.sh`. Distribution is ad hoc signed, without Apple notarization.
 - The owner authorized public visibility and MIT licensing on 2026-11-07. Never commit real snapshots, private scan history, credentials or personal file paths.
 - Documentation images must use illustrative data, never real user paths or scan history.
+
+- Every wait must have visible progress/activity and an accessible stop action where applicable. Duplicate jobs must not block the main workspace; honor Reduce Motion.

@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import Combine
 import AtlasCore
 
 @MainActor final class AtlasStore: ObservableObject {
@@ -10,7 +11,7 @@ import AtlasCore
     @Published var selectedKinds: Set<FileKind> = [] { didSet { refreshRows() } }
     @Published var largestFiles = false { didSet { refreshRows() } }
     @Published var logical = false { didSet { refreshRows() } }
-    @Published var scanning = false
+    @Published var scanning = false { didSet { updateDuplicatePriority() } }
     @Published var progressCount = 0
     @Published var progressBytes: Int64 = 0
     @Published var progressMetadataBytes: Int64 = 0
@@ -35,7 +36,7 @@ import AtlasCore
     @Published var rows: [Entry] = [] { didSet { rowRevision += 1 } }
     @Published var rowRevision = 0
     @Published var rowCount = 0
-    @Published var preparing = false
+    @Published var preparing = false { didSet { updateDuplicatePriority() } }
     @Published var loadingTitle: String?
     @Published var loadingStage = "Читаем снимок…"
     @Published var loadingHistoryID: UUID?
@@ -51,6 +52,19 @@ import AtlasCore
     @Published var skipHistoryDeleteConfirmation = UserDefaults.standard.bool(forKey: "atlas.skipHistoryDeleteConfirmation") {
         didSet { UserDefaults.standard.set(skipHistoryDeleteConfirmation, forKey: "atlas.skipHistoryDeleteConfirmation") }
     }
+    @Published var showDuplicates = false
+    @Published var prepareDuplicateSearch = false
+    @Published var sort: EntrySort = .size { didSet { refreshRows() } }
+    @Published var sortDescending = true { didSet { refreshRows() } }
+    @Published var viewFiltersEnabled = false { didSet { rebuildView() } }
+    @Published var viewOptions = DuplicateOptions() { didSet { rebuildView() } }
+    @Published var viewFiltering = false { didSet { updateDuplicatePriority() } }
+    let duplicates: DuplicateSession
+    private var duplicateObserver: AnyCancellable?
+    private var baseIndex: PresentationIndex?
+    private var filterTask: Task<Void, Never>?
+    private var filterWorker: Task<PresentationIndex, Error>?
+    private var filterGeneration = UUID()
     private let history: ScanHistory
     private var rowTask: Task<Void, Never>?
     private var rowWorker: Task<(entries: [Entry], count: Int), Never>?
@@ -59,6 +73,11 @@ import AtlasCore
 
     init(history: ScanHistory = ScanHistory()) {
         self.history = history
+        duplicates = DuplicateSession(history: history)
+        duplicateObserver = duplicates.$busy.dropFirst().sink { [weak self] busy in
+            self?.objectWillChange.send()
+            if !busy { Task { @MainActor [weak self] in try? await self?.refreshHistory() } }
+        }
         Task {
             do { try await refreshHistory() }
             catch { self.error = L10n.text("Не удалось открыть историю: ") + error.localizedDescription }
@@ -70,7 +89,7 @@ import AtlasCore
         historyRecords = try await history.list()
     }
 
-    var historyBusy: Bool { scanning || preparing || savingHistory > 0 || deletingHistory }
+    var historyBusy: Bool { scanning || preparing || savingHistory > 0 || deletingHistory || duplicates.busy }
 
     func requestHistoryDeletion(_ record: ScanHistoryRecord? = nil) {
         guard !historyBusy, record != nil || !historyRecords.isEmpty || historyStorageBytes > 0 else { return }
@@ -81,7 +100,7 @@ import AtlasCore
         let alert = NSAlert()
         alert.alertStyle = .warning
         alert.messageText = L10n.text(all ? "Очистить историю?" : "Удалить снимок?")
-        let size = all ? historyStorageBytes : (record?.archiveBytes ?? 0)
+        let size = all ? historyStorageBytes : (record?.storedBytes ?? 0)
         let label = record.map { historyTitle($0) + "\n" + L10n.date($0.created) } ?? L10n.text("Все снимки")
         alert.informativeText = label + (size > 0 ? " · " + byteString(size) : "") + "\n\n" + L10n.text("Снимки и их метаданные будут удалены безвозвратно. Исходные файлы останутся на месте.")
         alert.addButton(withTitle: L10n.text("Отмена"))
@@ -106,6 +125,7 @@ import AtlasCore
             do {
                 try await history.remove(ids: ids, all: all)
                 try await refreshHistory()
+                if let owner = duplicates.ownerID, !historyRecords.contains(where: { $0.id == owner }) { duplicates.discard() }
                 clearDeletedSnapshot()
                 notice = L10n.text(all ? "История очищена" : "Снимок удалён")
             } catch {
@@ -119,6 +139,8 @@ import AtlasCore
     private func clearDeletedSnapshot() {
         guard let activeHistoryID, !historyRecords.contains(where: { $0.id == activeHistoryID }) else { return }
         retire(index)
+        duplicates.discard()
+        filterTask?.cancel(); filterWorker?.cancel(); baseIndex = nil; viewFiltering = false
         index = nil; snapshot = nil; self.activeHistoryID = nil; snapshotArchiveBytes = nil; snapshotMetadataEstimate = nil
         selection = nil; folderID = 0; query = ""; selectedKinds = []; largestFiles = false
     }
@@ -136,6 +158,7 @@ import AtlasCore
                 try await refreshHistory()
                 if snapshot?.created == value.created && snapshot?.scanRoots == value.scanRoots {
                     activeHistoryID = record.id; snapshotArchiveBytes = record.archiveBytes
+                    duplicates.attach(record.id, to: value)
                 }
             } catch { self.error = L10n.text("Не удалось сохранить историю: ") + error.localizedDescription }
         }
@@ -162,10 +185,10 @@ import AtlasCore
         }
     }
 
-    var folder: Entry? { snapshot?.entries[folderID] }
+    var folder: Entry? { (index?.snapshot ?? snapshot)?.entries[folderID] }
     var selected: Entry? {
         guard let selection, let snapshot else { return folder }
-        return snapshot.entries[selection]
+        return index?.snapshot.entries[selection] ?? snapshot.entries[selection]
     }
     private func refreshRows() {
         rowTask?.cancel()
@@ -173,8 +196,8 @@ import AtlasCore
         rowGeneration += 1
         rowsLoading = false
         guard let index else { rows = []; rowCount = 0; return }
-        let folder = folderID, logical = logical, query = query, kinds = selectedKinds, files = largestFiles
-        if query.isEmpty && kinds.isEmpty && !files {
+        let folder = folderID, logical = logical, query = query, kinds = selectedKinds, files = largestFiles, sort = sort, descending = sortDescending
+        if query.isEmpty && kinds.isEmpty && !files && (sort == .size || sort == .share) && descending {
             let result = index.rows(folder: folder, logical: logical, query: "", kind: nil, filesOnly: false)
             rows = result.entries; rowCount = result.count
             return
@@ -185,13 +208,61 @@ import AtlasCore
             if !query.isEmpty { try? await Task.sleep(for: .milliseconds(100)) }
             guard !Task.isCancelled else { return }
             let worker = Task.detached(priority: .userInitiated) {
-                index.rows(folder: folder, logical: logical, query: query, kinds: kinds, filesOnly: files)
+                index.rows(folder: folder, logical: logical, query: query, kinds: kinds, filesOnly: files, sort: sort, descending: descending)
             }
             rowWorker = worker
             let result = await worker.value
             guard !Task.isCancelled, generation == rowGeneration else { return }
             rows = result.entries; rowCount = result.count
             rowsLoading = false
+        }
+    }
+
+    private func updateDuplicatePriority() { duplicates.foreground(scanning || preparing || viewFiltering) }
+    func openDuplicates() {
+        showDuplicates = true
+        guard let snapshot else { return }
+        if !duplicates.busy && duplicates.snapshotCreated != snapshot.created { duplicates.select(snapshot, id: activeHistoryID, prepareIfMissing: true) }
+        if !duplicates.busy && duplicates.plan == nil && duplicates.report == nil { duplicates.prepare(snapshot, id: activeHistoryID) }
+    }
+    func showDuplicateGroup(for path: String) {
+        guard duplicates.snapshotCreated == snapshot?.created, let groupID = duplicates.lookup?.byPath[path] else { return }
+        duplicates.focusedGroupID = groupID; showDuplicates = true
+    }
+    func prepareDuplicates(debounce: Bool = false) {
+        guard let snapshot else { return }
+        duplicates.prepare(snapshot, id: activeHistoryID, debounce: debounce)
+    }
+    func sortBy(_ field: EntrySort) {
+        if sort == field { sortDescending.toggle() }
+        else { sortDescending = field != .name; sort = field }
+    }
+    private func rebuildView() {
+        filterTask?.cancel(); filterWorker?.cancel()
+        filterGeneration = UUID(); let key = filterGeneration
+        guard let snapshot, let baseIndex else { return }
+        if !viewFiltersEnabled {
+            retire(index); index = baseIndex; viewFiltering = false; refreshRows(); return
+        }
+        let settings = viewOptions
+        viewFiltering = true
+        filterTask = Task {
+            do {
+                try await Task.sleep(for: .milliseconds(300))
+                try Task.checkCancellation()
+                let job = Task.detached(priority: .userInitiated) { () throws -> PresentationIndex in
+                    let filtered = try ViewFilter.apply(snapshot, options: settings)
+                    try Task.checkCancellation()
+                    return PresentationIndex(filtered)
+                }
+                filterWorker = job
+                let result = try await job.value
+                guard !Task.isCancelled, filterGeneration == key else { return }
+                retire(index); index = result
+                if let selection, result.snapshot.entries[selection].fileCount == 0 { self.selection = nil }
+                refreshRows(); viewFiltering = false
+            } catch is CancellationError { }
+            catch { if filterGeneration == key { self.error = error.localizedDescription; viewFiltering = false } }
         }
     }
 
@@ -275,6 +346,8 @@ import AtlasCore
 
     func scan(_ paths: [String]) {
         guard !scanning && !preparing && !deletingHistory else { return }
+        let wantDuplicates = prepareDuplicateSearch && !duplicates.busy
+        prepareDuplicateSearch = false
         scanning = true
         progressCount = 0
         progressBytes = 0
@@ -299,7 +372,10 @@ import AtlasCore
                 let result = prepared.0
                 if result.cancelled, snapshot != nil {
                     notice = L10n.text("Анализ остановлен · предыдущий снимок сохранён")
-                } else { apply(result, index: prepared.1, metadataEstimate: progressMetadataBytes) }
+                } else {
+                    apply(result, index: prepared.1, metadataEstimate: progressMetadataBytes)
+                    if wantDuplicates { duplicates.prepare(result, id: activeHistoryID) }
+                }
             } catch { self.error = error.localizedDescription }
             scanning = false
             cancellation = nil
@@ -318,7 +394,9 @@ import AtlasCore
     }
 
     func apply(_ value: Snapshot, index: PresentationIndex, historyID: UUID? = nil, metadataEstimate: Int64? = nil) {
-        retire(self.index)
+        filterTask?.cancel(); filterWorker?.cancel(); filterGeneration = UUID()
+        viewFiltersEnabled = false; viewFiltering = false
+        retire(self.index); baseIndex = index
         self.index = index
         snapshot = value
         pendingPaths = value.scanRoots
@@ -330,11 +408,14 @@ import AtlasCore
         activeHistoryID = historyID
         snapshotArchiveBytes = historyRecords.first { $0.id == historyID }?.archiveBytes
         snapshotMetadataEstimate = metadataEstimate
+        showDuplicates = false
+        if !duplicates.busy { duplicates.select(value, id: historyID) }
         if historyID == nil { remember(value) }
     }
 
     func navigate(_ id: Int) {
         guard snapshot?.entries[id].isDirectory == true else { selection = id; return }
+        showDuplicates = false
         folderID = id
         selection = nil
         query = ""
@@ -406,6 +487,16 @@ import AtlasCore
         notice = L10n.text("Скопировано")
     }
     func copyContext() {
+        if showDuplicates, let report = duplicates.report {
+            let groups = report.groups.prefix(30).map { group in
+                ["id": group.id, "copies": group.files.count, "repeatedLogicalBytes": group.repeatedBytes,
+                 "files": group.files.prefix(20).map(\.path)] as [String: Any]
+            }
+            let value: [String: Any] = ["app": "Disk Atlas", "roots": report.roots, "checkedAt": L10n.date(report.checkedAt), "groups": groups,
+                "totalGroups": report.groups.count, "partial": report.cancelled, "sourceFilesUnchanged": true]
+            if let data = try? JSONSerialization.data(withJSONObject: value, options: [.prettyPrinted,.sortedKeys]), let text = String(data: data, encoding: .utf8) { copy(text) }
+            return
+        }
         guard let snapshot, let folder else { return }
         let entries = rows.prefix(30).map { ["path": $0.path, "kind": $0.kind.rawValue, "bytes": size($0)] as [String: Any] }
         let value: [String: Any] = ["app": "Disk Atlas", "roots": snapshot.scanRoots, "folder": displayPath(folder),

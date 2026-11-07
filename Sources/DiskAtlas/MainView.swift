@@ -12,12 +12,13 @@ struct MainView: View {
             VStack(spacing: 0) {
                 if store.snapshot != nil {
                     HSplitView {
-                        workspace.frame(minWidth: 480)
-                        if store.inspectorVisible {
+                        Group { if store.showDuplicates { DuplicatesView(store: store, session: store.duplicates) } else { workspace } }.frame(minWidth: 480)
+                        if store.inspectorVisible && !store.showDuplicates {
                             Inspector(store: store).frame(minWidth: 210, idealWidth: 250, maxWidth: 380)
                         }
                     }
                 } else { welcome }
+                DuplicateActivity(store: store, session: store.duplicates)
                 footer
             }
         }
@@ -46,7 +47,29 @@ struct MainView: View {
     private var workspace: some View {
         VStack(alignment: .leading, spacing: 18) {
             heading
+            HStack(spacing: 8) {
+                Picker(L10n.text("Отображение"), selection: $store.largestFiles) {
+                    Text(L10n.text("Карта")).tag(false)
+                    Text(L10n.text("Крупные файлы")).tag(true)
+                }.pickerStyle(.segmented).labelsHidden().frame(width: 166)
+                Spacer(minLength: 0)
+                ViewFilterButton(store: store)
+                Picker(L10n.text("Размер"), selection: $store.logical) {
+                    Text(L10n.text("На диске")).tag(false)
+                    Text(L10n.text("Размер файлов")).tag(true)
+                }.pickerStyle(.segmented).labelsHidden().frame(width: 216)
+            }
+            if store.viewFiltersEnabled {
+                HStack {
+                    Label(L10n.text(store.viewFiltering ? "Применяем фильтр…" : "Фильтр вида"), systemImage: "line.3.horizontal.decrease.circle")
+                    Text("\(store.folder?.fileCount ?? 0) / \(store.snapshot?.entries[store.folderID].fileCount ?? 0) " + L10n.text("файлов"))
+                    if store.viewFiltering { ProgressView().controlSize(.mini) }
+                    Spacer()
+                    Button(L10n.text("Сбросить")) { store.viewFiltersEnabled = false }
+                }.font(.system(size: 10)).foregroundStyle(Palette.sub)
+            }
             if store.scanning { progressBanner }
+            if !store.largestFiles {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     SectionLabel(text: L10n.text("Карта папки"))
@@ -63,8 +86,10 @@ struct MainView: View {
                     }
                 }.lineLimit(1).id(store.language)
             }
+            }
             fileList
-        }.padding(24)
+        }.padding(24).opacity(store.viewFiltering ? 0.65 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: store.viewFiltering)
     }
 
     private var heading: some View {
@@ -75,10 +100,7 @@ struct MainView: View {
                     Text(store.folder.map(store.displayPath) ?? "").font(.system(size: 10, design: .monospaced)).foregroundStyle(Palette.sub).lineLimit(1).truncationMode(.middle).textSelection(.enabled)
                 }
                 Spacer()
-                Picker(L10n.text("Размер"), selection: $store.logical) {
-                    Text(L10n.text("На диске")).tag(false)
-                    Text(L10n.text("Размер файлов")).tag(true)
-                }.pickerStyle(.segmented).labelsHidden().frame(width: 216).help(L10n.text("Выделенные блоки или логический размер файлов"))
+
             }
             HStack(alignment: .firstTextBaseline, spacing: 29) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -125,21 +147,15 @@ struct MainView: View {
                 }.font(.system(size: 11)).padding(7).frame(width: 214)
                     .background(Palette.soft, in: RoundedRectangle(cornerRadius: 6))
             }.padding(.bottom, 11)
-            HStack(spacing: 0) {
-                Text(L10n.text("Имя"))
-                Spacer()
-                if showCreationDate { Text(L10n.text("Создан")).frame(width: 92, alignment: .leading).offset(x: 16) }
-                Text(L10n.text("Изменён")).frame(width: 92, alignment: .leading).offset(x: 16)
-                Text(L10n.text(store.logical ? "Размер ↓" : "На диске ↓")).frame(width: 100, alignment: .trailing)
-                Text(L10n.text("Доля")).frame(width: 65, alignment: .trailing)
-            }.font(.system(size: 10, weight: .medium)).foregroundStyle(Palette.sub).padding(.horizontal, 12).padding(.vertical, 9)
-            Divider().overlay(Palette.line)
             FileTable(rows: rows, logical: store.logical, folderBytes: store.folder.map(store.size) ?? 0,
                       revision: store.rowRevision, language: store.language,
                       showPaths: store.largestFiles || !store.query.isEmpty || !store.selectedKinds.isEmpty,
                       showCreationDate: showCreationDate,
+                      sort: store.sort, descending: store.sortDescending, sortBy: store.sortBy,
+                      duplicates: store.duplicates.snapshotCreated == store.snapshot?.created ? store.duplicates.lookup : nil,
+                      showDuplicates: store.showDuplicateGroup,
                       selection: $store.selection, open: store.activate, reveal: store.reveal, copyPath: store.copy)
-                .frame(minHeight: 130, idealHeight: 210, maxHeight: 245)
+                .frame(minHeight: store.largestFiles ? 260 : 130, idealHeight: store.largestFiles ? 600 : 210, maxHeight: store.largestFiles ? .infinity : 245)
                 .opacity(store.rowsLoading ? 0.5 : 1).disabled(store.rowsLoading)
                 .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: store.rowsLoading)
             if store.rowCount > 1000 {
@@ -165,6 +181,12 @@ struct MainView: View {
     }
 
     private var welcome: some View {
+        GeometryReader { geometry in
+            ScrollView { welcomeContent.frame(minHeight: geometry.size.height) }.scrollBounceBehavior(.basedOnSize)
+        }
+    }
+
+    private var welcomeContent: some View {
         VStack(alignment: .leading, spacing: 24) {
             Spacer()
             HStack(spacing: 12) {
@@ -197,11 +219,11 @@ struct MainView: View {
             Spacer()
             HStack(spacing: 25) {
                 Label(L10n.text("Без облака"), systemImage: "internaldrive")
-                Label(L10n.text("Только метаданные"), systemImage: "doc.text.magnifyingglass")
+                Label(L10n.text("Файлы не изменяются"), systemImage: "lock.shield")
                 Label("CLI + MCP", systemImage: "terminal")
             }.font(.system(size: 11)).foregroundStyle(Palette.sub).padding(.bottom, 32)
         }.frame(maxWidth: store.historyRecords.isEmpty || store.scanning ? 650 : 960, alignment: .leading).padding(.horizontal, 32)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity)
     }
 
     private var footer: some View {

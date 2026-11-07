@@ -1,5 +1,7 @@
 import Foundation
 
+public enum EntrySort: String, CaseIterable, Sendable { case name, created, modified, size, share }
+
 public struct KindTotal: Sendable, Identifiable {
     public var kind: FileKind
     public var bytes: Int64
@@ -50,7 +52,7 @@ public final class PresentationIndex: Sendable {
         self.traversal = traversal; self.ranges = ranges
 
         var a: [Int: [FileKind: Int64]] = [:], l: [Int: [FileKind: Int64]] = [:]
-        for entry in entries.reversed() {
+        for entry in entries.reversed() where entry.fileCount > 0 {
             guard let parent = entry.parent else { continue }
             if entry.isDirectory {
                 for (kind, bytes) in a[entry.id] ?? [:] { a[parent, default: [:]][kind, default: 0] += bytes }
@@ -76,23 +78,38 @@ public final class PresentationIndex: Sendable {
         rows(folder: folder, logical: logical, query: query, kinds: kind.map { [$0] } ?? [], filesOnly: filesOnly, limit: limit)
     }
 
-    public func rows(folder: Int, logical: Bool, query: String, kinds: Set<FileKind>, filesOnly: Bool, limit: Int = 1000) -> (entries: [Entry], count: Int) {
-        if query.isEmpty && kinds.isEmpty && !filesOnly {
+    public func rows(folder: Int, logical: Bool, query: String, kinds: Set<FileKind>, filesOnly: Bool, limit: Int = 1000, sort: EntrySort = .size, descending: Bool = true) -> (entries: [Entry], count: Int) {
+        if query.isEmpty && kinds.isEmpty && !filesOnly && (sort == .size || sort == .share) && descending {
             let ids = (logical ? logicalChildren[folder] : allocatedChildren[folder]) ?? []
             return (ids.prefix(limit).map { snapshot.entries[$0] }, ids.count)
         }
-        guard let range = ranges[folder] else { return ([], 0) }
+        let direct = query.isEmpty && kinds.isEmpty && !filesOnly
+        let candidates = direct ? ArraySlice((allocatedChildren[folder] ?? [])) : ranges[folder].map { traversal[$0] } ?? []
         // A bounded heap finds the top visible results without sorting millions
         // of descendants. DFS ranges avoid scanning unrelated branches.
         var heap: [Int] = []
         heap.reserveCapacity(limit)
         var count = 0
-        func worse(_ a: Int, _ b: Int) -> Bool {
-            let ea = snapshot.entries[a], eb = snapshot.entries[b]
-            let sa = logical ? ea.logicalBytes : ea.bytes, sb = logical ? eb.logicalBytes : eb.bytes
-            return sa == sb ? ea.path > eb.path : sa < sb
+        func before(_ a: Entry, _ b: Entry) -> Bool {
+            let order: ComparisonResult
+            switch sort {
+            case .name: order = a.name.localizedStandardCompare(b.name)
+            case .created:
+                if a.created == nil || b.created == nil {
+                    if (a.created == nil) != (b.created == nil) { return a.created != nil }
+                }
+                let x = a.created ?? .distantPast, y = b.created ?? .distantPast
+                order = x == y ? .orderedSame : x < y ? .orderedAscending : .orderedDescending
+            case .modified:
+                order = a.modified == b.modified ? .orderedSame : a.modified < b.modified ? .orderedAscending : .orderedDescending
+            case .size, .share:
+                let x = logical ? a.logicalBytes : a.bytes, y = logical ? b.logicalBytes : b.bytes
+                order = x == y ? .orderedSame : x < y ? .orderedAscending : .orderedDescending
+            }
+            return order == .orderedSame ? a.path < b.path : descending ? order == .orderedDescending : order == .orderedAscending
         }
-        for (offset, id) in traversal[range].enumerated() {
+        func worse(_ a: Int, _ b: Int) -> Bool { before(snapshot.entries[b], snapshot.entries[a]) }
+        for (offset, id) in candidates.enumerated() {
             if offset % 1024 == 0 && Task.isCancelled { break }
             let entry = snapshot.entries[id]
             if filesOnly && entry.isDirectory { continue }

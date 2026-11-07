@@ -6,7 +6,7 @@ body:
     id: version
     attributes:
       label: App version, macOS version and chip
-      placeholder: Disk Atlas 0.2.2, macOS 15, Apple Silicon
+      placeholder: Disk Atlas 0.3.0, macOS 15, Apple Silicon
     validations:
       required: true
   - type: textarea

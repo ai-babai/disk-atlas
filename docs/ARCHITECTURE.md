@@ -1,6 +1,6 @@
 ---
 type: Architecture Guide
-description: Components, data flow, performance boundaries and metadata-only security model of Disk Atlas.
+description: Components, data flow, performance boundaries and explicit content-reading boundary of Disk Atlas.
 created: "2026-11-07"
 ---
 # Architecture
@@ -37,12 +37,41 @@ Snapshots are observations over time, not atomic filesystem snapshots. macOS
 permissions can exclude protected directories. APFS clones and shared blocks mean
 allocated size is not a promise of reclaimable space.
 
+## Explicit duplicate checking
+
+`DuplicateFinder.prepare` refreshes metadata for files known to a scan and groups
+regular, locally available files by logical size. It does not read contents.
+Options constrain size and type; date criteria retain groups with at least one
+matching copy, including other-age peers. New paths need a fresh ordinary scan.
+
+Only `run` reads contents, after GUI Start, CLI `--read-contents`, or MCP
+`readContents: true`. Equal-size buckets first receive 64 KiB prefix/suffix
+samples; files up to 1 MiB receive a complete SHA-256 once. Only sample survivors
+are fully hashed, then same-hash files are compared byte by byte. Buffers are at
+most 1 MiB; reads bypass normal caching with `F_NOCACHE`. Files are opened with
+`openat` and `O_NOFOLLOW` on every path component; the final descriptor also uses
+`O_NONBLOCK`, and device/inode/size/mtime/ctime are checked before and after reads.
+Cloud-only placeholders and nonregular files are skipped. There is no atomic
+filesystem snapshot guarantee; reports are dated observations.
+
+`DuplicateSession` is a separate observable model. Worker progress and partial
+groups are batched, keeping updates out of the main map store. Pause and cancel
+checkpoints occur between read chunks. Foreground scanning/indexing temporarily
+pauses the background job. Confirmed groups survive stop as a partial report.
+A path-to-group lookup is built off the main thread for file-list badges. Keep
+marks affect reports only. No source-file cleanup action exists.
+
 ## Rendering and storage
 
 Scanning, snapshot decoding, compression and index construction run off the main
 thread. The immutable index caches both size orderings, descendant ranges and type
 totals. Filtered queries use a bounded top-K heap and cancellation checks. Only the
 first 1,000 matches render; the full match count remains visible.
+
+Size/date view filters construct a derived snapshot and index off the main thread;
+the saved snapshot remains unchanged. Native range controls preview locally while
+dragging and commit once on release. Table headers and cells share native column
+geometry, with a trailing gutter for percentages.
 
 Treemap work is bounded by visible tile count, geometry and nesting depth. Small
 objects are aggregated. The previous large index is retained through the visual
@@ -53,9 +82,12 @@ History stores lightweight records separately from LZFSE-compressed snapshots in
 are 0600. Opening history never rescans source folders. Normal app termination
 waits for an in-progress history write. History has no automatic pruning yet. Users can delete a snapshot or clear history
 after the configured confirmation. Cleanup unlinks only UUID-named app archives
-and the history manifest; source paths and exported snapshots are never targets.
+and UUID-named duplicate-report JSON sidecars plus the history manifest; source paths and exported snapshots are never targets.
 The scanner maintains a cheap running estimate of uncompressed metadata; history
-records report the exact compressed archive file size.
+records report compressed archive size plus the saved duplicate-report size.
+Duplicate reports are limited to 256 MiB on read/write, use mode 0600, and are
+removed together with the owning history record. Termination waits for writes;
+a running duplicate job is stopped and its partial result saved.
 
 ## Build and validation
 
@@ -66,3 +98,12 @@ and x86_64, combines executables, signs ad hoc and packages DMG/ZIP with checksu
 The initial release uses scratch validation outside the repository and manual UI
 checks. No committed test suite or CI is included. An Intel slice can be built on
 Apple Silicon, but this does not replace validation on physical Intel hardware.
+
+## 0.3.0 validation scope
+
+Scratch checks exercise unequal-size/sample pruning, same-edge/different-middle
+files, exact groups, date peers, hard links, symlink/path replacement, special
+files, pause/resume, cancellation, view totals, sorting, report permissions and
+history cleanup without source changes. Manual UI review covers EN/RU, both
+themes, minimum window size, native headers, filters and badge-to-group navigation.
+These checks are outside the repository; no durable test artifacts are added.

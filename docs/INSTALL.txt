@@ -13,7 +13,8 @@ https://support.apple.com/102445
 System Settings > Privacy & Security may offer Open Anyway after a launch attempt.
 Do not disable Gatekeeper globally.
 
-The app reads file metadata. It does not delete, move or execute scanned files.
+Ordinary scans read metadata. Duplicate checks read content only when explicitly
+started. The app does not delete, move or execute scanned files.
 Protected folders may require permissions from macOS; unavailable paths are listed.
 Scan history stays in ~/Library/Application Support/Disk Atlas/History.
 
@@ -31,6 +32,7 @@ https://support.apple.com/102445
 После попытки запуска в «Системные настройки > Конфиденциальность и безопасность»
 может появиться «Всё равно открыть». Не отключай Gatekeeper целиком.
 
-Приложение читает метаданные, не удаляет, не перемещает и не запускает файлы.
+Обычный анализ читает метаданные. Проверка дубликатов читает содержимое только
+после отдельного запуска. Приложение не удаляет, не перемещает и не запускает файлы.
 Недоступные папки видны в списке пропусков. История хранится локально:
 ~/Library/Application Support/Disk Atlas/History.

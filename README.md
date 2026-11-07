@@ -23,7 +23,9 @@ start the scan. Explore the treemap, follow the largest folders, filter by type
 or find an item by name. Open an earlier scan whenever you need to return to it.
 
 - **A map and a real file list.** Allocated or logical sizes, scoped search,
-  largest files, creation/modification dates and a focused inspector.
+  largest files, sortable dates and sizes, size/date view filters and a focused inspector.
+- **Duplicates, on your terms.** An explicit background check, a cost estimate first,
+  pause/stop controls and one-click access to confirmed copies from the file list.
 - **Your scope, your choice.** Multiple folders, drag and drop, common locations,
   overlap detection and no scan until you press Analyze.
 - **History that remembers.** Local compressed results, dates and sizes; opening
@@ -36,7 +38,7 @@ or find an item by name. Open an earlier scan whenever you need to return to it.
 ## Download & install
 
 1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Download **Disk-Atlas-0.2.2-universal.dmg**. The same app supports Apple Silicon
+2. Download **Disk-Atlas-0.3.0-universal.dmg**. The same app supports Apple Silicon
    and Intel Macs running **macOS 14 Sonoma or later**.
 3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
    then launch the app from Applications. A ZIP is also available.
@@ -71,12 +73,46 @@ shasum -a 256 -c SHA256SUMS.txt
 | ⌘B / ⌥⌘I | Toggle navigation / inspector |
 | ⇧⌘C | Copy the current scope as agent-friendly JSON |
 
+Choose **Map / Largest files** inside **Disk usage**. Click a column heading to sort
+by name, creation date, modification date, size or share; click again to reverse.
+The size/date filter beside the size selector affects both the map and list,
+without changing the saved scan. Its two-handle slider supports presets and exact
+bounds. Size criteria always use logical file bytes. Reset restores the full scan.
+
 The list renders up to 1,000 matches and shows the total count. Search and type
 filters affect the list; the map keeps showing the whole current folder. Click any
 part of a file-type row to toggle it. Several types can be selected together;
 **All** or the compact filter badge clears the selection. Search narrows the selected types. Missing
 creation dates are omitted from the inspector, and the column hides when no
 visible row has that date. Dates describe the time of the scan, not live changes.
+
+## Check duplicates when you need them
+
+Duplicate checking is **off by default** and separate from the storage map.
+
+1. Optionally select **Find duplicates** before scanning, or open **Duplicates** later.
+2. Review candidates, estimated read volume and a rough time range. Choose All,
+   Large or Small files; adjust the size range, modification date or file types in **Options**.
+3. Press **Start check** explicitly. The map remains usable while the lower status
+   strip shows the phase, progress and pause/stop controls.
+4. Expand a group to compare locations and reveal a copy in Finder. A small copies
+   icon beside a known file opens its exact group, without checking again.
+
+![Compact duplicate groups with locations, copy counts and expandable files](docs/images/duplicates-en.png)
+
+Different sizes are never compared. The checker samples the first and last 64 KiB,
+fully hashes only surviving candidates with SHA-256, then confirms matches byte by
+byte. Files up to 1 MiB use one full hash instead of an extra sampling pass.
+Hard-link aliases count once; symlinks, special files and cloud-only placeholders
+are skipped. Changed or replaced files are rejected.
+
+Time estimates are broad planning ranges, not benchmarks: drive speed, file count
+and matching content affect the result. Date criteria find groups with at least
+one matching copy, including newer peers for comparison. A check uses files known
+to the source scan; rescan to include newly added files. Results carry their check
+date and can become stale. Stopping preserves confirmed groups as a partial report.
+**Keep** is only a report mark; no source-file deletion is implemented. Repeated
+logical bytes are not guaranteed reclaimable APFS space.
 
 ## For agents
 
@@ -87,6 +123,10 @@ ATLAS="/Applications/Disk Atlas.app/Contents/MacOS/disk-atlas"
 "$ATLAS" scan "$HOME/Downloads" "$HOME/Desktop" --json --output /tmp/scan.atlas
 "$ATLAS" inspect /tmp/scan.atlas --files --limit 20
 "$ATLAS" show /tmp/scan.atlas
+# Metadata estimate only; no content reading:
+"$ATLAS" duplicates "$HOME/Downloads" --min-bytes 100000000
+# Separately authorize content reading and save a new report:
+"$ATLAS" duplicates "$HOME/Downloads" --read-contents --output /tmp/duplicates.json
 ```
 
 MCP client configuration:
@@ -104,7 +144,11 @@ MCP client configuration:
 
 Tools: `scan_directory` (`path` or `paths`, optional `output`),
 `inspect_snapshot` (`snapshot`, optional `path`, `files`, `limit`) and
-`show_snapshot` (`snapshot`). Sizes in JSON are bytes. `inspect` returns 1–500
+`show_snapshot` (`snapshot`), plus `plan_duplicates` (metadata only) and
+`find_duplicates` (requires explicit `readContents: true`). Duplicate tools take
+`paths`, optional `minimumBytes`, `maximumBytes`, ISO 8601 `modifiedAfter` /
+`modifiedBefore` and `kinds`. CLI equivalents are `--min-bytes`, `--max-bytes`,
+`--modified-after`, `--modified-before` and `--types`. Sizes in JSON are bytes. `inspect` returns 1–500
 items, 50 by default. Existing snapshot files are never overwritten by CLI/MCP.
 Errors are structured JSON on stderr with exit code 1.
 
@@ -114,7 +158,8 @@ button copies configuration using the app’s actual installation path.
 
 ## Local by design
 
-The scanner reads **metadata**, includes hidden files and application packages,
+Ordinary scans and duplicate preparation read **metadata**. Only the separate
+duplicate-check action reads file contents, locally. The scanner includes hidden files and application packages,
 does not follow symlinks, and counts hard links once across selected roots. It
 has no deletion, moving, content execution, networking or privilege escalation
 operations. Protected directories can be skipped and appear in the issue list.
@@ -128,18 +173,18 @@ operations. Protected directories can be skipped and appear in the issue list.
 
 **Snapshot size** appears in scan progress as an approximate uncompressed metadata
 size, then in the status bar as the exact compressed file size. Recent scans are visible on the start screen. Every history row shows the
-compressed snapshot size and a delete button; the history window also shows total
+snapshot size, including its saved duplicate report, and a delete button; the history window also shows total
 local storage used.
 
 <img src="docs/images/history-en.png" width="440" alt="Scan history with snapshot sizes, deletion buttons and confirmation preference">
 
 History is stored in `~/Library/Application Support/Disk Atlas/History`, compressed
-with LZFSE. The directory uses mode 0700 and files use 0600. Old history is not
+with LZFSE; duplicate reports are separate JSON metadata files. The directory uses mode 0700 and files use 0600. Old history is not
 pruned automatically. Delete one scan with its trash button or context menu, or use **Clear history**
-to remove all app-owned snapshots and metadata. A confirmation includes **Don’t ask
+to remove all app-owned snapshots and metadata, including duplicate reports. A confirmation includes **Don’t ask
 again**; turn confirmations back on in the history window. Deleting history never
 deletes source files or separately exported snapshots. GUI history and requested exports are local writes; scanned
-source files remain untouched. Exported snapshots contain **private paths and names**:
+source files remain untouched. Exported snapshots and duplicate reports contain **private paths and names**:
 review them before sharing. Imports validate structure and totals, up to 2 GiB.
 
 ## Build from source

@@ -7,7 +7,7 @@ struct HistoryRow: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var highlighted: Bool { store.activeHistoryID == record.id || store.loadingHistoryID == record.id }
     private var helpText: String {
-        let size = record.archiveBytes.map(byteString) ?? "—"
+        let size = record.storedBytes.map(byteString) ?? "—"
         return record.roots.joined(separator: "\n") + "\n" + L10n.date(record.created) + "\n" + L10n.text("Снимок") + ": " + size
     }
     var body: some View {
@@ -31,7 +31,7 @@ struct HistoryRow: View {
                     HStack(alignment: .firstTextBaseline, spacing: 5) {
                         Text(store.historyTitle(record)).font(.system(size: 11, weight: highlighted ? .semibold : .medium)).lineLimit(1).truncationMode(.middle)
                         Spacer(minLength: 0)
-                        if let bytes = record.archiveBytes {
+                        if let bytes = record.storedBytes {
                             Text(byteString(bytes)).font(.system(size: 9)).monospacedDigit().foregroundStyle(Palette.sub).fixedSize()
                         }
                     }.frame(height: 16, alignment: .top)

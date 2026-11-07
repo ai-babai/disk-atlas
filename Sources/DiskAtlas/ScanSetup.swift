@@ -60,6 +60,15 @@ struct ScanSetup: View {
                 }
                 return true
             }
+            VStack(alignment: .leading, spacing: 7) {
+                Toggle(L10n.text("Найти дубликаты"), isOn: $store.prepareDuplicateSearch)
+                    .font(.system(size: 11)).disabled(store.duplicates.busy)
+                if store.prepareDuplicateSearch {
+                    Text(L10n.text("Долгая проверка содержимого. Сначала — оценка времени."))
+                        .font(.system(size: 10)).foregroundStyle(Palette.sub).fixedSize(horizontal: false, vertical: true)
+                    DuplicateStartOptions(session: store.duplicates)
+                }
+            }
             HStack(spacing: 16) {
                 Button(L10n.text("Анализировать"), systemImage: "chart.pie") { store.analyzeSelection() }
                     .buttonStyle(.borderedProminent).controlSize(.large)
@@ -89,5 +98,13 @@ struct ScanSetup: View {
             Button { store.pendingPaths.removeAll { $0 == path } } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(Palette.sub) }
                 .buttonStyle(.plain).help(L10n.text("Убрать из анализа")).accessibilityLabel(L10n.text("Убрать \(path) из анализа"))
         }.padding(9).background(Palette.paper, in: RoundedRectangle(cornerRadius: 6))
+    }
+}
+
+private struct DuplicateStartOptions: View {
+    @ObservedObject var session: DuplicateSession
+    var body: some View {
+        DisclosureGroup(L10n.text("Размер и дата")) { FileCriteria(options: $session.options).frame(maxWidth: 420).padding(.top, 12) }
+            .font(.system(size: 11)).disabled(session.busy)
     }
 }
