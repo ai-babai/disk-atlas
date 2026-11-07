@@ -43,7 +43,7 @@ remembered after resizing, hiding and returning from Home.
 ## Download & install
 
 1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Download **Disk-Atlas-0.9.1-universal.dmg**. The same app supports Apple Silicon
+2. Download **Disk-Atlas-0.10.0-universal.dmg**. The same app supports Apple Silicon
    and Intel Macs running **macOS 14 Sonoma or later**.
 3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
    then launch the app from Applications. A ZIP is also available.
@@ -80,9 +80,13 @@ shasum -a 256 -c SHA256SUMS.txt
 | ⌘B / ⌥⌘I | Toggle navigation / inspector |
 | ⇧⌘C | Copy the current scope as agent-friendly JSON |
 
-Choose **Map / Largest files** inside **Disk usage**. Click a column heading to sort
+The folder map stays visible in **Disk usage**. Use **Contents / Largest files**
+directly above the list to switch between immediate contents and files throughout
+the current folder. Search, type filters and selection stay in place. Selecting a
+row outlines its location on the map, or the nearest visible containing folder or
+grouped area, without changing the map scale. Click a column heading to sort
 by name, creation date, modification date, size or share; click again to reverse.
-The **Filters** button beside the view modes affects both the map and list,
+The **Filters** button above the map affects both the map and list,
 without changing the saved scan. Its two-handle slider supports presets and exact
 bounds. Size criteria always use logical file bytes. Reset restores the full scan.
 

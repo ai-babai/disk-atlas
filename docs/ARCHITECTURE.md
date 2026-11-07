@@ -128,6 +128,22 @@ the scroll destination, including header insets, before the short animation. Agg
 tiles are inert. Inspector content is constrained to its viewport width so long
 paths cannot stretch or shift the panel.
 
+The map remains above the file list in both Contents and Largest files modes.
+The segmented control sits with the list count and search, making its scope local;
+it changes the existing row query without navigating or replacing the index.
+The table viewport depends on window height, not mode or result count; fixed count
+and status slots avoid shifting the map when only rows change. Narrow controls
+wrap before the table. This follows [Apple’s segmented-control grouping guidance](https://developer.apple.com/design/human-interface-guidelines/segmented-controls)
+and linked selection exemplified by [GrandPerspective](https://grandperspectiv.sourceforge.net/HelpDocumentation/NavigatingViews.html).
+
+List-to-map highlighting follows snapshot parent IDs rather than path prefixes.
+Only the selected branch is laid out, using the same child limits, depth and visible
+interiors as painting. Stop at an exactly selected folder; otherwise outline the
+deepest visible object, its nearest visible ancestor or an existing aggregate tile.
+A zero-area file does not invent an aggregate area. Selection never changes scale,
+current folder or filters. Core tests cover ancestry and scope boundaries; isolated
+native QA checks exact nested rectangles, aggregates, deep fallback and mode state.
+
 File tables and expanded duplicate groups use SwiftUI's native Quick Look panel.
 Only an explicit Space/context-menu/eye action supplies a selected file URL;
 no contents are prefetched or embedded in snapshots. Preview item collections are

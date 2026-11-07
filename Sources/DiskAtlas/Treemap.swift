@@ -111,6 +111,12 @@ private struct TreemapSurface: View, Equatable {
                 index.children(of: folder, logical: logical, limit: 60), logical: logical,
                 in: CGRect(origin: .zero, size: geometry.size), totalCount: entry.children.count,
                 totalBytes: logical ? entry.logicalBytes : entry.bytes)
+            let ancestors = index.mapSelectionAncestors(selection, within: folder)
+            let hasArea =
+                selection.map {
+                    logical ? index.snapshot.entries[$0].logicalBytes > 0 : index.snapshot.entries[$0].bytes > 0
+                } ?? false
+            let focused = MapSelectionGeometry.target(tiles, ancestors: ancestors, hasArea: hasArea)?.id
             ZStack(alignment: .topLeading) {
                 Palette.soft
                 if tiles.isEmpty {
@@ -121,7 +127,7 @@ private struct TreemapSurface: View, Equatable {
                 ForEach(tiles) { tile in
                     TreemapTile(
                         tile: tile, index: index, logical: logical, language: language,
-                        selection: selectionInside(tile), store: store
+                        selection: focused == tile.id ? selection : nil, store: store
                     ).equatable().frame(width: max(0, tile.rect.width - 3), height: max(0, tile.rect.height - 3))
                         .position(x: tile.rect.midX, y: tile.rect.midY)
                 }
@@ -138,12 +144,7 @@ private struct TreemapSurface: View, Equatable {
                 })
         }
     }
-    private func selectionInside(_ tile: MapTile) -> Int? {
-        guard tile.id >= 0, let selection else { return nil }
-        if selection == tile.id { return selection }
-        let entry = index.snapshot.entries[tile.id]
-        return entry.isDirectory && index.snapshot.entries[selection].path.hasPrefix(entry.path + "/") ? selection : nil
-    }
+
 }
 
 private struct TreemapTile: View, Equatable {
@@ -156,7 +157,8 @@ private struct TreemapTile: View, Equatable {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var entry: Entry? { tile.id >= 0 ? index.snapshot.entries[tile.id] : nil }
     private var isFolder: Bool { entry?.isDirectory == true }
-    private var selected: Bool { selection == tile.id }
+    private var showsChildren: Bool { isFolder && tile.rect.width > 60 && tile.rect.height > 66 }
+    private var selected: Bool { selection != nil && (selection == tile.id || !showsChildren) }
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.tile == rhs.tile && lhs.index === rhs.index && lhs.logical == rhs.logical && lhs.language == rhs.language
@@ -175,9 +177,10 @@ private struct TreemapTile: View, Equatable {
         ZStack(alignment: .topLeading) {
             RoundedRectangle(cornerRadius: 5).fill(
                 isFolder ? Palette.mark : (entry?.kind.tint ?? FileKind.other.tint).opacity(0.68))
-            if isFolder, let entry, tile.rect.width > 60, tile.rect.height > 66 {
+            if showsChildren, let entry {
                 NestedMapArtwork(
-                    index: index, parent: entry.id, logical: logical, language: language, selection: selection
+                    index: index, parent: entry.id, logical: logical, language: language,
+                    selection: selected ? nil : selection
                 ).equatable().allowsHitTesting(false)
             }
             if tile.rect.width > 45 && tile.rect.height > 28 { label }
@@ -253,6 +256,16 @@ private struct NestedMapArtwork: View, Equatable {
         Canvas(rendersAsynchronously: true) { context, size in
             let interior = CGRect(x: 5, y: 40, width: max(0, size.width - 10), height: max(0, size.height - 45))
             paintChildren(snapshot: index.snapshot, parent: parent, bounds: interior, depth: 0, context: &context)
+            if let selection {
+                let node = index.snapshot.entries[selection]
+                let rect =
+                    MapSelectionGeometry.highlight(
+                        index: index, parent: parent, selection: selection, logical: logical,
+                        ancestors: index.mapSelectionAncestors(selection, within: parent),
+                        hasArea: logical ? node.logicalBytes > 0 : node.bytes > 0, bounds: interior)
+                    ?? CGRect(origin: .zero, size: size).insetBy(dx: 2, dy: 2)
+                context.stroke(Path(roundedRect: rect, cornerRadius: 2), with: .color(Palette.ink), lineWidth: 2)
+            }
         }
     }
     private func paintChildren(
@@ -279,11 +292,6 @@ private struct NestedMapArtwork: View, Equatable {
             if let childBounds = NestedMapGeometry.childBounds(rect, entry: node, depth: depth), let node {
                 paintChildren(
                     snapshot: snapshot, parent: node.id, bounds: childBounds, depth: depth + 1, context: &context)
-            }
-            if tile.id == selection {
-                context.stroke(
-                    Path(roundedRect: rect.insetBy(dx: 1, dy: 1), cornerRadius: 2), with: .color(Palette.ink),
-                    lineWidth: 2)
             }
         }
     }

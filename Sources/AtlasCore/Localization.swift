@@ -291,7 +291,7 @@ public enum L10n {
         "Размер": "Size", "Выделенные блоки или логический размер файлов": "Allocated blocks or logical file size",
         "размер файлов в папке": "file size in this folder", "занято файлами в папке": "used by files in this folder",
         "файлов": "files", "свободно на томе при сканировании": "available on volume at scan time",
-        "Содержимое": "Contents", "Найти файл или папку": "Find a file or folder",
+        "Список файлов": "File list", "Содержимое": "Contents", "Найти файл или папку": "Find a file or folder",
         "Поиск по имени в текущей папке и вложенных папках": "Search by name in this folder and its subfolders",
         "Имя": "Name", "Размер ↓": "Size ↓", "На диске ↓": "On disk ↓", "Доля": "Share",
         "Первые 1 000 объектов. Уточни поиск для остальных.":

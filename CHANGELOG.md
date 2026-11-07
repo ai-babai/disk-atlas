@@ -5,6 +5,13 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.10.0 — 2026-11-08
+
+- Keep the folder map visible in both list modes. Place Contents / Largest files directly above the table; switch only its rows while preserving folder, search, type filters and selection.
+- Link list selection to the deepest visible map rectangle, with a containing-folder or grouped-area outline when the exact file is too small to draw. Keep the current map scale and navigation unchanged.
+- Keep the map geometry stable across list-mode changes and adapt list controls to narrow windows.
+- Add ancestry regression checks and verify nested selection geometry with an isolated native UI fixture.
+
 ## 0.9.1 — 2026-11-07
 
 - Fix inspector resizing that could leave content outside the viewport. Pin each SwiftUI host to all four edges of an AppKit split-item container.
