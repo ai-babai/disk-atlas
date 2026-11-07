@@ -39,15 +39,6 @@
       "start": 126
     },
     {
-      "bodyHash": "534fe6ce54c455606c3c34170f1a05aaba0b7970a8653559b461259f09ed2464",
-      "cognitive": 13,
-      "cyclomatic": 13,
-      "end": 229,
-      "file": "Sources/AtlasCLI/main.swift",
-      "identity": ".serveMCP()",
-      "start": 173
-    },
-    {
       "bodyHash": "2cfd4c849e2e346e7c2fa98aad096bb9bc6368c4af682fffce55da79470563c7",
       "cognitive": 20,
       "cyclomatic": 17,

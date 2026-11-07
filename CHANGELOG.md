@@ -11,7 +11,7 @@ created: "2026-11-07"
 - Replace the ambiguous ellipsis with a drive icon and Size menu.
 - Add one contributor quality command, opt-in pre-push hook and matching pinned-toolchain CI.
 - Add behavior/property tests, LLVM changed-Core coverage/CRAP checks, structural complexity and target/layer dependency checks, selected mutation tests and explicit frozen legacy debt.
-- Apply consistent Swift formatting and split the modified duplicate-results body into cohesive sections.
+- Apply consistent Swift formatting and split the modified duplicate-results body and MCP handler into cohesive responsibilities.
 
 ## 0.3.1 — 2026-11-07
 
