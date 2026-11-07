@@ -19,6 +19,7 @@ jobs:
         run: |
           atlas_xcode=$(python3 -c 'import json; print(json.load(open("quality/policy.json"))["xcode"])')
           export DEVELOPER_DIR="/Applications/Xcode_${atlas_xcode}.app/Contents/Developer"
+          export PATH="/usr/bin:$PATH" # use the selected Xcode's Python/Swift shims
           scripts/check.sh --base "$QUALITY_BASE"
       - name: Upload the audit and mutation logs
         if: always()

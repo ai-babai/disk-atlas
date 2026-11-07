@@ -20,6 +20,8 @@ It downloads only exact, SHA-256-verified macOS wheels from PyPI using
 [requirements.txt](../quality/requirements.txt); all transitive dependencies are pinned.
 The environment is reused until the requirements or Python version change. Build and
 release commands need only the standard library and Xcode, not those lint packages.
+CI puts `/usr/bin` first so the selected Xcode supplies Python/Swift rather than a
+runner's independently updated Homebrew Python. The same version guard still applies.
 Versions and thresholds are committed in [policy.json](../quality/policy.json).
 
 Fix formatting with `scripts/format.sh`. For another comparison base, use

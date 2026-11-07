@@ -18,6 +18,8 @@ scripts/check.sh       # тот же запуск локально, в hook и G
 [requirements.txt](../quality/requirements.txt), включая транзитивные зависимости.
 Окружение переиспользуется до изменения списка пакетов или версии Python.
 Сборке и упаковке эти пакеты не нужны: достаточно stdlib и Xcode.
+В CI `/usr/bin` стоит первым: используются Python/Swift выбранного Xcode,
+а не независимо обновляемый Homebrew Python runner. Проверка версии остаётся общей.
 Формат исправляется через `scripts/format.sh`. База сравнения — merge base с
 `origin/main`, явно: `scripts/check.sh --base <commit>`.
 
