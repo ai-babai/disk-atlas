@@ -1,6 +1,6 @@
-import SwiftUI
 import AppKit
 import AtlasCore
+import SwiftUI
 
 /// Native, virtualized rows with the app palette. Selection does not rebuild cells.
 struct FileTable: NSViewRepresentable {
@@ -44,7 +44,8 @@ struct FileTable: NSViewRepresentable {
         table.target = context.coordinator
         table.doubleAction = #selector(Coordinator.openRow)
         table.returnAction = { [weak coordinator = context.coordinator] in coordinator?.openRow() }
-        for (name, width) in [("name", 260.0), ("created", 92.0), ("modified", 92.0), ("size", 100.0), ("share", 65.0)] {
+        for (name, width) in [("name", 260.0), ("created", 92.0), ("modified", 92.0), ("size", 100.0), ("share", 65.0)]
+        {
             let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier(name))
             column.width = width
             column.minWidth = name == "name" ? 80 : width
@@ -73,10 +74,14 @@ struct FileTable: NSViewRepresentable {
         scroll.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
         table.backgroundColor = NSColor(Palette.paper)
         table.rowHeight = showPaths ? 43 : 33
-        let titles = ["name": "Имя", "created": "Создан", "modified": "Изменён", "size": logical ? "Размер" : "На диске", "share": "Доля"]
+        let titles = [
+            "name": "Имя", "created": "Создан", "modified": "Изменён", "size": logical ? "Размер" : "На диске",
+            "share": "Доля",
+        ]
         for column in table.tableColumns {
             let key = column.identifier.rawValue
-            column.headerCell.stringValue = L10n.text(titles[key] ?? key) + (key == sort.rawValue ? descending ? " ↓" : " ↑" : "")
+            column.headerCell.stringValue =
+                L10n.text(titles[key] ?? key) + (key == sort.rawValue ? descending ? " ↓" : " ↑" : "")
             column.headerCell.font = .systemFont(ofSize: 10, weight: .medium)
             column.headerCell.alignment = key == "size" || key == "share" ? .right : .left
             if let header = column.headerCell as? AtlasHeaderCell { header.color = NSColor(Palette.sub) }
@@ -84,7 +89,9 @@ struct FileTable: NSViewRepresentable {
         table.headerView?.needsDisplay = true
         table.tableColumns.first { $0.identifier.rawValue == "created" }?.isHidden = !showCreationDate
         scroll.needsLayout = true
-        if coordinator.revision != revision || coordinator.language != language || coordinator.logical != logical || coordinator.showPaths != showPaths || coordinator.duplicateID != duplicates?.id {
+        if coordinator.revision != revision || coordinator.language != language || coordinator.logical != logical
+            || coordinator.showPaths != showPaths || coordinator.duplicateID != duplicates?.id
+        {
             coordinator.duplicateID = duplicates?.id
             coordinator.revision = revision
             coordinator.language = language
@@ -123,7 +130,9 @@ struct FileTable: NSViewRepresentable {
         init(_ parent: FileTable) { self.parent = parent }
         func numberOfRows(in tableView: NSTableView) -> Int { parent.rows.count }
         func tableView(_ tableView: NSTableView, sortDescriptorsDidChange oldDescriptors: [NSSortDescriptor]) {
-            if let key = tableView.sortDescriptors.first?.key, let field = EntrySort(rawValue: key) { parent.sortBy(field) }
+            if let key = tableView.sortDescriptors.first?.key, let field = EntrySort(rawValue: key) {
+                parent.sortBy(field)
+            }
         }
         func tableView(_ tableView: NSTableView, rowViewForRow row: Int) -> NSTableRowView? { AtlasRowView() }
         func tableViewSelectionDidChange(_ notification: Notification) {
@@ -134,7 +143,8 @@ struct FileTable: NSViewRepresentable {
         func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
             guard row < parent.rows.count, let key = tableColumn?.identifier else { return nil }
             let entry = parent.rows[row]
-            let cell = (tableView.makeView(withIdentifier: key, owner: self) as? AtlasCell) ?? AtlasCell(identifier: key)
+            let cell =
+                (tableView.makeView(withIdentifier: key, owner: self) as? AtlasCell) ?? AtlasCell(identifier: key)
             let bytes = parent.logical ? entry.logicalBytes : entry.bytes
             switch key.rawValue {
             case "name":
@@ -146,7 +156,8 @@ struct FileTable: NSViewRepresentable {
                 let groupID = parent.duplicates?.byPath[entry.path]
                 cell.duplicateButton.isHidden = groupID == nil
                 cell.duplicateAction = { [weak self] in self?.parent.showDuplicates(entry.path) }
-                cell.duplicateButton.toolTip = L10n.text("Показать все копии") + " · " + (parent.duplicates.map { L10n.date($0.checkedAt) } ?? "")
+                cell.duplicateButton.toolTip =
+                    L10n.text("Показать все копии") + " · " + (parent.duplicates.map { L10n.date($0.checkedAt) } ?? "")
                 cell.duplicateButton.setAccessibilityLabel(L10n.text("Дубликаты") + ": " + entry.name)
             case "size": cell.title.stringValue = byteString(bytes)
             case "created", "modified":
@@ -156,7 +167,8 @@ struct FileTable: NSViewRepresentable {
             default:
                 let share = Double(bytes) / Double(max(1, parent.folderBytes)) * 100
                 let number = String(format: "%.1f", share)
-                cell.title.stringValue = (parent.language == "ru" ? number.replacingOccurrences(of: ".", with: ",") : number) + "%"
+                cell.title.stringValue =
+                    (parent.language == "ru" ? number.replacingOccurrences(of: ".", with: ",") : number) + "%"
             }
             cell.setAccessibilityLabel(cell.title.stringValue)
             cell.needsLayout = true
@@ -179,7 +191,8 @@ struct FileTable: NSViewRepresentable {
         }
         private func add(_ menu: NSMenu, _ title: String, _ selector: Selector) {
             let item = NSMenuItem(title: title, action: selector, keyEquivalent: "")
-            item.target = self; menu.addItem(item)
+            item.target = self
+            menu.addItem(item)
         }
         @objc private func revealRow() {
             guard let table, table.selectedRow >= 0 else { return }
@@ -196,29 +209,44 @@ private final class AtlasHeaderCell: NSTableHeaderCell {
     var press: (() -> Void)?
     var color = NSColor.secondaryLabelColor
     override func drawInterior(withFrame cellFrame: NSRect, in controlView: NSView) {
-        let paragraph = NSMutableParagraphStyle(); paragraph.alignment = alignment; paragraph.lineBreakMode = .byTruncatingTail
-        let attributes: [NSAttributedString.Key: Any] = [.font: font ?? NSFont.systemFont(ofSize: 10), .foregroundColor: color, .paragraphStyle: paragraph]
-        (stringValue as NSString).draw(in: NSRect(x: cellFrame.minX, y: cellFrame.midY - 6, width: cellFrame.width, height: 15), withAttributes: attributes)
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = alignment
+        paragraph.lineBreakMode = .byTruncatingTail
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font ?? NSFont.systemFont(ofSize: 10), .foregroundColor: color, .paragraphStyle: paragraph,
+        ]
+        (stringValue as NSString).draw(
+            in: NSRect(x: cellFrame.minX, y: cellFrame.midY - 6, width: cellFrame.width, height: 15),
+            withAttributes: attributes)
     }
-    override func accessibilityPerformPress() -> Bool { press?(); return true }
+    override func accessibilityPerformPress() -> Bool {
+        press?()
+        return true
+    }
 }
 
 private final class AtlasHeaderView: NSTableHeaderView {
     override func draw(_ dirtyRect: NSRect) {
-        NSColor(Palette.paper).setFill(); dirtyRect.fill()
+        NSColor(Palette.paper).setFill()
+        dirtyRect.fill()
         guard let tableView else { return }
         for (index, column) in tableView.tableColumns.enumerated() where !column.isHidden {
             let rect = headerRect(ofColumn: index)
             let name = column.identifier.rawValue
-            column.headerCell.drawInterior(withFrame: NSRect(x: rect.minX + (name == "name" ? 12 : 4), y: rect.minY,
-                width: max(0, rect.width - (name == "name" ? 24 : 15)), height: rect.height), in: self)
+            column.headerCell.drawInterior(
+                withFrame: NSRect(
+                    x: rect.minX + (name == "name" ? 12 : 4), y: rect.minY,
+                    width: max(0, rect.width - (name == "name" ? 24 : 15)), height: rect.height), in: self)
         }
-        NSColor(Palette.line).setFill(); NSRect(x: bounds.minX, y: bounds.maxY - 1, width: bounds.width, height: 1).fill()
+        NSColor(Palette.line).setFill()
+        NSRect(x: bounds.minX, y: bounds.maxY - 1, width: bounds.width, height: 1).fill()
     }
     override func mouseDown(with event: NSEvent) {
         guard let tableView else { return }
         let column = column(at: convert(event.locationInWindow, from: nil))
-        if column >= 0, column < tableView.tableColumns.count { (tableView.tableColumns[column].headerCell as? AtlasHeaderCell)?.press?() }
+        if column >= 0, column < tableView.tableColumns.count {
+            (tableView.tableColumns[column].headerCell as? AtlasHeaderCell)?.press?()
+        }
     }
 }
 
@@ -246,7 +274,8 @@ private final class AtlasTableView: NSTableView {
 
 private final class AtlasRowView: NSTableRowView {
     override func drawBackground(in dirtyRect: NSRect) {
-        NSColor(Palette.paper).setFill(); dirtyRect.fill()
+        NSColor(Palette.paper).setFill()
+        dirtyRect.fill()
     }
     override func drawSelection(in dirtyRect: NSRect) {
         guard isSelected else { return }
@@ -269,7 +298,10 @@ private final class AtlasCell: NSTableCellView {
         isDate = identifier.rawValue == "created" || identifier.rawValue == "modified"
         super.init(frame: .zero)
         self.identifier = identifier
-        title.font = isName ? .systemFont(ofSize: 12, weight: .medium) : .monospacedDigitSystemFont(ofSize: isDate ? 10 : 11, weight: .regular)
+        title.font =
+            isName
+            ? .systemFont(ofSize: 12, weight: .medium)
+            : .monospacedDigitSystemFont(ofSize: isDate ? 10 : 11, weight: .regular)
         title.textColor = NSColor(isDate ? Palette.sub : Palette.ink)
         title.lineBreakMode = .byTruncatingTail
         title.alignment = isName || isDate ? .left : .right
@@ -278,12 +310,16 @@ private final class AtlasCell: NSTableCellView {
         subtitle.lineBreakMode = .byTruncatingMiddle
         addSubview(title)
         if isName {
-            addSubview(icon); addSubview(subtitle)
+            addSubview(icon)
+            addSubview(subtitle)
             duplicateButton.image = NSImage(systemSymbolName: "doc.on.doc", accessibilityDescription: nil)
-            duplicateButton.isBordered = false; duplicateButton.imagePosition = .imageOnly
+            duplicateButton.isBordered = false
+            duplicateButton.imagePosition = .imageOnly
             duplicateButton.contentTintColor = NSColor(Palette.accent)
-            duplicateButton.target = self; duplicateButton.action = #selector(showCopies)
-            duplicateButton.isHidden = true; addSubview(duplicateButton)
+            duplicateButton.target = self
+            duplicateButton.action = #selector(showCopies)
+            duplicateButton.isHidden = true
+            addSubview(duplicateButton)
         }
         textField = title
         setAccessibilityElement(true)
@@ -300,9 +336,17 @@ private final class AtlasCell: NSTableCellView {
             icon.frame = NSRect(x: 9, y: (bounds.height - 16) / 2, width: 16, height: 16)
             let hasSubtitle = !subtitle.stringValue.isEmpty
             let available = max(0, bounds.width - 42 - (duplicateButton.isHidden ? 0 : 28))
-            let titleWidth = duplicateButton.isHidden ? available : min(available, ceil((title.stringValue as NSString).size(withAttributes: [.font: title.font!]).width) + 8)
-            title.frame = NSRect(x: 34, y: hasSubtitle ? bounds.height / 2 : (bounds.height - 17) / 2, width: titleWidth, height: 17)
-            duplicateButton.frame = NSRect(x: 38 + titleWidth, y: hasSubtitle ? bounds.height / 2 - 3 : (bounds.height - 24) / 2, width: 24, height: 24)
+            let titleWidth =
+                duplicateButton.isHidden
+                ? available
+                : min(
+                    available,
+                    ceil((title.stringValue as NSString).size(withAttributes: [.font: title.font!]).width) + 8)
+            title.frame = NSRect(
+                x: 34, y: hasSubtitle ? bounds.height / 2 : (bounds.height - 17) / 2, width: titleWidth, height: 17)
+            duplicateButton.frame = NSRect(
+                x: 38 + titleWidth, y: hasSubtitle ? bounds.height / 2 - 3 : (bounds.height - 24) / 2, width: 24,
+                height: 24)
             subtitle.frame = NSRect(x: 34, y: 4, width: max(0, bounds.width - 42), height: 12)
         } else {
             title.frame = NSRect(x: 4, y: (bounds.height - 17) / 2, width: max(0, bounds.width - 15), height: 17)

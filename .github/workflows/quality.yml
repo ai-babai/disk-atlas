@@ -1,0 +1,32 @@
+name: Quality
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  quality:
+    runs-on: macos-15
+    timeout-minutes: 20
+    env:
+      QUALITY_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Run the same gate as contributors
+        run: |
+          atlas_xcode=$(python3 -c 'import json; print(json.load(open("quality/policy.json"))["xcode"])')
+          export DEVELOPER_DIR="/Applications/Xcode_${atlas_xcode}.app/Contents/Developer"
+          scripts/check.sh --base "$QUALITY_BASE"
+      - name: Upload the audit and mutation logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: quality-report
+          path: |
+            .build/quality/report.json
+            .build/quality/coverage.lcov
+            .build/quality/mutations/*.log
+          if-no-files-found: ignore

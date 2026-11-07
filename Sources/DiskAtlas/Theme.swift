@@ -1,14 +1,15 @@
-import SwiftUI
 import AtlasCore
+import SwiftUI
 
 enum Palette {
     static func adaptive(_ light: UInt32, _ dark: UInt32) -> Color {
-        Color(nsColor: NSColor(name: nil) { appearance in
-            let rgb = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
-            return NSColor(srgbRed: Double((rgb >> 16) & 255) / 255,
-                           green: Double((rgb >> 8) & 255) / 255,
-                           blue: Double(rgb & 255) / 255, alpha: 1)
-        })
+        Color(
+            nsColor: NSColor(name: nil) { appearance in
+                let rgb = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
+                return NSColor(
+                    srgbRed: Double((rgb >> 16) & 255) / 255, green: Double((rgb >> 8) & 255) / 255,
+                    blue: Double(rgb & 255) / 255, alpha: 1)
+            })
     }
     static let paper = adaptive(0xffffff, 0x17201b)
     static let soft = adaptive(0xf3f6f3, 0x202d25)
@@ -51,7 +52,8 @@ extension FileKind {
 struct SectionLabel: View {
     let text: String
     var body: some View {
-        Text(text.uppercased()).font(.system(size: 10, weight: .semibold)).tracking(1.4).foregroundStyle(Palette.sub).lineLimit(1).minimumScaleFactor(0.75)
+        Text(text.uppercased()).font(.system(size: 10, weight: .semibold)).tracking(1.4).foregroundStyle(Palette.sub)
+            .lineLimit(1).minimumScaleFactor(0.75)
     }
 }
 
@@ -77,7 +79,6 @@ struct LanguagePicker: View {
             }.pickerStyle(.inline)
         } label: {
             Text(store.language.uppercased()).font(.system(size: 11, weight: .medium))
-        }.fixedSize().help("Language / Язык")
-            .accessibilityLabel("Language / Язык")
+        }.fixedSize().help("Language / Язык").accessibilityLabel("Language / Язык")
     }
 }

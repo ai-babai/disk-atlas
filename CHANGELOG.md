@@ -5,6 +5,14 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.3.2 — 2026-11-07
+
+- Sort duplicate groups by repeated bytes, copy size, copy count or name, with reversible headings and background preparation.
+- Replace the ambiguous ellipsis with a drive icon and Size menu.
+- Add one contributor quality command, opt-in pre-push hook and matching pinned-toolchain CI.
+- Add behavior/property tests, LLVM changed-Core coverage/CRAP checks, structural complexity and target/layer dependency checks, selected mutation tests and explicit frozen legacy debt.
+- Apply consistent Swift formatting and split the modified duplicate-results body into cohesive sections.
+
 ## 0.3.1 — 2026-11-07
 
 - Find duplicates at startup now reveals size options immediately and starts the background check after the map is ready, with no second Start action.

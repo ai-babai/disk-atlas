@@ -14,8 +14,15 @@ public enum ViewFilter {
                 result.entries[id].fileCount = children.reduce(0) { $0 + result.entries[$1].fileCount }
             } else {
                 let file = result.entries[id]
-                let match = file.logicalBytes >= options.minimumBytes && (options.maximumBytes.map { file.logicalBytes <= $0 } ?? true) && options.matchesDate(file.modified)
-                if !match { result.entries[id].bytes = 0; result.entries[id].logicalBytes = 0; result.entries[id].fileCount = 0 }
+                let match =
+                    file.logicalBytes >= options.minimumBytes
+                    && (options.maximumBytes.map { file.logicalBytes <= $0 } ?? true)
+                    && options.matchesDate(file.modified)
+                if !match {
+                    result.entries[id].bytes = 0
+                    result.entries[id].logicalBytes = 0
+                    result.entries[id].fileCount = 0
+                }
             }
         }
         return result

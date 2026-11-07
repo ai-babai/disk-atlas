@@ -1,0 +1,258 @@
+{
+  "revision": "e5f7721",
+  "note": "Frozen, pre-existing violations. Changed bodies lose the exception; do not regenerate to pass a check.",
+  "functions": [
+    {
+      "bodyHash": "a35f4d0b8c5fc100ed3a91fa382d77299e57c20ba968311fbd34717f8056e717",
+      "cognitive": 19,
+      "cyclomatic": 13,
+      "end": 47,
+      "file": "Sources/AtlasCLI/DuplicateCommands.swift",
+      "identity": ".duplicateOptions(_:[String: Any])",
+      "start": 18
+    },
+    {
+      "bodyHash": "1954272477ab6a69c6697d2101a377867f22af19634727be55e8ccb503d71a71",
+      "cognitive": 11,
+      "cyclomatic": 12,
+      "end": 106,
+      "file": "Sources/AtlasCLI/DuplicateCommands.swift",
+      "identity": ".runDuplicateTool(_:[String: Any],read:Bool)",
+      "start": 61
+    },
+    {
+      "bodyHash": "a78a434e3e09e91eb98b8a5c86be069d9e420d6c361376cb39ae0fb17d3ea39c",
+      "cognitive": 13,
+      "cyclomatic": 11,
+      "end": 145,
+      "file": "Sources/AtlasCLI/DuplicateCommands.swift",
+      "identity": ".duplicateCLI(_:[String])",
+      "start": 108
+    },
+    {
+      "bodyHash": "1cf15e26b9c718766b5014b7d29b1edb267c8896d7e490995b7723eb64b87968",
+      "cognitive": 11,
+      "cyclomatic": 13,
+      "end": 171,
+      "file": "Sources/AtlasCLI/main.swift",
+      "identity": ".callTool(_:String,_:[String: Any])",
+      "start": 126
+    },
+    {
+      "bodyHash": "534fe6ce54c455606c3c34170f1a05aaba0b7970a8653559b461259f09ed2464",
+      "cognitive": 13,
+      "cyclomatic": 13,
+      "end": 229,
+      "file": "Sources/AtlasCLI/main.swift",
+      "identity": ".serveMCP()",
+      "start": 173
+    },
+    {
+      "bodyHash": "2cfd4c849e2e346e7c2fa98aad096bb9bc6368c4af682fffce55da79470563c7",
+      "cognitive": 20,
+      "cyclomatic": 17,
+      "end": 214,
+      "file": "Sources/AtlasCore/Duplicates.swift",
+      "identity": "DuplicateFinder.prepare(_:Snapshot,options:DuplicateOptions,control:DuplicateControl,progress:@escaping @Sendable (DuplicateProgress) -> Void)",
+      "start": 156
+    },
+    {
+      "bodyHash": "dbb6c0a72bc4383f13831717bd1658481ca2edd4ad118982ebf133d1181c8abf",
+      "cognitive": 40,
+      "cyclomatic": 21,
+      "end": 345,
+      "file": "Sources/AtlasCore/Duplicates.swift",
+      "identity": "DuplicateFinder.run(_:DuplicatePlan,control:DuplicateControl,progress:@escaping @Sendable (DuplicateProgress) -> Void,found:@escaping @Sendable ([DuplicateGroup]) -> Void)",
+      "start": 220
+    },
+    {
+      "bodyHash": "a7bc2ef766d0e1ece26ef57a99b5c8a31bcd89d8de75a7be7bd91f67b6107aa1",
+      "cognitive": 16,
+      "cyclomatic": 16,
+      "end": 177,
+      "file": "Sources/AtlasCore/Model.swift",
+      "identity": "Snapshot.decode(_:Data)",
+      "start": 129
+    },
+    {
+      "bodyHash": "325db3a19805c9eb891bcf97f9ceedcab5060cb9f92e24d77edcf1fb20c860e3",
+      "cognitive": 20,
+      "cyclomatic": 11,
+      "end": 80,
+      "file": "Sources/AtlasCore/PresentationIndex.swift",
+      "identity": "PresentationIndex.init(_:Snapshot)",
+      "start": 21
+    },
+    {
+      "bodyHash": "e80cd0ee7aefa5d124d5d89dba0e8c11d378fed64d4479eb8ccc3831618e30f7",
+      "cognitive": 43,
+      "cyclomatic": 30,
+      "end": 177,
+      "file": "Sources/AtlasCore/PresentationIndex.swift",
+      "identity": "PresentationIndex.rows(folder:Int,logical:Bool,query:String,kinds:Set<FileKind>,filesOnly:Bool,limit:Int,sort:EntrySort,descending:Bool,including:Int?)",
+      "start": 101
+    },
+    {
+      "bodyHash": "d84e9a4a1f3b1d1eba56fa72df692468706cc4f242285bde357f17b1b8a1cd12",
+      "cognitive": 16,
+      "cyclomatic": 11,
+      "end": 166,
+      "file": "Sources/AtlasCore/ScanHistory.swift",
+      "identity": "ScanHistory.remove(ids:Set<UUID>,all:Bool)",
+      "start": 136
+    },
+    {
+      "bodyHash": "bd2caccb68d1653905e4ea7d2d13ae6b9a687f511689bc34e8566e359e0cd9c8",
+      "cognitive": 29,
+      "cyclomatic": 18,
+      "end": 232,
+      "file": "Sources/AtlasCore/Scanner.swift",
+      "identity": "DiskScanner.scanOne(path:String,seenLinks:inout Set<String>,cancellation:ScanCancellation,progress:@escaping @Sendable (ScanProgress) -> Void)",
+      "start": 132
+    },
+    {
+      "bodyHash": "a03259f8293e915699745f964bef72772f169158f18aaca9080f956f97105c20",
+      "cognitive": 80,
+      "cyclomatic": 28,
+      "end": 158,
+      "file": "Sources/DiskAtlas/DiskAtlasApp.swift",
+      "identity": "DiskAtlasApp.property:body",
+      "start": 8
+    },
+    {
+      "bodyHash": "6b8f5e2d0d6acff19d29e829a067d5f5f3d0c6484b071574d4005189780b39ff",
+      "cognitive": 7,
+      "cyclomatic": 12,
+      "end": 46,
+      "file": "Sources/DiskAtlas/DuplicateSession.swift",
+      "identity": "DuplicateSession.property:phaseTitle",
+      "start": 32
+    },
+    {
+      "bodyHash": "ceb96e76aeffcd904f783f442c3660f1162c8ba589d10d7f16d6eafb4a27836e",
+      "cognitive": 22,
+      "cyclomatic": 12,
+      "end": 196,
+      "file": "Sources/DiskAtlas/DuplicateSession.swift",
+      "identity": "DuplicateSession.prepare(_:Snapshot,id:UUID?,debounce:Bool,autoStart:Bool)",
+      "start": 140
+    },
+    {
+      "bodyHash": "170d30e714e8f486001d66efef4e85d86d742f3626355c40d73f871ab730186e",
+      "cognitive": 16,
+      "cyclomatic": 7,
+      "end": 248,
+      "file": "Sources/DiskAtlas/DuplicateSession.swift",
+      "identity": "DuplicateSession.start()",
+      "start": 197
+    },
+    {
+      "bodyHash": "1c6440e34a51ed4efd55fe0df788259adaa0ea44eb1302852189ca05968c6d17",
+      "cognitive": 20,
+      "cyclomatic": 16,
+      "end": 252,
+      "file": "Sources/DiskAtlas/DuplicatesView.swift",
+      "identity": "DuplicatesView.property:status",
+      "start": 173
+    },
+    {
+      "bodyHash": "8621a06f302aef25fd49b1efbde23e4d0a82d20d2d6c0d7ec30f2f240fc78c16",
+      "cognitive": 28,
+      "cyclomatic": 16,
+      "end": 399,
+      "file": "Sources/DiskAtlas/DuplicatesView.swift",
+      "identity": "DuplicateActivity.property:body",
+      "start": 349
+    },
+    {
+      "bodyHash": "c7d41515f860c3ff0f8be6f0becd185aa0a08068780c0c690e61ea43417ae85f",
+      "cognitive": 10,
+      "cyclomatic": 14,
+      "end": 117,
+      "file": "Sources/DiskAtlas/FileTable.swift",
+      "identity": "FileTable.updateNSView(_:NSScrollView,context:Context)",
+      "start": 70
+    },
+    {
+      "bodyHash": "df2b623a02c271da3ad06a8f4098064a98d5f18304f8f6cd32586ab64e9ae20b",
+      "cognitive": 40,
+      "cyclomatic": 8,
+      "end": 76,
+      "file": "Sources/DiskAtlas/Inspector.swift",
+      "identity": "Inspector.property:body",
+      "start": 8
+    },
+    {
+      "bodyHash": "595da9139e9c4e877bbe9e76a43b8c824051bd1e8f2f69a2ee9ef2f5636a0e66",
+      "cognitive": 26,
+      "cyclomatic": 10,
+      "end": 61,
+      "file": "Sources/DiskAtlas/MainView.swift",
+      "identity": "MainView.property:body",
+      "start": 7
+    },
+    {
+      "bodyHash": "5580da6deaf7cd301c5c076a59aea28c7b85326f9301734214fa5fec6cc5ba1d",
+      "cognitive": 17,
+      "cyclomatic": 8,
+      "end": 227,
+      "file": "Sources/DiskAtlas/MainView.swift",
+      "identity": "MainView.property:fileList",
+      "start": 164
+    },
+    {
+      "bodyHash": "abbb8b1f3848807746300602a3c235ad8cd5b9ee5cde89c1c2a1c271310987fe",
+      "cognitive": 17,
+      "cyclomatic": 10,
+      "end": 337,
+      "file": "Sources/DiskAtlas/MainView.swift",
+      "identity": "MainView.property:footer",
+      "start": 296
+    },
+    {
+      "bodyHash": "dedae9294c9d21c08e6ba0be4d6646ee97298644aee92f60c8eb449b014729a3",
+      "cognitive": 16,
+      "cyclomatic": 7,
+      "end": 87,
+      "file": "Sources/DiskAtlas/ScanSetup.swift",
+      "identity": "ScanSetup.property:body",
+      "start": 16
+    },
+    {
+      "bodyHash": "c160a0f0a14f22429cec00ca55f802cd049163093dc491af316f4b76639653ad",
+      "cognitive": 38,
+      "cyclomatic": 11,
+      "end": 109,
+      "file": "Sources/DiskAtlas/Sidebar.swift",
+      "identity": "Sidebar.property:body",
+      "start": 6
+    },
+    {
+      "bodyHash": "ac828668f8137c3aea6d1837374f26811956c620b9200a47b2ce3d67a8b8081e",
+      "cognitive": 8,
+      "cyclomatic": 12,
+      "end": 291,
+      "file": "Sources/DiskAtlas/Store.swift",
+      "identity": "AtlasStore.refreshRows()",
+      "start": 248
+    },
+    {
+      "bodyHash": "a54fb4e2bfb8d3e402053e6f1a06b9071c136cf95fdfd6538f89035c4bc6de93",
+      "cognitive": 18,
+      "cyclomatic": 10,
+      "end": 78,
+      "file": "Sources/DiskAtlas/Treemap.swift",
+      "identity": "TreemapLayout.tiles(_:[Entry],logical:Bool,in:CGRect,limit:Int,totalCount:Int?,totalBytes:Int64?)",
+      "start": 15
+    },
+    {
+      "bodyHash": "40824f3d2c405991fef44a56e1b70323d0cc2d0ad32dcc81f1fa5d32006c24d0",
+      "cognitive": 26,
+      "cyclomatic": 13,
+      "end": 159,
+      "file": "Sources/DiskAtlas/Treemap.swift",
+      "identity": "TreemapView.tileView(_:MapTile,snapshot:Snapshot,index:PresentationIndex)",
+      "start": 110
+    }
+  ]
+}

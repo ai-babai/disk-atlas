@@ -1,0 +1,6 @@
+[
+  {"id":"sort-direction", "file":"Sources/AtlasCore/DuplicateOrdering.swift", "from":"return descending ? order == .orderedDescending : order == .orderedAscending", "to":"return descending ? order == .orderedAscending : order == .orderedDescending"},
+  {"id":"repeated-volume", "file":"Sources/AtlasCore/DuplicateOrdering.swift", "from":"return group.repeatedBytes", "to":"return group.fileBytes"},
+  {"id":"copy-count", "file":"Sources/AtlasCore/DuplicateOrdering.swift", "from":"return Int64(group.files.count)", "to":"return 0"},
+  {"id":"stable-ties", "file":"Sources/AtlasCore/DuplicateOrdering.swift", "from":"return left.id < right.id", "to":"return left.id > right.id"}
+]

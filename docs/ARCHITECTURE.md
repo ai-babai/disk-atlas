@@ -102,8 +102,9 @@ Swift 6 / Xcode Command Line Tools, macOS 14+ deployment target, no external pac
 dependencies. `scripts/build.sh` builds locally; `scripts/release.sh` compiles arm64
 and x86_64, combines executables, signs ad hoc and packages DMG/ZIP with checksums.
 
-The initial release uses scratch validation outside the repository and manual UI
-checks. No committed test suite or CI is included. An Intel slice can be built on
+The project uses [the shared quality gate](QUALITY.md), behavior/property tests,
+selected mutation checks and manual native UI validation. Complexity legacy debt
+and the changed-Core coverage/CRAP scope are reported explicitly. An Intel slice can be built on
 Apple Silicon, but this does not replace validation on physical Intel hardware.
 
 ## 0.3.0 validation scope

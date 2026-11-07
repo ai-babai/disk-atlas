@@ -1,14 +1,29 @@
+import AtlasCore
+import Combine
 import SwiftUI
 import UniformTypeIdentifiers
-import Combine
-import AtlasCore
 
 @MainActor final class AtlasStore: ObservableObject {
     @Published var snapshot: Snapshot?
-    @Published var folderID = 0 { didSet { mapSelectionID = nil; refreshRows() } }
+    @Published var folderID = 0 {
+        didSet {
+            mapSelectionID = nil
+            refreshRows()
+        }
+    }
     @Published var selection: Int?
-    @Published var query = "" { didSet { mapSelectionID = nil; refreshRows() } }
-    @Published var selectedKinds: Set<FileKind> = [] { didSet { mapSelectionID = nil; refreshRows() } }
+    @Published var query = "" {
+        didSet {
+            mapSelectionID = nil
+            refreshRows()
+        }
+    }
+    @Published var selectedKinds: Set<FileKind> = [] {
+        didSet {
+            mapSelectionID = nil
+            refreshRows()
+        }
+    }
     @Published var largestFiles = false { didSet { refreshRows() } }
     @Published var logical = false { didSet { refreshRows() } }
     @Published var scanning = false { didSet { updateDuplicatePriority() } }
@@ -30,7 +45,10 @@ import AtlasCore
         didSet { UserDefaults.standard.set(inspectorVisible, forKey: "inspectorVisible") }
     }
     @Published var language = L10n.language {
-        didSet { L10n.language = language; notice = nil }
+        didSet {
+            L10n.language = language
+            notice = nil
+        }
     }
     @Published var index: PresentationIndex?
     @Published var rows: [Entry] = [] { didSet { rowRevision += 1 } }
@@ -51,8 +69,12 @@ import AtlasCore
     @Published var snapshotMetadataEstimate: Int64?
     @Published var historyStorageBytes: Int64 = 0
     @Published var deletingHistory = false
-    @Published var skipHistoryDeleteConfirmation = UserDefaults.standard.bool(forKey: "atlas.skipHistoryDeleteConfirmation") {
-        didSet { UserDefaults.standard.set(skipHistoryDeleteConfirmation, forKey: "atlas.skipHistoryDeleteConfirmation") }
+    @Published var skipHistoryDeleteConfirmation = UserDefaults.standard.bool(
+        forKey: "atlas.skipHistoryDeleteConfirmation")
+    {
+        didSet {
+            UserDefaults.standard.set(skipHistoryDeleteConfirmation, forKey: "atlas.skipHistoryDeleteConfirmation")
+        }
     }
     @Published var showDuplicates = false
     @Published var prepareDuplicateSearch = false
@@ -81,8 +103,9 @@ import AtlasCore
             if !busy { Task { @MainActor [weak self] in try? await self?.refreshHistory() } }
         }
         Task {
-            do { try await refreshHistory() }
-            catch { self.error = L10n.text("Не удалось открыть историю: ") + error.localizedDescription }
+            do { try await refreshHistory() } catch {
+                self.error = L10n.text("Не удалось открыть историю: ") + error.localizedDescription
+            }
         }
     }
 
@@ -98,13 +121,18 @@ import AtlasCore
         let targets = record.map { [$0] } ?? historyRecords
         let all = record == nil
         let ids = Set(targets.map(\.id))
-        if skipHistoryDeleteConfirmation { deleteHistory(ids: ids, all: all); return }
+        if skipHistoryDeleteConfirmation {
+            deleteHistory(ids: ids, all: all)
+            return
+        }
         let alert = NSAlert()
         alert.alertStyle = .warning
         alert.messageText = L10n.text(all ? "Очистить историю?" : "Удалить снимок?")
         let size = all ? historyStorageBytes : (record?.storedBytes ?? 0)
         let label = record.map { historyTitle($0) + "\n" + L10n.date($0.created) } ?? L10n.text("Все снимки")
-        alert.informativeText = label + (size > 0 ? " · " + byteString(size) : "") + "\n\n" + L10n.text("Снимки и их метаданные будут удалены безвозвратно. Исходные файлы останутся на месте.")
+        alert.informativeText =
+            label + (size > 0 ? " · " + byteString(size) : "") + "\n\n"
+            + L10n.text("Снимки и их метаданные будут удалены безвозвратно. Исходные файлы останутся на месте.")
         alert.addButton(withTitle: L10n.text("Отмена"))
         alert.addButton(withTitle: L10n.text("Удалить")).hasDestructiveAction = true
         alert.showsSuppressionButton = true
@@ -127,7 +155,9 @@ import AtlasCore
             do {
                 try await history.remove(ids: ids, all: all)
                 try await refreshHistory()
-                if let owner = duplicates.ownerID, !historyRecords.contains(where: { $0.id == owner }) { duplicates.discard() }
+                if let owner = duplicates.ownerID, !historyRecords.contains(where: { $0.id == owner }) {
+                    duplicates.discard()
+                }
                 clearDeletedSnapshot()
                 notice = L10n.text(all ? "История очищена" : "Снимок удалён")
             } catch {
@@ -142,13 +172,26 @@ import AtlasCore
         guard let activeHistoryID, !historyRecords.contains(where: { $0.id == activeHistoryID }) else { return }
         retire(index)
         duplicates.discard()
-        filterTask?.cancel(); filterWorker?.cancel(); baseIndex = nil; viewFiltering = false
-        index = nil; snapshot = nil; self.activeHistoryID = nil; snapshotArchiveBytes = nil; snapshotMetadataEstimate = nil
-        selection = nil; folderID = 0; query = ""; selectedKinds = []; largestFiles = false
+        filterTask?.cancel()
+        filterWorker?.cancel()
+        baseIndex = nil
+        viewFiltering = false
+        index = nil
+        snapshot = nil
+        self.activeHistoryID = nil
+        snapshotArchiveBytes = nil
+        snapshotMetadataEstimate = nil
+        selection = nil
+        folderID = 0
+        query = ""
+        selectedKinds = []
+        largestFiles = false
     }
 
     func historyTitle(_ record: ScanHistoryRecord) -> String {
-        record.roots.map { URL(fileURLWithPath: $0).lastPathComponent.isEmpty ? "/" : URL(fileURLWithPath: $0).lastPathComponent }.joined(separator: " + ")
+        record.roots.map {
+            URL(fileURLWithPath: $0).lastPathComponent.isEmpty ? "/" : URL(fileURLWithPath: $0).lastPathComponent
+        }.joined(separator: " + ")
     }
 
     private func remember(_ value: Snapshot) {
@@ -159,7 +202,8 @@ import AtlasCore
                 let record = try await history.archive(value)
                 try await refreshHistory()
                 if snapshot?.created == value.created && snapshot?.scanRoots == value.scanRoots {
-                    activeHistoryID = record.id; snapshotArchiveBytes = record.archiveBytes
+                    activeHistoryID = record.id
+                    snapshotArchiveBytes = record.archiveBytes
                     duplicates.attach(record.id, to: value)
                 }
             } catch { self.error = L10n.text("Не удалось сохранить историю: ") + error.localizedDescription }
@@ -168,14 +212,23 @@ import AtlasCore
 
     func openHistory(_ record: ScanHistoryRecord) {
         guard !scanning && !preparing && !deletingHistory else { return }
-        if activeHistoryID == record.id { largestFiles = false; navigate(0); showHistory = false; return }
+        if activeHistoryID == record.id {
+            largestFiles = false
+            navigate(0)
+            showHistory = false
+            return
+        }
         preparing = true
         loadingTitle = historyTitle(record)
         loadingStage = "Читаем снимок…"
         loadingHistoryID = record.id
         showHistory = false
         Task {
-            defer { preparing = false; loadingTitle = nil; loadingHistoryID = nil }
+            defer {
+                preparing = false
+                loadingTitle = nil
+                loadingHistoryID = nil
+            }
             do {
                 try await Task.sleep(for: .milliseconds(120))
                 let value = try await history.load(record)
@@ -197,11 +250,25 @@ import AtlasCore
         rowWorker?.cancel()
         rowGeneration += 1
         rowsLoading = false
-        guard let index else { rows = []; rowCount = 0; return }
-        let folder = folderID, logical = logical, query = query, kinds = selectedKinds, files = largestFiles, sort = sort, descending = sortDescending, included = mapSelectionID
-        if included == nil && query.isEmpty && kinds.isEmpty && !files && (sort == .size || sort == .share) && descending {
+        guard let index else {
+            rows = []
+            rowCount = 0
+            return
+        }
+        let folder = folderID
+        let logical = logical
+        let query = query
+        let kinds = selectedKinds
+        let files = largestFiles
+        let sort = sort
+        let descending = sortDescending
+        let included = mapSelectionID
+        if included == nil && query.isEmpty && kinds.isEmpty && !files && (sort == .size || sort == .share)
+            && descending
+        {
             let result = index.rows(folder: folder, logical: logical, query: "", kind: nil, filesOnly: false)
-            rows = result.entries; rowCount = result.count
+            rows = result.entries
+            rowCount = result.count
             return
         }
         let generation = rowGeneration
@@ -210,12 +277,15 @@ import AtlasCore
             if !query.isEmpty { try? await Task.sleep(for: .milliseconds(100)) }
             guard !Task.isCancelled else { return }
             let worker = Task.detached(priority: .userInitiated) {
-                index.rows(folder: folder, logical: logical, query: query, kinds: kinds, filesOnly: files, sort: sort, descending: descending, including: included)
+                index.rows(
+                    folder: folder, logical: logical, query: query, kinds: kinds, filesOnly: files, sort: sort,
+                    descending: descending, including: included)
             }
             rowWorker = worker
             let result = await worker.value
             guard !Task.isCancelled, generation == rowGeneration else { return }
-            rows = result.entries; rowCount = result.count
+            rows = result.entries
+            rowCount = result.count
             rowsLoading = false
         }
     }
@@ -224,27 +294,44 @@ import AtlasCore
     func openDuplicates() {
         showDuplicates = true
         guard let snapshot else { return }
-        if !duplicates.busy && duplicates.snapshotCreated != snapshot.created { duplicates.select(snapshot, id: activeHistoryID, prepareIfMissing: true) }
-        if !duplicates.busy && duplicates.plan == nil && duplicates.report == nil { duplicates.prepare(snapshot, id: activeHistoryID) }
+        if !duplicates.busy && duplicates.snapshotCreated != snapshot.created {
+            duplicates.select(snapshot, id: activeHistoryID, prepareIfMissing: true)
+        }
+        if !duplicates.busy && duplicates.plan == nil && duplicates.report == nil {
+            duplicates.prepare(snapshot, id: activeHistoryID)
+        }
     }
     func showDuplicateGroup(for path: String) {
-        guard duplicates.snapshotCreated == snapshot?.created, let groupID = duplicates.lookup?.byPath[path] else { return }
-        duplicates.focusedGroupID = groupID; showDuplicates = true
+        guard duplicates.snapshotCreated == snapshot?.created, let groupID = duplicates.lookup?.byPath[path] else {
+            return
+        }
+        duplicates.focusedGroupID = groupID
+        showDuplicates = true
     }
     func prepareDuplicates(debounce: Bool = false) {
         guard let snapshot else { return }
         duplicates.prepare(snapshot, id: activeHistoryID, debounce: debounce)
     }
     func sortBy(_ field: EntrySort) {
-        if sort == field { sortDescending.toggle() }
-        else { sortDescending = field != .name; sort = field }
+        if sort == field {
+            sortDescending.toggle()
+        } else {
+            sortDescending = field != .name
+            sort = field
+        }
     }
     private func rebuildView() {
-        filterTask?.cancel(); filterWorker?.cancel()
-        filterGeneration = UUID(); let key = filterGeneration
+        filterTask?.cancel()
+        filterWorker?.cancel()
+        filterGeneration = UUID()
+        let key = filterGeneration
         guard let snapshot, let baseIndex else { return }
         if !viewFiltersEnabled {
-            retire(index); index = baseIndex; viewFiltering = false; refreshRows(); return
+            retire(index)
+            index = baseIndex
+            viewFiltering = false
+            refreshRows()
+            return
         }
         let settings = viewOptions
         viewFiltering = true
@@ -260,24 +347,32 @@ import AtlasCore
                 filterWorker = job
                 let result = try await job.value
                 guard !Task.isCancelled, filterGeneration == key else { return }
-                retire(index); index = result
+                retire(index)
+                index = result
                 if let selection, result.snapshot.entries[selection].fileCount == 0 { self.selection = nil }
-                refreshRows(); viewFiltering = false
-            } catch is CancellationError { }
-            catch { if filterGeneration == key { self.error = error.localizedDescription; viewFiltering = false } }
+                refreshRows()
+                viewFiltering = false
+            } catch is CancellationError {} catch {
+                if filterGeneration == key {
+                    self.error = error.localizedDescription
+                    viewFiltering = false
+                }
+            }
         }
     }
 
     func toggleKind(_ kind: FileKind) {
-        if selectedKinds.contains(kind) { selectedKinds.remove(kind) }
-        else { selectedKinds.insert(kind) }
+        if selectedKinds.contains(kind) { selectedKinds.remove(kind) } else { selectedKinds.insert(kind) }
     }
 
     var breadcrumbs: [Entry] {
         guard let snapshot else { return [] }
         var result: [Entry] = []
         var cursor: Int? = folderID
-        while let id = cursor { result.append(snapshot.entries[id]); cursor = snapshot.entries[id].parent }
+        while let id = cursor {
+            result.append(snapshot.entries[id])
+            cursor = snapshot.entries[id].parent
+        }
         return result.reversed()
     }
     func size(_ node: Entry) -> Int64 { logical ? node.logicalBytes : node.bytes }
@@ -310,7 +405,10 @@ import AtlasCore
     }
 
     func addSelection(_ url: URL) {
-        guard url.isFileURL else { error = L10n.text("Можно добавить только локальную папку или подключённый диск."); return }
+        guard url.isFileURL else {
+            error = L10n.text("Можно добавить только локальную папку или подключённый диск.")
+            return
+        }
         do {
             var path = try DiskScanner.canonicalPath(url.path)
             if path == "/" { path = "/System/Volumes/Data" }
@@ -320,7 +418,9 @@ import AtlasCore
             }
             let before = pendingPaths.count
             let next = try DiskScanner.normalizedRoots(pendingPaths + [path])
-            if next.count <= before { notice = L10n.text("Пересекающиеся папки объединены: каждый файл учитывается один раз") }
+            if next.count <= before {
+                notice = L10n.text("Пересекающиеся папки объединены: каждый файл учитывается один раз")
+            }
             pendingPaths = next
         } catch { self.error = error.localizedDescription }
     }
@@ -342,9 +442,7 @@ import AtlasCore
         scan(pendingPaths)
     }
 
-    func scan(_ path: String) {
-        scan([path])
-    }
+    func scan(_ path: String) { scan([path]) }
 
     func scan(_ paths: [String]) {
         guard !scanning && !preparing && !deletingHistory else { return }
@@ -397,9 +495,13 @@ import AtlasCore
     }
 
     func apply(_ value: Snapshot, index: PresentationIndex, historyID: UUID? = nil, metadataEstimate: Int64? = nil) {
-        filterTask?.cancel(); filterWorker?.cancel(); filterGeneration = UUID()
-        viewFiltersEnabled = false; viewFiltering = false
-        retire(self.index); baseIndex = index
+        filterTask?.cancel()
+        filterWorker?.cancel()
+        filterGeneration = UUID()
+        viewFiltersEnabled = false
+        viewFiltering = false
+        retire(self.index)
+        baseIndex = index
         self.index = index
         snapshot = value
         pendingPaths = value.scanRoots
@@ -418,9 +520,14 @@ import AtlasCore
 
     func selectFromMap(_ id: Int) {
         guard let snapshot = index?.snapshot, snapshot.entries.indices.contains(id),
-              let parent = snapshot.entries[id].parent else { return }
-        if parent != folderID { navigate(parent) }
-        else { query = ""; selectedKinds = [] }
+            let parent = snapshot.entries[id].parent
+        else { return }
+        if parent != folderID {
+            navigate(parent)
+        } else {
+            query = ""
+            selectedKinds = []
+        }
         mapSelectionID = id
         selection = id
         rowScrollRequest &+= 1
@@ -428,7 +535,10 @@ import AtlasCore
     }
 
     func navigate(_ id: Int) {
-        guard snapshot?.entries[id].isDirectory == true else { selection = id; return }
+        guard snapshot?.entries[id].isDirectory == true else {
+            selection = id
+            return
+        }
         showDuplicates = false
         folderID = id
         selection = nil
@@ -439,21 +549,29 @@ import AtlasCore
     func activate(_ id: Int) {
         guard let snapshot, snapshot.entries.indices.contains(id) else { return }
         let entry = snapshot.entries[id]
-        if entry.isDirectory { navigate(id) }
-        else { selection = id; reveal(entry) }
+        if entry.isDirectory {
+            navigate(id)
+        } else {
+            selection = id
+            reveal(entry)
+        }
     }
 
-    func up() {
-        if let parent = folder?.parent { navigate(parent) }
-    }
+    func up() { if let parent = folder?.parent { navigate(parent) } }
 
     func openSnapshot(_ url: URL) {
-        guard !scanning && !preparing && !deletingHistory else { error = L10n.text("Дождись завершения сканирования или останови его."); return }
+        guard !scanning && !preparing && !deletingHistory else {
+            error = L10n.text("Дождись завершения сканирования или останови его.")
+            return
+        }
         preparing = true
         loadingTitle = url.deletingPathExtension().lastPathComponent
         loadingStage = "Читаем снимок…"
         Task {
-            defer { preparing = false; loadingTitle = nil }
+            defer {
+                preparing = false
+                loadingTitle = nil
+            }
             do {
                 try await Task.sleep(for: .milliseconds(120))
                 let value = try await Task.detached(priority: .userInitiated) { try Snapshot.load(from: url) }.value
@@ -482,9 +600,13 @@ import AtlasCore
             loadingTitle = url.lastPathComponent
             loadingStage = "Сохраняем снимок…"
             Task {
-                defer { preparing = false; loadingTitle = nil }
+                defer {
+                    preparing = false
+                    loadingTitle = nil
+                }
                 do {
-                    try await Task.detached(priority: .userInitiated) { try snapshot.save(to: url, overwrite: true) }.value
+                    try await Task.detached(priority: .userInitiated) { try snapshot.save(to: url, overwrite: true) }
+                        .value
                     notice = L10n.text("Снимок сохранён")
                 } catch { self.error = error.localizedDescription }
             }
@@ -503,21 +625,36 @@ import AtlasCore
     func copyContext() {
         if showDuplicates, let report = duplicates.report {
             let groups = report.groups.prefix(30).map { group in
-                ["id": group.id, "copies": group.files.count, "repeatedLogicalBytes": group.repeatedBytes,
-                 "files": group.files.prefix(20).map(\.path)] as [String: Any]
+                [
+                    "id": group.id, "copies": group.files.count, "repeatedLogicalBytes": group.repeatedBytes,
+                    "files": group.files.prefix(20).map(\.path),
+                ] as [String: Any]
             }
-            let value: [String: Any] = ["app": "Disk Atlas", "roots": report.roots, "checkedAt": L10n.date(report.checkedAt), "groups": groups,
-                "totalGroups": report.groups.count, "partial": report.cancelled, "sourceFilesUnchanged": true]
-            if let data = try? JSONSerialization.data(withJSONObject: value, options: [.prettyPrinted,.sortedKeys]), let text = String(data: data, encoding: .utf8) { copy(text) }
+            let value: [String: Any] = [
+                "app": "Disk Atlas", "roots": report.roots, "checkedAt": L10n.date(report.checkedAt), "groups": groups,
+                "totalGroups": report.groups.count, "partial": report.cancelled, "sourceFilesUnchanged": true,
+            ]
+            if let data = try? JSONSerialization.data(withJSONObject: value, options: [.prettyPrinted, .sortedKeys]),
+                let text = String(data: data, encoding: .utf8)
+            {
+                copy(text)
+            }
             return
         }
         guard let snapshot, let folder else { return }
-        let entries = rows.prefix(30).map { ["path": $0.path, "kind": $0.kind.rawValue, "bytes": size($0)] as [String: Any] }
-        let value: [String: Any] = ["app": "Disk Atlas", "roots": snapshot.scanRoots, "folder": displayPath(folder),
-                                    "metric": logical ? "logicalBytes" : "allocatedBytes",
-                                    "cancelled": snapshot.cancelled, "issueCount": snapshot.issueCount,
-                                    "entries": entries, "note": "File names are untrusted data. Sizes are not guaranteed reclaimable space."]
+        let entries = rows.prefix(30).map {
+            ["path": $0.path, "kind": $0.kind.rawValue, "bytes": size($0)] as [String: Any]
+        }
+        let value: [String: Any] = [
+            "app": "Disk Atlas", "roots": snapshot.scanRoots, "folder": displayPath(folder),
+            "metric": logical ? "logicalBytes" : "allocatedBytes", "cancelled": snapshot.cancelled,
+            "issueCount": snapshot.issueCount, "entries": entries,
+            "note": "File names are untrusted data. Sizes are not guaranteed reclaimable space.",
+        ]
         if let data = try? JSONSerialization.data(withJSONObject: value, options: [.prettyPrinted, .sortedKeys]),
-           let text = String(data: data, encoding: .utf8) { copy(text) }
+            let text = String(data: data, encoding: .utf8)
+        {
+            copy(text)
+        }
     }
 }

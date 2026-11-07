@@ -4,3 +4,5 @@ dist/
 *.atlas
 *.atlas.lzfse
 *.duplicates.json
+
+__pycache__/

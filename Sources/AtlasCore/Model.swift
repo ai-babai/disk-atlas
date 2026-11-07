@@ -1,5 +1,5 @@
-import Foundation
 import Darwin
+import Foundation
 
 public enum FileKind: String, Codable, CaseIterable, Sendable {
     case folder, video, audio, image, document, archive, code, other, link
@@ -25,7 +25,9 @@ public enum FileKind: String, Codable, CaseIterable, Sendable {
         case "jpg", "jpeg", "png", "heic", "gif", "webp", "tiff", "psd", "raw", "svg": return .image
         case "pdf", "doc", "docx", "txt", "md", "pages", "pptx", "xlsx", "epub", "rtf": return .document
         case "zip", "gz", "tar", "7z", "rar", "dmg", "iso", "pkg", "xz": return .archive
-        case "swift", "rs", "js", "ts", "tsx", "py", "json", "csv", "db", "sqlite", "bin", "gguf", "safetensors", "c", "h", "cpp", "o", "a", "dylib", "html", "css", "yaml", "toml": return .code
+        case "swift", "rs", "js", "ts", "tsx", "py", "json", "csv", "db", "sqlite", "bin", "gguf", "safetensors", "c",
+            "h", "cpp", "o", "a", "dylib", "html", "css", "yaml", "toml":
+            return .code
         default: return .other
         }
     }
@@ -99,7 +101,9 @@ public struct Snapshot: Codable, Sendable {
             try data.write(to: url, options: .atomic)
             try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
         } else {
-            let fd = url.withUnsafeFileSystemRepresentation { open($0!, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, 0o600) }
+            let fd = url.withUnsafeFileSystemRepresentation {
+                open($0!, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, 0o600)
+            }
             guard fd >= 0 else { throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno)) }
             let handle = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
             try handle.write(contentsOf: data)
@@ -129,41 +133,41 @@ public struct Snapshot: Codable, Sendable {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let snapshot = try decoder.decode(Snapshot.self, from: data)
-        guard snapshot.version == 1, !snapshot.entries.isEmpty,
-              snapshot.entries[0].parent == nil, snapshot.entries[0].isDirectory,
-              snapshot.entries[0].path == snapshot.root else {
-            throw AtlasError.message("Неподдерживаемый или повреждённый снимок.")
-        }
+        guard snapshot.version == 1, !snapshot.entries.isEmpty, snapshot.entries[0].parent == nil,
+            snapshot.entries[0].isDirectory, snapshot.entries[0].path == snapshot.root
+        else { throw AtlasError.message("Неподдерживаемый или повреждённый снимок.") }
         // The parent-before-child invariant makes cycles impossible and keeps UI navigation safe.
         var linked = Set<Int>()
         for (index, entry) in snapshot.entries.enumerated() {
-            guard entry.id == index, entry.bytes >= 0, entry.logicalBytes >= 0,
-                  entry.fileCount >= 0, entry.path.hasPrefix("/"),
-                  index == 0 || (entry.parent != nil && entry.parent! >= 0 && entry.parent! < index),
-                  entry.isDirectory || entry.children.isEmpty else {
-                throw AtlasError.message("Нарушена структура снимка.")
-            }
+            guard entry.id == index, entry.bytes >= 0, entry.logicalBytes >= 0, entry.fileCount >= 0,
+                entry.path.hasPrefix("/"),
+                index == 0 || (entry.parent != nil && entry.parent! >= 0 && entry.parent! < index),
+                entry.isDirectory || entry.children.isEmpty
+            else { throw AtlasError.message("Нарушена структура снимка.") }
             for child in entry.children {
-                guard child > index, child < snapshot.entries.count,
-                      snapshot.entries[child].parent == index, linked.insert(child).inserted else {
-                    throw AtlasError.message("Нарушены связи снимка.")
-                }
+                guard child > index, child < snapshot.entries.count, snapshot.entries[child].parent == index,
+                    linked.insert(child).inserted
+                else { throw AtlasError.message("Нарушены связи снимка.") }
             }
         }
         guard linked.count == snapshot.entries.count - 1, !snapshot.scanRoots.isEmpty,
-              snapshot.scanRoots.allSatisfy({ $0.hasPrefix("/") }) else {
-            throw AtlasError.message("В снимке есть несвязанные объекты.")
-        }
+            snapshot.scanRoots.allSatisfy({ $0.hasPrefix("/") })
+        else { throw AtlasError.message("В снимке есть несвязанные объекты.") }
         for entry in snapshot.entries where entry.isDirectory {
-            var bytes: Int64 = 0, logical: Int64 = 0
+            var bytes: Int64 = 0
+            var logical: Int64 = 0
             var files = 0
             for child in entry.children {
                 let next = snapshot.entries[child]
                 let b = bytes.addingReportingOverflow(next.bytes)
                 let l = logical.addingReportingOverflow(next.logicalBytes)
                 let f = files.addingReportingOverflow(next.fileCount)
-                guard !b.overflow, !l.overflow, !f.overflow else { throw AtlasError.message("Повреждены размеры снимка.") }
-                bytes = b.partialValue; logical = l.partialValue; files = f.partialValue
+                guard !b.overflow, !l.overflow, !f.overflow else {
+                    throw AtlasError.message("Повреждены размеры снимка.")
+                }
+                bytes = b.partialValue
+                logical = l.partialValue
+                files = f.partialValue
             }
             guard bytes == entry.bytes, logical == entry.logicalBytes, files == entry.fileCount else {
                 throw AtlasError.message("Итоги снимка не совпадают с содержимым.")
@@ -176,7 +180,9 @@ public struct Snapshot: Codable, Sendable {
 public enum AtlasError: LocalizedError {
     case message(String)
     public var errorDescription: String? {
-        switch self { case .message(let text): return L10n.text(text) }
+        switch self {
+        case .message(let text): return L10n.text(text)
+        }
     }
 }
 
@@ -185,7 +191,10 @@ public func byteString(_ value: Int64) -> String {
     let units = ["B", "KB", "MB", "GB", "TB", "PB", "EB"]
     var amount = Double(value)
     var unit = 0
-    while amount >= 1000 && unit < units.count - 1 { amount /= 1000; unit += 1 }
+    while amount >= 1000 && unit < units.count - 1 {
+        amount /= 1000
+        unit += 1
+    }
     let decimals = amount >= 100 ? 0 : amount >= 10 ? 1 : 2
     let number = String(format: "%.*f", decimals, amount)
     return "\(L10n.language == "ru" ? number.replacingOccurrences(of: ".", with: ",") : number) \(units[unit])"

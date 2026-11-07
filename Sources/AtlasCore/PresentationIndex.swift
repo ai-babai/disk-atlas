@@ -28,12 +28,14 @@ public final class PresentationIndex: Sendable {
                 return a == b ? entries[$0].path < entries[$1].path : a > b
             }
         }
-        var physical: [Int: [Int]] = [:], logical: [Int: [Int]] = [:]
+        var physical: [Int: [Int]] = [:]
+        var logical: [Int: [Int]] = [:]
         for entry in entries where entry.isDirectory {
             physical[entry.id] = sorted(entry.children, logical: false)
             logical[entry.id] = sorted(entry.children, logical: true)
         }
-        allocatedChildren = physical; logicalChildren = logical
+        allocatedChildren = physical
+        logicalChildren = logical
 
         var positions = [Int](repeating: 0, count: entries.count)
         var ranges: [Int: Range<Int>] = [:]
@@ -42,16 +44,23 @@ public final class PresentationIndex: Sendable {
         var cursor = 0
         var stack: [(Int, Bool)] = [(0, false)]
         while let (id, exiting) = stack.popLast() {
-            if exiting { ranges[id] = (positions[id] + 1)..<cursor; continue }
-            positions[id] = cursor; traversal.append(id); cursor += 1
+            if exiting {
+                ranges[id] = (positions[id] + 1)..<cursor
+                continue
+            }
+            positions[id] = cursor
+            traversal.append(id)
+            cursor += 1
             if entries[id].isDirectory {
                 stack.append((id, true))
                 for child in entries[id].children.reversed() { stack.append((child, false)) }
             }
         }
-        self.traversal = traversal; self.ranges = ranges
+        self.traversal = traversal
+        self.ranges = ranges
 
-        var a: [Int: [FileKind: Int64]] = [:], l: [Int: [FileKind: Int64]] = [:]
+        var a: [Int: [FileKind: Int64]] = [:]
+        var l: [Int: [FileKind: Int64]] = [:]
         for entry in entries.reversed() where entry.fileCount > 0 {
             guard let parent = entry.parent else { continue }
             if entry.isDirectory {
@@ -62,8 +71,12 @@ public final class PresentationIndex: Sendable {
                 l[parent, default: [:]][entry.kind, default: 0] += entry.logicalBytes
             }
         }
-        allocatedKinds = a.mapValues { $0.map { KindTotal(kind: $0.key, bytes: $0.value) }.sorted { $0.bytes > $1.bytes } }
-        logicalKinds = l.mapValues { $0.map { KindTotal(kind: $0.key, bytes: $0.value) }.sorted { $0.bytes > $1.bytes } }
+        allocatedKinds = a.mapValues {
+            $0.map { KindTotal(kind: $0.key, bytes: $0.value) }.sorted { $0.bytes > $1.bytes }
+        }
+        logicalKinds = l.mapValues {
+            $0.map { KindTotal(kind: $0.key, bytes: $0.value) }.sorted { $0.bytes > $1.bytes }
+        }
     }
 
     public func children(of id: Int, logical: Bool, limit: Int = .max) -> [Entry] {
@@ -74,17 +87,27 @@ public final class PresentationIndex: Sendable {
         (logical ? logicalKinds[id] : allocatedKinds[id]) ?? []
     }
 
-    public func rows(folder: Int, logical: Bool, query: String, kind: FileKind?, filesOnly: Bool, limit: Int = 1000) -> (entries: [Entry], count: Int) {
-        rows(folder: folder, logical: logical, query: query, kinds: kind.map { [$0] } ?? [], filesOnly: filesOnly, limit: limit)
+    public func rows(folder: Int, logical: Bool, query: String, kind: FileKind?, filesOnly: Bool, limit: Int = 1000)
+        -> (entries: [Entry], count: Int)
+    {
+        rows(
+            folder: folder, logical: logical, query: query, kinds: kind.map { [$0] } ?? [], filesOnly: filesOnly,
+            limit: limit)
     }
 
-    public func rows(folder: Int, logical: Bool, query: String, kinds: Set<FileKind>, filesOnly: Bool, limit: Int = 1000, sort: EntrySort = .size, descending: Bool = true, including: Int? = nil) -> (entries: [Entry], count: Int) {
-        if including == nil && query.isEmpty && kinds.isEmpty && !filesOnly && (sort == .size || sort == .share) && descending {
+    public func rows(
+        folder: Int, logical: Bool, query: String, kinds: Set<FileKind>, filesOnly: Bool, limit: Int = 1000,
+        sort: EntrySort = .size, descending: Bool = true, including: Int? = nil
+    ) -> (entries: [Entry], count: Int) {
+        if including == nil && query.isEmpty && kinds.isEmpty && !filesOnly && (sort == .size || sort == .share)
+            && descending
+        {
             let ids = (logical ? logicalChildren[folder] : allocatedChildren[folder]) ?? []
             return (ids.prefix(limit).map { snapshot.entries[$0] }, ids.count)
         }
         let direct = query.isEmpty && kinds.isEmpty && !filesOnly
-        let candidates = direct ? ArraySlice((allocatedChildren[folder] ?? [])) : ranges[folder].map { traversal[$0] } ?? []
+        let candidates =
+            direct ? ArraySlice((allocatedChildren[folder] ?? [])) : ranges[folder].map { traversal[$0] } ?? []
         // A bounded heap finds the top visible results without sorting millions
         // of descendants. DFS ranges avoid scanning unrelated branches.
         var heap: [Int] = []
@@ -98,15 +121,20 @@ public final class PresentationIndex: Sendable {
                 if a.created == nil || b.created == nil {
                     if (a.created == nil) != (b.created == nil) { return a.created != nil }
                 }
-                let x = a.created ?? .distantPast, y = b.created ?? .distantPast
+                let x = a.created ?? .distantPast
+                let y = b.created ?? .distantPast
                 order = x == y ? .orderedSame : x < y ? .orderedAscending : .orderedDescending
             case .modified:
-                order = a.modified == b.modified ? .orderedSame : a.modified < b.modified ? .orderedAscending : .orderedDescending
+                order =
+                    a.modified == b.modified
+                    ? .orderedSame : a.modified < b.modified ? .orderedAscending : .orderedDescending
             case .size, .share:
-                let x = logical ? a.logicalBytes : a.bytes, y = logical ? b.logicalBytes : b.bytes
+                let x = logical ? a.logicalBytes : a.bytes
+                let y = logical ? b.logicalBytes : b.bytes
                 order = x == y ? .orderedSame : x < y ? .orderedAscending : .orderedDescending
             }
-            return order == .orderedSame ? a.path < b.path : descending ? order == .orderedDescending : order == .orderedAscending
+            return order == .orderedSame
+                ? a.path < b.path : descending ? order == .orderedDescending : order == .orderedAscending
         }
         func worse(_ a: Int, _ b: Int) -> Bool { before(snapshot.entries[b], snapshot.entries[a]) }
         for (offset, id) in candidates.enumerated() {
@@ -122,7 +150,8 @@ public final class PresentationIndex: Sendable {
                 while child > 0 {
                     let parent = (child - 1) / 2
                     if !worse(heap[child], heap[parent]) { break }
-                    heap.swapAt(child, parent); child = parent
+                    heap.swapAt(child, parent)
+                    child = parent
                 }
             } else if limit > 0 && worse(heap[0], id) {
                 heap[0] = id
@@ -131,13 +160,15 @@ public final class PresentationIndex: Sendable {
                     var child = parent * 2 + 1
                     if child + 1 < heap.count && worse(heap[child + 1], heap[child]) { child += 1 }
                     if !worse(heap[child], heap[parent]) { break }
-                    heap.swapAt(child, parent); parent = child
+                    heap.swapAt(child, parent)
+                    parent = child
                 }
             }
         }
         // A map hit must remain visible even outside the bounded first page.
         if direct, limit > 0, let id = including, snapshot.entries.indices.contains(id),
-           snapshot.entries[id].parent == folder, snapshot.entries[folder].children.contains(id), !heap.contains(id) {
+            snapshot.entries[id].parent == folder, snapshot.entries[folder].children.contains(id), !heap.contains(id)
+        {
             if heap.count == limit { heap.removeFirst() }
             heap.append(id)
         }

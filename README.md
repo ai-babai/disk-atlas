@@ -38,7 +38,7 @@ or find an item by name. Open an earlier scan whenever you need to return to it.
 ## Download & install
 
 1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Download **Disk-Atlas-0.3.1-universal.dmg**. The same app supports Apple Silicon
+2. Download **Disk-Atlas-0.3.2-universal.dmg**. The same app supports Apple Silicon
    and Intel Macs running **macOS 14 Sonoma or later**.
 3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
    then launch the app from Applications. A ZIP is also available.
@@ -86,7 +86,7 @@ part of a file-type row to toggle it. Several types can be selected together;
 creation dates are omitted from the inspector, and the column hides when no
 visible row has that date. Dates describe the time of the scan, not live changes.
 
-Allocated size (**On disk**) is the default. The **…** display menu contains
+Allocated size (**On disk**) is the default. The **Size** menu with a drive icon contains
 **File size** when logical bytes are needed. Clicking a map tile selects and scrolls
 to its entry in the list; a nested file reveals its parent folder. Double-clicking
 a folder still opens it. Aggregated **More…** tiles do not select a file.
@@ -100,7 +100,8 @@ Duplicate checking is **off by default** and separate from the storage map.
    background check starts automatically. There is no second Start button.
 2. The lower status strip shows the phase, time estimate and pause/stop controls.
    The map and list remain usable. Duplicate checking covers all dates.
-3. Expand a group to compare locations and reveal a copy in Finder. A small copies
+3. Sort groups by repeated bytes, copy size, copy count or name; click a column heading
+   to reverse its order. Expand a group to compare locations and reveal a copy in Finder. A small copies
    icon beside a known file opens its exact group, without checking again.
 
 For an existing scan that was not opted in, open **Duplicates**, review the
@@ -216,8 +217,10 @@ scripts/release.sh
 Builds arm64 and x86_64 executables, combines them into a universal app, verifies
 the ad hoc signature, and creates DMG, ZIP and SHA-256 files in `dist/release/`.
 See [architecture and validation](docs/ARCHITECTURE.md), [changelog](CHANGELOG.md)
-and [security policy](SECURITY.md). Initial release validation uses scratch checks
-and manual UI review; no committed test suite or CI is included yet.
+and [security policy](SECURITY.md). Contributors share [one quality gate](docs/QUALITY.md): strict formatting/build,
+behavior and generated-property tests, coverage/CRAP, complexity and selected
+mutations. Run `scripts/setup-dev.sh`, then `scripts/check.sh`. Its scope and
+frozen pre-existing complexity debt are explicit. Native UI review remains required.
 
 ---
 

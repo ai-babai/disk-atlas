@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "xcode": "16.4",
+  "xcode_build": "16F6",
+  "swift": "6.1.2",
+  "cyclomatic_max": 10,
+  "cognitive_max": 15,
+  "changed_core_line_coverage_min": 80,
+  "changed_core_crap_average_below": 5,
+  "changed_core_crap_max": 30,
+  "file_lines_max": 1000,
+  "legacy_revision": "e5f7721"
+}
