@@ -42,17 +42,15 @@ struct DuplicatesView: View {
                     reportFooter
                 }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
             }.onAppear { focus(reader) }.onChange(of: session.focusedGroupID) { _, _ in focus(reader) }
-        }.animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: session.sorting).background(Palette.paper)
-            .sheet(item: $session.trashReview) { plan in
-                DuplicateTrashReview(
-                    plan: plan, cancel: { session.trashReview = nil }, confirm: { session.trash(plan) })
-            }.sheet(isPresented: $store.showDuplicateSearch) {
-                NewDuplicateCheckSheet(
-                    title: store.snapshot.map {
-                        $0.scanRoots.map { URL(fileURLWithPath: $0).lastPathComponent }.joined(separator: " + ")
-                    } ?? session.title, options: session.hasResultContext ? session.resultFilter : session.options,
-                    confirm: store.prepareDuplicateCheck)
-            }
+        }.background(Palette.paper).sheet(item: $session.trashReview) { plan in
+            DuplicateTrashReview(plan: plan, cancel: { session.trashReview = nil }, confirm: { session.trash(plan) })
+        }.sheet(isPresented: $store.showDuplicateSearch) {
+            NewDuplicateCheckSheet(
+                title: store.snapshot.map {
+                    $0.scanRoots.map { URL(fileURLWithPath: $0).lastPathComponent }.joined(separator: " + ")
+                } ?? session.title, options: session.hasResultContext ? session.resultFilter : session.options,
+                confirm: store.prepareDuplicateCheck)
+        }
     }
     @ViewBuilder private var errorBanner: some View {
         if let error = session.error {
@@ -75,7 +73,7 @@ struct DuplicatesView: View {
     }
     @ViewBuilder private var results: some View {
         if !visibleGroups.isEmpty {
-            groupTable.opacity(session.sorting ? 0.5 : 1).allowsHitTesting(!session.sorting)
+            groupTable.id(store.language)
             if session.orderedCount > 500 {
                 Text(L10n.text("Показаны первые 500 групп. Полный результат доступен в экспорте.")).font(
                     .system(size: 10)
@@ -118,7 +116,8 @@ struct DuplicatesView: View {
             HStack(spacing: 12) {
                 sortHeading("Файлы", key: .name).padding(.leading, 70)
                 Spacer()
-                if session.sorting { ProgressView().controlSize(.mini) }
+                ProgressView().controlSize(.mini).frame(width: 16, height: 16).opacity(session.sorting ? 1 : 0)
+                    .accessibilityHidden(!session.sorting)
                 sortHeading("Копии", key: .copies).frame(width: 52, alignment: .trailing)
                 sortHeading("Повторы", key: .repeatedBytes).frame(width: 100, alignment: .trailing).help(
                     L10n.text(
@@ -139,19 +138,12 @@ struct DuplicatesView: View {
     private func setExpanded(_ id: String, value: Bool) {
         if value { expanded.insert(id) } else { expanded.remove(id) }
     }
-    @ViewBuilder private var trashSelectionBar: some View {
-        if !session.trashSelection.paths.isEmpty {
-            HStack(spacing: 12) {
-                Text(L10n.text("Выбрано: ") + String(session.trashSelection.paths.count)).monospacedDigit()
-                Button(L10n.text("Снять выбор")) { session.trashSelection = DuplicateTrashSelection() }.buttonStyle(
-                    .plain)
-                Spacer()
-                Button(L10n.text("В корзину…"), systemImage: "trash") { session.reviewTrash() }.buttonStyle(
-                    .borderedProminent)
-            }.font(.system(size: 11)).padding(12).background(Palette.soft, in: RoundedRectangle(cornerRadius: 8))
-                .disabled(session.busy)
-        }
-        if let notice = session.trashNotice { Text(notice).font(.system(size: 11)).foregroundStyle(Palette.sub) }
+    private var trashSelectionBar: some View {
+        TrashSelectionBar(
+            count: session.trashSelection.paths.count, busy: session.trashPreparing || session.trashing,
+            notice: session.trashNotice, clear: { session.trashSelection = DuplicateTrashSelection() },
+            review: { session.reviewTrash() }, stop: session.stop
+        ).id(store.language).disabled(session.busy && !session.trashPreparing && !session.trashing)
     }
     @ViewBuilder private var reportFooter: some View {
         if let report = session.report {

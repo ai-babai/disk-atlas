@@ -60,6 +60,22 @@ public enum L10n {
         (". Используй --help.", ". Use --help."), ("\nДвойной щелчок — открыть папку", "\nDouble-click to open folder"),
     ]
     private static let english: [String: String] = [
+        "Выбрать показанные объекты": "Select displayed items", "Показать весь список": "Show full list",
+        "Объектов: ": "Items: ",
+        "Проверь список. Объекты можно восстановить через Finder.":
+            "Review the list. Items can be restored using Finder.",
+        "Папки будут перемещены целиком, со всем содержимым.": "Folders will be moved with all their contents.",
+        "Состав области — в списке под картой.": "This area’s contents are in the list below the map.",
+        "Выбери файлы или папки для корзины.": "Select files or folders to move to Trash.",
+        "Объект вне области анализа.": "The item is outside the scanned scope.",
+        "Том нельзя переместить в Корзину.": "A volume cannot be moved to Trash.",
+        "Объект изменился. Обнови анализ и проверь выбор ещё раз.":
+            "The item changed. Refresh the scan and review the selection again.",
+        "Объект изменился после анализа. Обнови анализ перед переносом в Корзину.":
+            "The item changed since scanning. Refresh the scan before moving it to Trash.",
+        "Размер файла изменился. Обнови анализ перед переносом в Корзину.":
+            "The file size changed. Refresh the scan before moving it to Trash.",
+
         "Все копии совпавшего файла остаются в группе.": "Every copy of a matching file stays in its group.",
         "Свободно": "Free", "Назад к ": "Back to ", "Вернуться к снимку": "Return to snapshot", " из ": " of ",
         "Сначала посчитаем размеры файлов, затем найдём дубликаты в фоне. Поиск дубликатов может занять время.":

@@ -13,8 +13,8 @@ public final class PresentationIndex: Sendable {
     public let snapshot: Snapshot
     private let allocatedChildren: [Int: [Int]]
     private let logicalChildren: [Int: [Int]]
-    private let traversal: [Int]
-    private let ranges: [Int: Range<Int>]
+    let traversal: [Int]
+    let ranges: [Int: Range<Int>]
     private let allocatedKinds: [Int: [KindTotal]]
     private let logicalKinds: [Int: [KindTotal]]
 
@@ -97,82 +97,49 @@ public final class PresentationIndex: Sendable {
 
     public func rows(
         folder: Int, logical: Bool, query: String, kinds: Set<FileKind>, filesOnly: Bool, limit: Int = 1000,
-        sort: EntrySort = .size, descending: Bool = true, including: Int? = nil
+        sort: EntrySort = .size, descending: Bool = true, including: Int? = nil, groupRoots: [Int]? = nil
     ) -> (entries: [Entry], count: Int) {
-        if including == nil && query.isEmpty && kinds.isEmpty && !filesOnly && (sort == .size || sort == .share)
-            && descending
-        {
-            let ids = (logical ? logicalChildren[folder] : allocatedChildren[folder]) ?? []
-            return (ids.prefix(limit).map { snapshot.entries[$0] }, ids.count)
-        }
         let direct = query.isEmpty && kinds.isEmpty && !filesOnly
-        let candidates =
-            direct ? ArraySlice((allocatedChildren[folder] ?? [])) : ranges[folder].map { traversal[$0] } ?? []
-        // A bounded heap finds the top visible results without sorting millions
-        // of descendants. DFS ranges avoid scanning unrelated branches.
-        var heap: [Int] = []
-        heap.reserveCapacity(limit)
-        var count = 0
-        func before(_ a: Entry, _ b: Entry) -> Bool {
-            let order: ComparisonResult
-            switch sort {
-            case .name: order = a.name.localizedStandardCompare(b.name)
-            case .created:
-                if a.created == nil || b.created == nil {
-                    if (a.created == nil) != (b.created == nil) { return a.created != nil }
-                }
-                let x = a.created ?? .distantPast
-                let y = b.created ?? .distantPast
-                order = x == y ? .orderedSame : x < y ? .orderedAscending : .orderedDescending
-            case .modified:
-                order =
-                    a.modified == b.modified
-                    ? .orderedSame : a.modified < b.modified ? .orderedAscending : .orderedDescending
-            case .size, .share:
-                let x = logical ? a.logicalBytes : a.bytes
-                let y = logical ? b.logicalBytes : b.bytes
-                order = x == y ? .orderedSame : x < y ? .orderedAscending : .orderedDescending
-            }
-            return order == .orderedSame
-                ? a.path < b.path : descending ? order == .orderedDescending : order == .orderedAscending
-        }
-        func worse(_ a: Int, _ b: Int) -> Bool { before(snapshot.entries[b], snapshot.entries[a]) }
-        for (offset, id) in candidates.enumerated() {
-            if offset % 1024 == 0 && Task.isCancelled { break }
-            let entry = snapshot.entries[id]
-            if filesOnly && entry.isDirectory { continue }
-            if !kinds.isEmpty && !kinds.contains(entry.kind) { continue }
-            if !query.isEmpty && !entry.name.localizedCaseInsensitiveContains(query) { continue }
-            count += 1
-            if heap.count < limit {
-                heap.append(id)
-                var child = heap.count - 1
-                while child > 0 {
-                    let parent = (child - 1) / 2
-                    if !worse(heap[child], heap[parent]) { break }
-                    heap.swapAt(child, parent)
-                    child = parent
-                }
-            } else if limit > 0 && worse(heap[0], id) {
-                heap[0] = id
-                var parent = 0
-                while parent * 2 + 1 < heap.count {
-                    var child = parent * 2 + 1
-                    if child + 1 < heap.count && worse(heap[child + 1], heap[child]) { child += 1 }
-                    if !worse(heap[child], heap[parent]) { break }
-                    heap.swapAt(child, parent)
-                    parent = child
-                }
-            }
-        }
-        // A map hit must remain visible even outside the bounded first page.
-        if direct, limit > 0, let id = including, snapshot.entries.indices.contains(id),
-            snapshot.entries[id].parent == folder, snapshot.entries[folder].children.contains(id), !heap.contains(id)
+        if let result = defaultRows(
+            folder: folder, logical: logical, direct: direct, groupRoots: groupRoots, including: including, sort: sort,
+            descending: descending, limit: limit)
         {
-            if heap.count == limit { heap.removeFirst() }
-            heap.append(id)
+            return result
         }
-        let result = heap.sorted { worse($1, $0) }.map { snapshot.entries[$0] }
-        return (result, count)
+        let candidates = rowCandidates(folder: folder, direct: direct, groupRoots: groupRoots)
+        let request = RowQuery(
+            logical: logical, query: query, kinds: kinds, filesOnly: filesOnly, limit: limit, sort: sort,
+            descending: descending)
+        var result = request.select(candidates, entries: snapshot.entries)
+        if direct, let including, snapshot.entries.indices.contains(including), candidates.contains(including),
+            !result.entries.contains(where: { $0.id == including }), limit > 0
+        {
+            if result.entries.count == limit { result.entries.removeLast() }
+            result.entries.append(snapshot.entries[including])
+            result.entries.sort(by: request.before)
+        }
+        return result
+    }
+
+    private func defaultRows(
+        folder: Int, logical: Bool, direct: Bool, groupRoots: [Int]?, including: Int?, sort: EntrySort,
+        descending: Bool, limit: Int
+    ) -> (entries: [Entry], count: Int)? {
+        guard direct, groupRoots == nil, including == nil, sort == .size || sort == .share, descending else {
+            return nil
+        }
+        let ids = (logical ? logicalChildren[folder] : allocatedChildren[folder]) ?? []
+        return (ids.prefix(max(0, limit)).map { snapshot.entries[$0] }, ids.count)
+    }
+
+    private func rowCandidates(folder: Int, direct: Bool, groupRoots: [Int]?) -> FlattenSequence<[ArraySlice<Int>]> {
+        if direct { return [(groupRoots ?? snapshot.entries[folder].children)[...]].joined() }
+        guard let groupRoots else { return [ranges[folder].map { traversal[$0] } ?? []].joined() }
+        var slices: [ArraySlice<Int>] = []
+        for id in groupRoots {
+            slices.append([id][...])
+            if let range = ranges[id] { slices.append(traversal[range]) }
+        }
+        return slices.joined()
     }
 }

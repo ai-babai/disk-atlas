@@ -156,7 +156,8 @@ struct MainView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     headingMetrics(duplicates: false)
                     if let entry = store.folder {
-                        DuplicateSummary(entry: entry, store: store, session: store.duplicates, style: .inline)
+                        DuplicateSummary(entry: entry, store: store, session: store.duplicates, style: .inline).id(
+                            store.language)
                     }
                 }
             }
@@ -181,7 +182,7 @@ struct MainView: View {
                 Text(L10n.text("файлов")).font(.system(size: 10)).foregroundStyle(Palette.sub)
             }
             if duplicates, let entry = store.folder {
-                DuplicateSummary(entry: entry, store: store, session: store.duplicates)
+                DuplicateSummary(entry: entry, store: store, session: store.duplicates).id(store.language)
             }
             Spacer(minLength: 0)
             if let snapshot = store.snapshot, !snapshot.isComposite {
@@ -198,6 +199,7 @@ struct MainView: View {
     private func fileList(height: CGFloat) -> some View {
         VStack(spacing: 0) {
             fileListHeader
+            FileTrashControls(session: store.fileTrash, store: store).id(store.language).padding(.bottom, 8)
             fileTable.frame(height: height)
             Text(listStatus).font(.system(size: 10)).foregroundStyle(Palette.sub).frame(height: 18).opacity(
                 listStatus.isEmpty ? 0 : 1
@@ -224,7 +226,16 @@ struct MainView: View {
                     listSearch
                 }
             }
-            typeSelection
+            HStack {
+                if let group = store.mapGroup {
+                    Button {
+                        store.clearMapGroup()
+                    } label: {
+                        Label(group.title, systemImage: "xmark.circle.fill")
+                    }.buttonStyle(.plain).font(.system(size: 10)).help(L10n.text("Показать весь список"))
+                }
+                typeSelection
+            }.frame(height: 20, alignment: .leading)
         }.padding(.bottom, 11)
     }
     private var listSummary: some View {
@@ -273,6 +284,7 @@ struct MainView: View {
     private var fileTable: some View {
         let rows = store.rows
         return FileTable(
+            trash: store.fileTrash, reviewTrash: { store.reviewFileTrash([$0]) }, trashEnabled: !store.historyBusy,
             rows: rows, logical: store.logical, folderBytes: store.folder.map(store.size) ?? 0,
             revision: store.rowRevision, language: store.language,
             showPaths: store.largestFiles || !store.query.isEmpty || !store.selectedKinds.isEmpty,

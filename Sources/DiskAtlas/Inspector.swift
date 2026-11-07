@@ -6,6 +6,14 @@ struct Inspector: View {
     @State private var hoveredKind: FileKind?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
+        if let group = store.mapGroup, store.selection == nil {
+            MapGroupInspector(group: group, parent: store.index?.snapshot.entries[group.parent].path ?? "").id(
+                store.language)
+        } else {
+            entryInspector
+        }
+    }
+    private var entryInspector: some View {
         GeometryReader { geometry in
             ScrollView(.vertical) {
                 VStack(alignment: .leading, spacing: 22) {
@@ -54,7 +62,8 @@ struct Inspector: View {
             VStack(spacing: 13) {
                 detail(L10n.text("На диске"), value: byteString(entry.bytes))
                 detail(L10n.text("Размер файлов"), value: byteString(entry.logicalBytes))
-                DuplicateSummary(entry: entry, store: store, session: store.duplicates, style: .detail)
+                DuplicateSummary(entry: entry, store: store, session: store.duplicates, style: .detail).id(
+                    store.language)
                 if entry.isDirectory { detail(L10n.text("Файлов"), value: entry.fileCount.formatted()) }
                 if !store.isVirtual(entry) {
                     if let created = entry.created { detail(L10n.text("Создан"), value: L10n.date(created)) }

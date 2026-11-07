@@ -8,9 +8,19 @@ import UniformTypeIdentifiers
     @Published var folderID = 0 {
         didSet {
             mapSelectionID = nil
+            mapGroup = nil
             refreshRows()
         }
     }
+    @Published var mapGroup: MapGroup?
+    var mapHighlight: Int? {
+        selection
+            ?? mapGroup?.roots.first {
+                guard let entry = index?.snapshot.entries[$0] else { return false }
+                return logical ? entry.logicalBytes > 0 : entry.bytes > 0
+            }
+    }
+    let fileTrash = FileTrashSession()
     @Published var selection: Int?
     @Published var query = "" {
         didSet {
@@ -25,7 +35,12 @@ import UniformTypeIdentifiers
         }
     }
     @Published var largestFiles = false { didSet { refreshRows() } }
-    @Published var logical = false { didSet { refreshRows() } }
+    @Published var logical = false {
+        didSet {
+            mapGroup = nil
+            refreshRows()
+        }
+    }
     @Published var scanning = false { didSet { updateDuplicatePriority() } }
     @Published var progressCount = 0
     @Published var progressBytes: Int64 = 0
@@ -89,8 +104,9 @@ import UniformTypeIdentifiers
     @Published var viewOptions = DuplicateOptions() { didSet { rebuildView() } }
     @Published var viewFiltering = false { didSet { updateDuplicatePriority() } }
     let duplicates: DuplicateSession
+    private var trashObserver: AnyCancellable?
     private var duplicateObserver: AnyCancellable?
-    private var baseIndex: PresentationIndex?
+    var baseIndex: PresentationIndex?
     private struct ParkedWorkspace {
         let snapshot: Snapshot
         let selection: Int?
@@ -110,6 +126,7 @@ import UniformTypeIdentifiers
     init(history: ScanHistory = ScanHistory()) {
         self.history = history
         duplicates = DuplicateSession(history: history)
+        trashObserver = fileTrash.$busy.dropFirst().sink { [weak self] _ in self?.objectWillChange.send() }
         duplicateObserver = duplicates.$busy.dropFirst().sink { [weak self] busy in
             self?.objectWillChange.send()
             if !busy { Task { @MainActor [weak self] in try? await self?.refreshHistory() } }
@@ -126,7 +143,9 @@ import UniformTypeIdentifiers
         historyRecords = try await history.list()
     }
 
-    var historyBusy: Bool { scanning || preparing || savingHistory > 0 || deletingHistory || duplicates.busy }
+    var historyBusy: Bool {
+        fileTrash.busy || scanning || preparing || savingHistory > 0 || deletingHistory || duplicates.busy
+    }
 
     func requestHistoryDeletion(_ record: ScanHistoryRecord? = nil) {
         guard !historyBusy, record != nil || !historyRecords.isEmpty || historyStorageBytes > 0 else { return }
@@ -224,7 +243,7 @@ import UniformTypeIdentifiers
     }
 
     func openHistory(_ record: ScanHistoryRecord) {
-        guard !scanning && !preparing && !deletingHistory else { return }
+        guard !scanning && !preparing && !deletingHistory && !fileTrash.busy else { return }
         if activeHistoryID == record.id {
             if snapshot == nil {
                 returnToWorkspace()
@@ -263,10 +282,10 @@ import UniformTypeIdentifiers
         return index?.snapshot.entries[selection] ?? snapshot.entries[selection]
     }
     private var usesDefaultRows: Bool {
-        mapSelectionID == nil && query.isEmpty && selectedKinds.isEmpty && !largestFiles
+        mapGroup == nil && mapSelectionID == nil && query.isEmpty && selectedKinds.isEmpty && !largestFiles
             && (sort == .size || sort == .share) && sortDescending
     }
-    private func refreshRows() {
+    func refreshRows() {
         rowTask?.cancel()
         rowWorker?.cancel()
         rowGeneration += 1
@@ -283,7 +302,8 @@ import UniformTypeIdentifiers
         let files = largestFiles
         let sort = sort
         let descending = sortDescending
-        let included = mapSelectionID
+        let group = mapGroup
+        let included = group == nil ? mapSelectionID : nil
         if usesDefaultRows {
             let result = index.rows(folder: folder, logical: logical, query: "", kind: nil, filesOnly: false)
             rows = result.entries
@@ -298,7 +318,7 @@ import UniformTypeIdentifiers
             let worker = Task.detached(priority: .userInitiated) {
                 let result = index.rows(
                     folder: folder, logical: logical, query: query, kinds: kinds, filesOnly: files, sort: sort,
-                    descending: descending, including: included)
+                    descending: descending, including: included, groupRoots: group?.roots)
                 return (
                     entries: index.revealingMapSelection(included, folder: folder, in: result.entries),
                     count: result.count
@@ -364,6 +384,7 @@ import UniformTypeIdentifiers
         }
     }
     private func rebuildView() {
+        mapGroup = nil
         filterTask?.cancel()
         filterWorker?.cancel()
         filterGeneration = UUID()
@@ -438,7 +459,7 @@ import UniformTypeIdentifiers
     }
 
     func beginSelection() {
-        guard !scanning && !preparing && !deletingHistory else { return }
+        guard !scanning && !preparing && !deletingHistory && !fileTrash.busy else { return }
         showSourcePicker = true
     }
 
@@ -488,7 +509,7 @@ import UniformTypeIdentifiers
     func scan(_ path: String) { scan([path]) }
 
     func scan(_ paths: [String]) {
-        guard !scanning && !preparing && !deletingHistory else { return }
+        guard !scanning && !preparing && !deletingHistory && !fileTrash.busy else { return }
         let wantDuplicates = prepareDuplicateSearch && !duplicates.busy
         if wantDuplicates { duplicates.options.kinds = [] }
         prepareDuplicateSearch = false
@@ -547,6 +568,7 @@ import UniformTypeIdentifiers
         retire(self.index)
         baseIndex = index
         self.index = index
+        fileTrash.reset()
         snapshot = value
         pendingPaths = value.scanRoots
         folderID = 0
@@ -562,7 +584,45 @@ import UniformTypeIdentifiers
         if historyID == nil { remember(value) }
     }
 
+    func reviewFileTrash(_ ids: Set<Int>? = nil) {
+        guard !historyBusy, let snapshot else { return }
+        fileTrash.prepare(snapshot, ids: ids)
+    }
+    func applyFileTrash(_ paths: Set<String>) {
+        guard !paths.isEmpty, let snapshot else { return }
+        let folderPath = folder?.path ?? snapshot.root
+        duplicates.reconcileRemovedPaths(paths)
+        fileTrash.selected = []
+        mapGroup = nil
+        selection = nil
+        preparing = true
+        Task {
+            let updated = await Task.detached(priority: .utility) {
+                let value = snapshot.removingFilePaths(paths)
+                return (value, PresentationIndex(value), value.entries.first { $0.path == folderPath }?.id ?? 0)
+            }.value
+            retire(index)
+            self.snapshot = updated.0
+            baseIndex = updated.1
+            index = updated.1
+            folderID = updated.2
+            rebuildView()
+            preparing = false
+        }
+    }
+    func selectMapGroup(_ group: MapGroup) {
+        mapGroup = group
+        selection = nil
+        mapSelectionID = nil
+        refreshRows()
+        rowScrollRequest &+= 1
+    }
+    func clearMapGroup() {
+        mapGroup = nil
+        refreshRows()
+    }
     func selectFromMap(_ id: Int) {
+        mapGroup = nil
         guard let snapshot = index?.snapshot, snapshot.entries.indices.contains(id) else { return }
         selection = id
         mapSelectionID = id
@@ -570,7 +630,7 @@ import UniformTypeIdentifiers
         refreshRows()
     }
 
-    var canGoHome: Bool { !scanning && !preparing && !deletingHistory && savingHistory == 0 }
+    var canGoHome: Bool { !scanning && !preparing && !deletingHistory && savingHistory == 0 && !fileTrash.busy }
     func goHome() {
         guard canGoHome, let snapshot else { return }
         parkedWorkspace = ParkedWorkspace(snapshot: snapshot, selection: selection, duplicates: showDuplicates)
@@ -603,6 +663,7 @@ import UniformTypeIdentifiers
     }
 
     func navigate(_ id: Int) {
+        fileTrash.selected = []
         guard snapshot?.entries[id].isDirectory == true else {
             selection = id
             return
@@ -628,7 +689,7 @@ import UniformTypeIdentifiers
     func up() { if let parent = folder?.parent { navigate(parent) } }
 
     func openSnapshot(_ url: URL) {
-        guard !scanning && !preparing && !deletingHistory else {
+        guard !scanning && !preparing && !deletingHistory && !fileTrash.busy else {
             error = L10n.text("Дождись завершения сканирования или останови его.")
             return
         }
@@ -652,14 +713,14 @@ import UniformTypeIdentifiers
     }
 
     func importSnapshot() {
-        guard !scanning && !preparing && !deletingHistory else { return }
+        guard !scanning && !preparing && !deletingHistory && !fileTrash.busy else { return }
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.json, UTType(filenameExtension: "atlas") ?? .data]
         if panel.runModal() == .OK, let url = panel.url { openSnapshot(url) }
     }
 
     func exportSnapshot() {
-        guard !scanning && !preparing && !deletingHistory, let snapshot else { return }
+        guard !scanning && !preparing && !deletingHistory && !fileTrash.busy, let snapshot else { return }
         let panel = NSSavePanel()
         panel.nameFieldStringValue = "\(snapshot.rootEntry.name).atlas"
         panel.allowedContentTypes = [UTType(filenameExtension: "atlas") ?? .data]

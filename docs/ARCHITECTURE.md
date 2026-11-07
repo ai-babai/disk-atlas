@@ -125,7 +125,7 @@ after the nearest listed ancestor or at the top. This projection leaves the
 folder’s bounded matches, ordering, filters and count intact. The next map hit
 replaces the context row; navigation or filter changes clear it. AppKit computes
 the scroll destination, including header insets, before the short animation. Aggregate
-tiles are inert. Inspector content is constrained to its viewport width so long
+tiles select a temporary list group. Inspector content is constrained to its viewport width so long
 paths cannot stretch or shift the panel.
 
 The map remains above the file list in both Contents and Largest files modes.
@@ -143,6 +143,30 @@ deepest visible object, its nearest visible ancestor or an existing aggregate ti
 A zero-area file does not invent an aggregate area. Selection never changes scale,
 current folder or filters. Core tests cover ancestry and scope boundaries; isolated
 native QA checks exact nested rectangles, aggregates, deep fallback and mode state.
+
+More areas capture the exact omitted child IDs at click time, including nested
+aggregates. Their list scope shares the bounded RowQuery heap, filters and ordering
+with ordinary results; no second index or source scan is needed. The group chip
+clears scope without resetting search/types/mode. Navigation, size-basis and view
+filter changes clear the group. Its inspector describes a collection, not a directory.
+
+Ordinary file-list Trash uses independent checkboxes and fixed leading/trailing
+native columns. Only available button cells update when checks change; row focus
+and Quick Look stay separate. A fixed 40-point action slot is shared with duplicates.
+Duplicate remaining-copy badges reserve their width, and streamed sorting leaves
+existing results at full opacity with a fixed spinner slot.
+
+FileTrashPlan normalizes folder/child overlap, validates scan scope and captures
+current lstat identities for full-path review. Snapshot modification dates have
+whole-second precision; review-to-move validation additionally compares nanosecond
+mtime/ctime, device, inode, mode and the resolved parent path. Symlinks are moved
+as links, not followed. The cancellable utility executor validates all items before
+the first native Trash call and each item again before moving it; errors retain
+partial results and never fall back to deletion. Folder moves include their whole
+current contents. The current presentation prunes moved branches, remaps IDs and
+restores the current folder by path, keeping export/reopen validation intact. It
+rebuilds its index off-main and reconciles saved duplicate groups. Historical scan
+archives remain historical. CLI/MCP expose no cleanup commands.
 
 File tables and expanded duplicate groups use SwiftUI's native Quick Look panel.
 Only an explicit Space/context-menu/eye action supplies a selected file URL;

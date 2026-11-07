@@ -54,7 +54,7 @@ struct AtlasToolbar: ToolbarContent {
             if store.snapshot != nil {
                 if store.showDuplicates { duplicateActions } else { scanActions }
                 Button(L10n.text("Новый анализ"), systemImage: "plus") { store.beginSelection() }.disabled(
-                    store.scanning || store.preparing
+                    store.scanning || store.preparing || store.fileTrash.busy
                 ).labelStyle(.titleAndIcon)
 
             }

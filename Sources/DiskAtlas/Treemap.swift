@@ -84,7 +84,7 @@ struct TreemapView: View {
         if let index = store.index {
             TreemapSurface(
                 index: index, folder: store.folderID, logical: store.logical, language: store.language,
-                selection: store.selection, store: store
+                selection: store.mapHighlight, store: store
             ).equatable()
         }
     }
@@ -127,18 +127,20 @@ private struct TreemapSurface: View, Equatable {
                 ForEach(tiles) { tile in
                     TreemapTile(
                         tile: tile, index: index, logical: logical, language: language,
-                        selection: focused == tile.id ? selection : nil, store: store
+                        selection: focused == tile.id ? selection : nil, parent: folder, siblings: tiles, store: store
                     ).equatable().frame(width: max(0, tile.rect.width - 3), height: max(0, tile.rect.height - 3))
                         .position(x: tile.rect.midX, y: tile.rect.midY)
                 }
             }.clipShape(RoundedRectangle(cornerRadius: 9)).contentShape(Rectangle()).gesture(
                 SpatialTapGesture().onEnded { tap in
-                    let target = MapHitTesting.target(tiles, point: tap.location, index: index, logical: logical)
+                    let target = MapHitTesting.target(
+                        tiles, parent: folder, point: tap.location, index: index, logical: logical)
                     switch interaction.action(
                         target: target, index: index, point: tap.location, time: ProcessInfo.processInfo.systemUptime)
                     {
                     case .select(let id): store.selectFromMap(id)
                     case .activate(let id): store.activate(id)
+                    case .group(let group): store.selectMapGroup(group)
                     case .none: break
                     }
                 })
@@ -153,6 +155,8 @@ private struct TreemapTile: View, Equatable {
     let logical: Bool
     let language: String
     let selection: Int?
+    let parent: Int
+    let siblings: [MapTile]
     let store: AtlasStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var entry: Entry? { tile.id >= 0 ? index.snapshot.entries[tile.id] : nil }
@@ -169,9 +173,15 @@ private struct TreemapTile: View, Equatable {
             "\(tile.name) · \(byteString(tile.bytes))" + (isFolder ? L10n.text("\nДвойной щелчок — открыть папку") : "")
         ).accessibilityElement(children: .ignore).accessibilityLabel("\(tile.name), \(byteString(tile.bytes))")
             .accessibilityAddTraits(.isButton).animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: selected)
-            .accessibilityAction { if let entry { store.selectFromMap(entry.id) } }.accessibilityAction(
-                named: L10n.text("Открыть папку")
-            ) { if let entry { store.navigate(entry.id) } }.contextMenu { actions }
+            .accessibilityAction {
+                if let entry {
+                    store.selectFromMap(entry.id)
+                } else {
+                    store.selectMapGroup(MapHitTesting.group(siblings, parent: parent, index: index, logical: logical))
+                }
+            }.accessibilityActions {
+                if let entry, entry.isDirectory { Button(L10n.text("Открыть папку")) { store.navigate(entry.id) } }
+            }.contextMenu { actions }
     }
     private var artwork: some View {
         ZStack(alignment: .topLeading) {
@@ -207,7 +217,8 @@ private struct TreemapTile: View, Equatable {
 
 enum MapTarget: Equatable {
     case entry(Int)
-    case aggregate
+    case aggregate(MapGroup)
+    case none
 }
 
 enum NestedMapGeometry {
@@ -229,7 +240,9 @@ enum NestedMapGeometry {
         for tile in tiles {
             let rect = tile.rect.insetBy(dx: 1, dy: 1)
             guard rect.width > 1, rect.height > 1, rect.contains(point) else { continue }
-            guard tile.id >= 0 else { return .aggregate }
+            guard tile.id >= 0 else {
+                return .aggregate(MapHitTesting.group(tiles, parent: parent, index: index, logical: logical))
+            }
             let child = snapshot.entries[tile.id]
             if let interior = childBounds(rect, entry: child, depth: depth), interior.contains(point) {
                 return target(

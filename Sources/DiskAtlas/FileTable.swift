@@ -4,6 +4,9 @@ import SwiftUI
 
 /// Native, virtualized rows with the app palette. Selection does not rebuild cells.
 struct FileTable: NSViewRepresentable {
+    @ObservedObject var trash: FileTrashSession
+    let reviewTrash: (Int) -> Void
+    let trashEnabled: Bool
     var rows: [Entry]
     var logical: Bool
     var folderBytes: Int64
@@ -49,18 +52,27 @@ struct FileTable: NSViewRepresentable {
         table.doubleAction = #selector(Coordinator.openRow)
         table.returnAction = { [weak coordinator = context.coordinator] in coordinator?.openRow() }
         table.previewAction = { [weak coordinator = context.coordinator] in coordinator?.previewRow() }
-        for (name, width) in [("name", 260.0), ("created", 92.0), ("modified", 92.0), ("size", 100.0), ("share", 65.0)]
-        {
+        for (name, width) in [
+            ("check", 30.0), ("name", 260.0), ("created", 92.0), ("modified", 92.0), ("size", 100.0), ("share", 65.0),
+            ("trash", 30.0),
+        ] {
             let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier(name))
             column.width = width
             column.minWidth = name == "name" ? 80 : width
             column.resizingMask = name == "name" ? .autoresizingMask : []
             let header = AtlasHeaderCell(textCell: name)
             header.press = { [weak coordinator = context.coordinator] in
+                if name == "check" {
+                    coordinator?.toggleVisible()
+                    return
+                }
                 guard let field = EntrySort(rawValue: name) else { return }
                 coordinator?.parent.sortBy(field)
             }
-            column.sortDescriptorPrototype = NSSortDescriptor(key: name, ascending: name == "name")
+            if EntrySort(rawValue: name) != nil {
+                column.sortDescriptorPrototype = NSSortDescriptor(key: name, ascending: name == "name")
+            }
+            if name == "check" { header.setAccessibilityLabel(L10n.text("Выбрать показанные объекты")) }
             column.headerCell = header
             table.addTableColumn(column)
         }
@@ -86,7 +98,7 @@ struct FileTable: NSViewRepresentable {
         for column in table.tableColumns {
             let key = column.identifier.rawValue
             column.headerCell.stringValue =
-                L10n.text(titles[key] ?? key) + (key == sort.rawValue ? descending ? " ↓" : " ↑" : "")
+                L10n.text(titles[key] ?? "") + (key == sort.rawValue ? descending ? " ↓" : " ↑" : "")
             column.headerCell.font = .systemFont(ofSize: 10, weight: .medium)
             column.headerCell.alignment = key == "size" || key == "share" ? .right : .left
             if let header = column.headerCell as? AtlasHeaderCell { header.color = NSColor(Palette.sub) }
@@ -97,10 +109,11 @@ struct FileTable: NSViewRepresentable {
         coordinator.reloadIfNeeded()
         coordinator.updateSelection()
         coordinator.scrollSelection(animated: !reduceMotion)
+        coordinator.updateTrashControls()
         table.needsDisplay = true
     }
 
-    final class Coordinator: NSObject, NSTableViewDataSource, NSTableViewDelegate, NSMenuDelegate {
+    @MainActor final class Coordinator: NSObject, NSTableViewDataSource, NSTableViewDelegate, NSMenuDelegate {
         var parent: FileTable
         weak var table: NSTableView?
         var duplicateID: UUID?
@@ -162,6 +175,48 @@ struct FileTable: NSViewRepresentable {
                 scroll.reflectScrolledClipView(clip)
             }
         }
+        func toggleVisible() {
+            guard parent.trashEnabled else { return }
+            parent.trash.toggle(Set(parent.rows.map(\.id)))
+        }
+        func updateTrashControls() {
+            guard let table else { return }
+            table.enumerateAvailableRowViews { _, row in
+                for key in ["check", "trash"] {
+                    let column = table.column(withIdentifier: NSUserInterfaceItemIdentifier(key))
+                    if let cell = table.view(atColumn: column, row: row, makeIfNecessary: false) as? TrashTableCell {
+                        configure(cell, row: row, checkbox: key == "check")
+                    }
+                }
+            }
+            if let header = table.tableColumns.first?.headerCell {
+                header.setAccessibilityLabel(L10n.text("Выбрать показанные объекты"))
+                let all = !parent.rows.isEmpty && parent.rows.allSatisfy { parent.trash.selected.contains($0.id) }
+                header.image = NSImage(
+                    systemSymbolName: all ? "checkmark.square.fill" : "square",
+                    accessibilityDescription: L10n.text("Выбрать показанные объекты"))
+            }
+        }
+        private func trashCell(_ table: NSTableView, key: NSUserInterfaceItemIdentifier, row: Int) -> TrashTableCell {
+            let cell =
+                (table.makeView(withIdentifier: key, owner: self) as? TrashTableCell)
+                ?? TrashTableCell(checkbox: key.rawValue == "check")
+            cell.identifier = key
+            configure(cell, row: row, checkbox: key.rawValue == "check")
+            return cell
+        }
+        private func configure(_ cell: TrashTableCell, row: Int, checkbox: Bool) {
+            let entry = parent.rows[row]
+            cell.button.state = parent.trash.selected.contains(entry.id) ? .on : .off
+            cell.button.isEnabled = parent.trashEnabled && !parent.trash.busy
+            let label = L10n.text(checkbox ? "Выбрать для корзины" : "В корзину…") + ": " + entry.name
+            cell.button.toolTip = label
+            cell.button.setAccessibilityLabel(label)
+            cell.action = { [weak self] in
+                guard let self, parent.trashEnabled else { return }
+                if checkbox { parent.trash.toggle(entry.id) } else { parent.reviewTrash(entry.id) }
+            }
+        }
         func numberOfRows(in tableView: NSTableView) -> Int { parent.rows.count }
         func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
             parent.showPaths || parent.rows[row].id == parent.contextID ? 43 : 33
@@ -179,6 +234,7 @@ struct FileTable: NSViewRepresentable {
         }
         func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
             guard row < parent.rows.count, let key = tableColumn?.identifier else { return nil }
+            if key.rawValue == "check" || key.rawValue == "trash" { return trashCell(tableView, key: key, row: row) }
             let entry = parent.rows[row]
             let cell =
                 (tableView.makeView(withIdentifier: key, owner: self) as? AtlasCell) ?? AtlasCell(identifier: key)
@@ -251,6 +307,11 @@ private final class AtlasHeaderCell: NSTableHeaderCell {
     var press: (() -> Void)?
     var color = NSColor.secondaryLabelColor
     override func drawInterior(withFrame cellFrame: NSRect, in controlView: NSView) {
+        if let image {
+            image.withSymbolConfiguration(NSImage.SymbolConfiguration(paletteColors: [color]))?.draw(
+                in: NSRect(x: cellFrame.midX - 7, y: cellFrame.midY - 7, width: 14, height: 14))
+            return
+        }
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = alignment
         paragraph.lineBreakMode = .byTruncatingTail
@@ -300,8 +361,12 @@ private final class AtlasTableScrollView: NSScrollView {
     }
     override func layout() {
         super.layout()
-        guard let table = documentView as? NSTableView, let name = table.tableColumns.first else { return }
-        let fixedWidth = table.tableColumns.dropFirst().filter { !$0.isHidden }.reduce(CGFloat(0)) { $0 + $1.width }
+        guard let table = documentView as? NSTableView,
+            let name = table.tableColumns.first(where: { $0.identifier.rawValue == "name" })
+        else { return }
+        let fixedWidth = table.tableColumns.filter { !$0.isHidden && $0.identifier.rawValue != "name" }.reduce(
+            CGFloat(0)
+        ) { $0 + $1.width }
         let width = max(fixedWidth + name.minWidth, contentView.bounds.width - 16)
         let nameWidth = max(name.minWidth, width - fixedWidth)
         if abs(name.width - nameWidth) > 0.5 || abs(table.frame.width - width) > 0.5 {

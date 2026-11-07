@@ -493,6 +493,27 @@ import SwiftUI
         if let error = outcome.error { self.error = error }
         if outcome.cancelled { self.error = L10n.text("Остановлено. Уже перемещённые файлы находятся в Корзине.") }
     }
+    func reconcileRemovedPaths(_ paths: Set<String>) {
+        guard !busy, let report else {
+            discard()
+            return
+        }
+        busy = true
+        savingReport = true
+        task = Task {
+            defer {
+                busy = false
+                savingReport = false
+            }
+            let removed = await Task.detached(priority: .utility) {
+                Set(
+                    report.groups.flatMap(\.files).map(\.path).filter { file in
+                        paths.contains(file) || paths.contains { file.hasPrefix($0 + "/") }
+                    })
+            }.value
+            await applyTrash(DuplicateTrashOutcome(moved: removed), to: report)
+        }
+    }
     func export() {
         guard let report else { return }
         let panel = NSSavePanel()

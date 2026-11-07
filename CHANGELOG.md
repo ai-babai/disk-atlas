@@ -5,6 +5,14 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.11.0 — 2026-11-08
+
+- Make More areas selectable as temporary list groups, including nested map areas. Keep map scale, search and list mode; clear the group with its visible chip.
+- Add independent Trash checkboxes, select-displayed control and per-row Trash actions to the ordinary file list. Review full paths, normalize folder/child overlap and revalidate current identities before recoverable native Trash moves.
+- Keep the Trash action slot and duplicate selection indicators stable so checking items does not shift tables. Remove recurring result dimming during streamed duplicate sorting.
+- Reconcile the current map/list and saved duplicate report after ordinary Trash; retain the historical scan archive until the user rescans.
+- Share bounded list ordering across normal and group queries, with behavior tests and one fewer frozen complexity exception.
+
 ## 0.10.0 — 2026-11-08
 
 - Keep the folder map visible in both list modes. Place Contents / Largest files directly above the table; switch only its rows while preserving folder, search, type filters and selection.

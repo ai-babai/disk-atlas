@@ -43,7 +43,7 @@ remembered after resizing, hiding and returning from Home.
 ## Download & install
 
 1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Download **Disk-Atlas-0.10.0-universal.dmg**. The same app supports Apple Silicon
+2. Download **Disk-Atlas-0.11.0-universal.dmg**. The same app supports Apple Silicon
    and Intel Macs running **macOS 14 Sonoma or later**.
 3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
    then launch the app from Applications. A ZIP is also available.
@@ -97,6 +97,18 @@ part of a file-type row to toggle it. Several types can be selected together;
 creation dates are omitted from the inspector, and the column hides when no
 visible row has that date. Dates describe the time of the scan, not live changes.
 
+Click a **More** area to show its contents in the list without zooming or navigating.
+The visible **More ×** chip clears that temporary scope; search, type filters and
+Contents / Largest files mode still apply within it.
+
+File-list checkboxes select items for Trash independently of the focused row.
+Use the fixed action bar for all checked items, or the Trash icon in a row for one
+item. The header checkbox selects the displayed rows. Every move requires a
+full-path review; folders include their contents and overlapping child selections
+are merged. Changed/unavailable items stop the operation. Moves use recoverable
+macOS Trash, never permanent deletion. The current map/list and saved duplicate
+report are reconciled; the original historical scan remains a snapshot of its scan time.
+
 Press **Space** on a file row or choose **Quick Look** from its context menu.
 The system panel previews supported formats and browses neighboring items with
 arrow keys. Expanded duplicate groups also have an eye button; click a file name,
@@ -115,7 +127,7 @@ the nearest visible ancestor (or at the top when no ancestor is listed). The
 folder, filters and match count stay unchanged; the next map selection replaces
 that context row. Click the sidebar logo to return to the empty start screen;
 saved history remains available. Double-click a
-folder or choose **Explore folder** to enter it. Aggregated **More…** tiles are inert.
+folder or choose **Explore folder** to enter it. Aggregated **More…** tiles reveal their contents in the list.
 
 ## Check duplicates when you need them
 

@@ -28,6 +28,7 @@ import SwiftUI
     weak var store: AtlasStore?
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         store?.cancel()
+        store?.fileTrash.stop()
         store?.duplicates.stop()
         return .terminateNow
     }

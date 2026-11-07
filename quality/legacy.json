@@ -30,15 +30,6 @@
       "start": 21
     },
     {
-      "bodyHash": "e80cd0ee7aefa5d124d5d89dba0e8c11d378fed64d4479eb8ccc3831618e30f7",
-      "cognitive": 43,
-      "cyclomatic": 30,
-      "end": 177,
-      "file": "Sources/AtlasCore/PresentationIndex.swift",
-      "identity": "PresentationIndex.rows(folder:Int,logical:Bool,query:String,kinds:Set<FileKind>,filesOnly:Bool,limit:Int,sort:EntrySort,descending:Bool,including:Int?)",
-      "start": 101
-    },
-    {
       "bodyHash": "d84e9a4a1f3b1d1eba56fa72df692468706cc4f242285bde357f17b1b8a1cd12",
       "cognitive": 16,
       "cyclomatic": 11,

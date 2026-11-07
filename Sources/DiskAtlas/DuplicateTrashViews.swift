@@ -112,6 +112,10 @@ struct DuplicateGroupRow: View {
             if expanded { focusedFile = previous.path }
         }
     }
+    private var groupSelectionStatus: String {
+        if selectedCount == group.files.count { return L10n.text("Все копии выбраны") }
+        return selectedCount > 0 ? L10n.text("Останется: ") + String(group.files.count - selectedCount) : ""
+    }
     private var expandButton: some View {
         Button {
             withAnimation(reduceMotion ? nil : .easeOut(duration: 0.15)) { expanded.toggle() }
@@ -127,18 +131,14 @@ struct DuplicateGroupRow: View {
                         group.displayName ?? representative.map { URL(fileURLWithPath: $0.path).lastPathComponent }
                             ?? ""
                     ).font(.system(size: 12, weight: .medium)).lineLimit(1).truncationMode(.middle)
-                    Text((group.locations ?? []).joined(separator: " · ")).font(.system(size: 9)).foregroundStyle(
-                        Palette.sub
-                    ).lineLimit(1)
-                    if selectedCount == group.files.count {
-                        Label(L10n.text("Все копии выбраны"), systemImage: "exclamationmark.triangle.fill").font(
-                            .system(size: 9, weight: .medium)
-                        ).foregroundStyle(.orange)
-                    } else if selectedCount > 0 {
-                        Text(L10n.text("Останется: ") + String(group.files.count - selectedCount)).font(
-                            .system(size: 9)
-                        ).foregroundStyle(Palette.accent)
-                    }
+                    HStack(spacing: 8) {
+                        Text((group.locations ?? []).joined(separator: " · ")).lineLimit(1)
+                        Spacer(minLength: 0)
+                        Text(groupSelectionStatus).foregroundStyle(
+                            selectedCount == group.files.count ? .orange : Palette.accent
+                        ).frame(width: 125, height: 12, alignment: .trailing)
+                    }.font(.system(size: 9)).foregroundStyle(Palette.sub)
+
                 }
                 Spacer(minLength: 8)
                 Text("\(group.files.count)").frame(width: 52, alignment: .trailing)
@@ -184,7 +184,8 @@ private struct DuplicateFileRow: View {
                 HStack {
                     Text(URL(fileURLWithPath: file.path).lastPathComponent).font(.system(size: 11, weight: .medium))
                         .lineLimit(1)
-                    if keeper { Text(L10n.text("Останется")).font(.system(size: 9)).foregroundStyle(Palette.accent) }
+                    Text(L10n.text("Останется")).font(.system(size: 9)).foregroundStyle(Palette.accent).frame(width: 70)
+                        .opacity(keeper ? 1 : 0).accessibilityHidden(!keeper)
                 }
                 Text(file.path).font(.system(size: 9)).foregroundStyle(Palette.sub).lineLimit(1).truncationMode(.middle)
             }.frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle()).simultaneousGesture(
