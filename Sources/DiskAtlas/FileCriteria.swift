@@ -111,8 +111,11 @@ struct ViewFilterButton: View {
     @State private var showing = false
     var body: some View {
         Button { showing.toggle() } label: {
-            Image(systemName: store.viewFiltersEnabled ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                .foregroundStyle(store.viewFiltersEnabled ? Palette.accent : Palette.sub).frame(width: 28, height: 26)
+            Label(L10n.text("Фильтры"), systemImage: "line.3.horizontal.decrease")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(store.viewFiltersEnabled ? Palette.accent : Palette.ink)
+                .padding(.horizontal, 10).frame(height: 28)
+                .background(store.viewFiltersEnabled ? Palette.mark : Palette.soft, in: RoundedRectangle(cornerRadius: 6))
         }.buttonStyle(.plain).help(L10n.text("Фильтры карты и списка"))
             .accessibilityLabel(L10n.text("Фильтры карты и списка"))
             .popover(isPresented: $showing) {

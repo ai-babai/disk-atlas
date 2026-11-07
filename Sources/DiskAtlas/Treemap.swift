@@ -67,6 +67,7 @@ enum TreemapLayout {
 
 struct TreemapView: View {
     @ObservedObject var store: AtlasStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
         GeometryReader { geometry in
             if let index = store.index {
@@ -96,7 +97,7 @@ struct TreemapView: View {
         ZStack(alignment: .topLeading) {
             RoundedRectangle(cornerRadius: 5).fill(isFolder ? Palette.mark : (entry?.kind.tint ?? FileKind.other.tint).opacity(0.68))
             if isFolder, let entry, tile.rect.width > 60, tile.rect.height > 66 {
-                NestedMapArtwork(index: index, parent: entry.id, logical: store.logical, language: store.language)
+                NestedMapArtwork(index: index, parent: entry.id, logical: store.logical, language: store.language, selection: store.selection)
                     .equatable().allowsHitTesting(false)
             }
             if tile.rect.width > 45 && tile.rect.height > 28 {
@@ -109,14 +110,18 @@ struct TreemapView: View {
         }
         .clipped()
         .contentShape(Rectangle())
-        .onTapGesture(count: 2) { if let entry { store.activate(entry.id) } }
-        .onTapGesture { if let entry { store.selection = entry.id } }
+        .gesture(SpatialTapGesture(count: 2).exclusively(before: SpatialTapGesture()).onEnded { value in
+            switch value {
+            case .first(let tap): if case .entry(let id) = target(tile, point: tap.location, snapshot: snapshot, index: index) { store.activate(id) }
+            case .second(let tap): if case .entry(let id) = target(tile, point: tap.location, snapshot: snapshot, index: index) { store.selectFromMap(id) }
+            }
+        })
         .help("\(tile.name) · \(byteString(tile.bytes))" + (isFolder ? L10n.text("\nДвойной щелчок — открыть папку") : ""))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(tile.name), \(byteString(tile.bytes))")
         .accessibilityAddTraits(.isButton)
-        .animation(.easeOut(duration: 0.12), value: selected)
-        .accessibilityAction { if let entry { store.selection = entry.id } }
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: selected)
+        .accessibilityAction { if let entry { store.selectFromMap(entry.id) } }
         .accessibilityAction(named: L10n.text("Открыть папку")) { if let entry { store.navigate(entry.id) } }
         .contextMenu {
             if let entry {
@@ -127,6 +132,44 @@ struct TreemapView: View {
         }
     }
 
+    private func target(_ tile: MapTile, point: CGPoint, snapshot: Snapshot, index: PresentationIndex) -> MapTarget {
+        guard tile.id >= 0 else { return .aggregate }
+        let entry = snapshot.entries[tile.id]
+        if entry.isDirectory, tile.rect.width > 60, tile.rect.height > 66 {
+            let bounds = CGRect(x: 5, y: 40, width: max(0, tile.rect.width - 13), height: max(0, tile.rect.height - 48))
+            if bounds.contains(point) {
+                return NestedMapGeometry.target(index: index, parent: entry.id, logical: store.logical, bounds: bounds, point: point) ?? .entry(entry.id)
+            }
+        }
+        return .entry(entry.id)
+    }
+}
+
+enum MapTarget: Equatable { case entry(Int), aggregate }
+
+enum NestedMapGeometry {
+    static func labelHeight(_ rect: CGRect) -> CGFloat { rect.width > 90 && rect.height > 40 ? 17 : 0 }
+    static func childBounds(_ rect: CGRect, entry: Entry?, depth: Int) -> CGRect? {
+        guard entry?.isDirectory == true, depth < 7, rect.width > 55, rect.height > 35 else { return nil }
+        let label = labelHeight(rect)
+        return CGRect(x: rect.minX + 2, y: rect.minY + label + 2, width: rect.width - 4, height: rect.height - label - 4)
+    }
+    static func target(index: PresentationIndex, parent: Int, logical: Bool, bounds: CGRect, point: CGPoint, depth: Int = 0) -> MapTarget? {
+        let snapshot = index.snapshot, entry = snapshot.entries[parent]
+        let tiles = TreemapLayout.tiles(index.children(of: parent, logical: logical, limit: 40), logical: logical, in: bounds, limit: 40,
+                                        totalCount: entry.children.count, totalBytes: logical ? entry.logicalBytes : entry.bytes)
+        for tile in tiles {
+            let rect = tile.rect.insetBy(dx: 1, dy: 1)
+            guard rect.width > 1, rect.height > 1, rect.contains(point) else { continue }
+            guard tile.id >= 0 else { return .aggregate }
+            let child = snapshot.entries[tile.id]
+            if let interior = childBounds(rect, entry: child, depth: depth), interior.contains(point) {
+                return target(index: index, parent: child.id, logical: logical, bounds: interior, point: point, depth: depth + 1) ?? .entry(child.id)
+            }
+            return .entry(child.id)
+        }
+        return nil
+    }
 }
 
 private struct NestedMapArtwork: View, Equatable {
@@ -134,8 +177,9 @@ private struct NestedMapArtwork: View, Equatable {
     let parent: Int
     let logical: Bool
     let language: String
+    let selection: Int?
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.index === rhs.index && lhs.parent == rhs.parent && lhs.logical == rhs.logical && lhs.language == rhs.language
+        lhs.index === rhs.index && lhs.parent == rhs.parent && lhs.logical == rhs.logical && lhs.language == rhs.language && lhs.selection == rhs.selection
     }
     var body: some View {
         Canvas(rendersAsynchronously: true) { context, size in
@@ -151,18 +195,18 @@ private struct NestedMapArtwork: View, Equatable {
             let node = tile.id >= 0 ? snapshot.entries[tile.id] : nil
             let color = node?.kind.tint ?? FileKind.other.tint
             context.fill(Path(roundedRect: rect, cornerRadius: 2), with: .color(color.opacity(0.62)))
-            let canExpand = node?.isDirectory == true && depth < 7 && rect.width > 55 && rect.height > 35
-            let labelHeight: CGFloat = rect.width > 90 && rect.height > 40 ? 17 : 0
+            let labelHeight = NestedMapGeometry.labelHeight(rect)
             if labelHeight > 0 {
                 var clipped = context
                 clipped.clip(to: Path(CGRect(x: rect.minX + 4, y: rect.minY + 3, width: rect.width - 8, height: 14)))
                 clipped.draw(Text(tile.name).font(.system(size: 9, weight: .medium)).foregroundColor(.black.opacity(0.8)),
                              at: CGPoint(x: rect.minX + 4, y: rect.minY + 3), anchor: .topLeading)
             }
-            if canExpand, let node {
-                let childBounds = CGRect(x: rect.minX + 2, y: rect.minY + labelHeight + 2,
-                                         width: rect.width - 4, height: rect.height - labelHeight - 4)
+            if let childBounds = NestedMapGeometry.childBounds(rect, entry: node, depth: depth), let node {
                 paintChildren(snapshot: snapshot, parent: node.id, bounds: childBounds, depth: depth + 1, context: &context)
+            }
+            if tile.id == selection {
+                context.stroke(Path(roundedRect: rect.insetBy(dx: 1, dy: 1), cornerRadius: 2), with: .color(Palette.ink), lineWidth: 2)
             }
         }
     }

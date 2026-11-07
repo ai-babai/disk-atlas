@@ -14,7 +14,7 @@ Do not attach a real `.atlas` snapshot, history archive, absolute personal paths
 file listings without reviewing their contents. Snapshots contain names, paths,
 sizes and dates. Duplicate reports also contain copy relationships and content
 digests. Ordinary scans read metadata only; duplicate checking reads contents
-locally only after a separate explicit action. No file content is included in reports.
+locally only after explicit opt-in (at startup or from an existing scan). No file content is included in reports.
 
 Only download release artifacts from this repository. Check `SHA256SUMS.txt`.
 These releases are ad hoc signed and are not notarized by Apple; it does not carry

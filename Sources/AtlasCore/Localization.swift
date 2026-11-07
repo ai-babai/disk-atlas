@@ -55,6 +55,10 @@ public enum L10n {
     private static let english: [String: String] = [
         "Оценить поиск дубликатов": "Estimate duplicate search", "Проверить копии · явное readContents: true": "Compare copies · explicit readContents: true",
         "Пауза": "Pause", "Продолжить": "Resume", "Совпадения ещё не подтверждены": "No matches confirmed yet",
+        "Показаны 1 000 объектов. Уточни поиск для остальных.": "Showing 1,000 entries. Refine your search to see more.",
+        "Снимки содержат имена, пути, размеры и даты. Поиск дубликатов читает содержимое только по твоему выбору. Команд удаления нет.": "Snapshots contain names, paths, sizes and dates. Duplicate checks read content only when you opt in. No deletion commands.",
+        "Фильтры": "Filters",
+        "После анализа — проверка в фоне. Чтение файлов может занять время.": "Checks run in the background after analysis. Reading files can take time.",
         "Отчёт": "Report", "Отчёт не сохранён": "Report not saved",
         "Снимки содержат имена, пути, размеры и даты. Чтение содержимого для дубликатов требует отдельного запуска. Команд удаления нет.": "Snapshots contain names, paths, sizes and dates. Duplicate content reading requires a separate explicit start. No deletion commands.",
         "Без минимума": "No minimum", "Параметры": "Options",

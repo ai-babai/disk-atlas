@@ -6,16 +6,19 @@ struct Inspector: View {
     @State private var hoveredKind: FileKind?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
-        ScrollView {
+        GeometryReader { geometry in
+        ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: 22) {
                 SectionLabel(text: L10n.text("Подробности"))
                 if let entry = store.selected {
                     VStack(alignment: .leading, spacing: 12) {
                         Image(systemName: entry.kind.symbol).font(.system(size: 29, weight: .light)).foregroundStyle(entry.kind.tint)
                             .frame(width: 58, height: 58).background(Palette.soft, in: RoundedRectangle(cornerRadius: 13))
-                        Text(store.name(entry)).font(.system(size: 18, weight: .semibold)).lineLimit(3).textSelection(.enabled)
-                        Text(store.displayPath(entry)).font(.system(size: 10, design: .monospaced)).foregroundStyle(Palette.sub).fixedSize()
-                            .textSelection(.enabled).lineLimit(5).truncationMode(.middle)
+                        Text(store.name(entry)).font(.system(size: 18, weight: .semibold)).lineLimit(3).truncationMode(.middle)
+                            .fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled).help(store.name(entry))
+                        Text(store.displayPath(entry)).font(.system(size: 10, design: .monospaced)).foregroundStyle(Palette.sub)
+                            .lineLimit(3).truncationMode(.middle).fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled).help(store.displayPath(entry))
                     }
                     VStack(spacing: 13) {
                         detail(L10n.text("На диске"), value: byteString(entry.bytes))
@@ -48,7 +51,8 @@ struct Inspector: View {
                     .help(L10n.text("Скопировать текущую папку и 30 крупных объектов в JSON · ⇧⌘C"))
                 Text(L10n.text("APFS может разделять блоки между копиями. Размер здесь не равен гарантированно освобождаемому месту."))
                     .font(.system(size: 10)).foregroundStyle(Palette.sub).lineSpacing(3)
-            }.padding(22)
+            }.frame(width: max(0, geometry.size.width - 44), alignment: .leading).padding(22)
+        }.clipped()
         }.background(Palette.paper)
     }
 
@@ -141,7 +145,7 @@ struct AgentSheet: View {
                 operation("plan_duplicates", L10n.text("Оценить поиск дубликатов"))
                 operation("find_duplicates", L10n.text("Проверить копии · явное readContents: true"))
             }
-            Text(L10n.text("Снимки содержат имена, пути, размеры и даты. Чтение содержимого для дубликатов требует отдельного запуска. Команд удаления нет."))
+            Text(L10n.text("Снимки содержат имена, пути, размеры и даты. Поиск дубликатов читает содержимое только по твоему выбору. Команд удаления нет."))
                 .font(.system(size: 11)).foregroundStyle(Palette.sub)
             HStack { Spacer(); Button(L10n.text("Готово")) { store.showAgent = false }.keyboardShortcut(.defaultAction) }
         }.padding(30).frame(width: 660).background(Palette.paper).foregroundStyle(Palette.ink)

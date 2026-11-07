@@ -90,12 +90,24 @@ import AtlasCore
         }
     }
     func attach(_ id: UUID, to snapshot: Snapshot) {
-        if snapshotCreated == snapshot.created && roots == snapshot.scanRoots { ownerID = id }
+        guard snapshotCreated == snapshot.created && roots == snapshot.scanRoots else { return }
+        ownerID = id
+        // A tiny check can finish before its scan archive. Persist it once the owner exists.
+        if let report, !busy {
+            busy = true; savingReport = true
+            Task {
+                defer { busy = false; savingReport = false }
+                do { metadataBytes = try await history.saveDuplicates(report, id: id) }
+                catch { self.error = error.localizedDescription }
+            }
+        }
     }
-    func prepare(_ snapshot: Snapshot, id: UUID?, debounce: Bool = false) {
+    func prepare(_ snapshot: Snapshot, id: UUID?, debounce: Bool = false, autoStart: Bool = false) {
         guard !running && !savingReport else { return }
         task?.cancel(); worker?.cancel(); control?.cancel()
-        generation = UUID(); let key = generation, settings = options
+        generation = UUID(); let key = generation
+        var settings = options; settings.modifiedAfter = nil; settings.modifiedBefore = nil
+        options = settings
         roots = snapshot.scanRoots; snapshotCreated = snapshot.created; ownerID = id
         retireResults()
         plan = nil; report = nil; groups = []; lookup = nil; focusedGroupID = nil; metadataBytes = 0; error = nil
@@ -116,6 +128,10 @@ import AtlasCore
                 let result = try await job.value
                 guard generation == key, !Task.isCancelled else { return }
                 plan = result
+                if autoStart && result.candidateCount > 0 {
+                    preparing = false; busy = false; control = nil
+                    start()
+                }
             } catch is CancellationError { }
             catch { if generation == key { self.error = error.localizedDescription } }
         }

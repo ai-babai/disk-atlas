@@ -5,6 +5,15 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.3.1 — 2026-11-07
+
+- Find duplicates at startup now reveals size options immediately and starts the background check after the map is ready, with no second Start action.
+- Remove date restrictions from GUI duplicate checks; keep date filtering for map/list display and advanced CLI/MCP use.
+- Make Filters a labeled button and move allocated/logical sizing into the display menu; On disk remains the default.
+- Constrain inspector width so long names and paths wrap without stretching or clipping the panel.
+- Select nested map rectangles accurately, reveal their parent and scroll to the selected row, including entries outside the first 1,000 results. Aggregate tiles remain inert.
+- Persist results even when a small duplicate check finishes before its scan archive is ready.
+
 ## 0.3.0 — 2026-11-07
 
 - Add an optional, explicitly started duplicate check with metadata-only preparation, read-volume/time estimates, background phases, pause/resume and stop.

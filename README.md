@@ -38,7 +38,7 @@ or find an item by name. Open an earlier scan whenever you need to return to it.
 ## Download & install
 
 1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Download **Disk-Atlas-0.3.0-universal.dmg**. The same app supports Apple Silicon
+2. Download **Disk-Atlas-0.3.1-universal.dmg**. The same app supports Apple Silicon
    and Intel Macs running **macOS 14 Sonoma or later**.
 3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
    then launch the app from Applications. A ZIP is also available.
@@ -75,7 +75,7 @@ shasum -a 256 -c SHA256SUMS.txt
 
 Choose **Map / Largest files** inside **Disk usage**. Click a column heading to sort
 by name, creation date, modification date, size or share; click again to reverse.
-The size/date filter beside the size selector affects both the map and list,
+The **Filters** button beside the view modes affects both the map and list,
 without changing the saved scan. Its two-handle slider supports presets and exact
 bounds. Size criteria always use logical file bytes. Reset restores the full scan.
 
@@ -86,17 +86,26 @@ part of a file-type row to toggle it. Several types can be selected together;
 creation dates are omitted from the inspector, and the column hides when no
 visible row has that date. Dates describe the time of the scan, not live changes.
 
+Allocated size (**On disk**) is the default. The **…** display menu contains
+**File size** when logical bytes are needed. Clicking a map tile selects and scrolls
+to its entry in the list; a nested file reveals its parent folder. Double-clicking
+a folder still opens it. Aggregated **More…** tiles do not select a file.
+
 ## Check duplicates when you need them
 
 Duplicate checking is **off by default** and separate from the storage map.
 
-1. Optionally select **Find duplicates** before scanning, or open **Duplicates** later.
-2. Review candidates, estimated read volume and a rough time range. Choose All,
-   Large or Small files; adjust the size range, modification date or file types in **Options**.
-3. Press **Start check** explicitly. The map remains usable while the lower status
-   strip shows the phase, progress and pause/stop controls.
-4. Expand a group to compare locations and reveal a copy in Finder. A small copies
+1. Select **Find duplicates** before scanning. Size presets and the range slider
+   appear immediately. Checking may take time; when the storage map is ready, the
+   background check starts automatically. There is no second Start button.
+2. The lower status strip shows the phase, time estimate and pause/stop controls.
+   The map and list remain usable. Duplicate checking covers all dates.
+3. Expand a group to compare locations and reveal a copy in Finder. A small copies
    icon beside a known file opens its exact group, without checking again.
+
+For an existing scan that was not opted in, open **Duplicates**, review the
+candidates and read/time estimate, then press **Start comparison**. **Options**
+contains size bounds and optional file types.
 
 ![Compact duplicate groups with locations, copy counts and expandable files](docs/images/duplicates-en.png)
 
@@ -107,8 +116,8 @@ Hard-link aliases count once; symlinks, special files and cloud-only placeholder
 are skipped. Changed or replaced files are rejected.
 
 Time estimates are broad planning ranges, not benchmarks: drive speed, file count
-and matching content affect the result. Date criteria find groups with at least
-one matching copy, including newer peers for comparison. A check uses files known
+and matching content affect the result. The GUI compares files of any age;
+advanced date criteria remain available through CLI/MCP. A check uses files known
 to the source scan; rescan to include newly added files. Results carry their check
 date and can become stale. Stopping preserves confirmed groups as a partial report.
 **Keep** is only a report mark; no source-file deletion is implemented. Repeated
@@ -159,7 +168,7 @@ button copies configuration using the app’s actual installation path.
 ## Local by design
 
 Ordinary scans and duplicate preparation read **metadata**. Only the separate
-duplicate-check action reads file contents, locally. The scanner includes hidden files and application packages,
+opt-in duplicate check reads file contents, locally. The scanner includes hidden files and application packages,
 does not follow symlinks, and counts hard links once across selected roots. It
 has no deletion, moving, content execution, networking or privilege escalation
 operations. Protected directories can be skipped and appear in the issue list.

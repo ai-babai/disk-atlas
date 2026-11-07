@@ -5,10 +5,10 @@ import AtlasCore
 
 @MainActor final class AtlasStore: ObservableObject {
     @Published var snapshot: Snapshot?
-    @Published var folderID = 0 { didSet { refreshRows() } }
+    @Published var folderID = 0 { didSet { mapSelectionID = nil; refreshRows() } }
     @Published var selection: Int?
-    @Published var query = "" { didSet { refreshRows() } }
-    @Published var selectedKinds: Set<FileKind> = [] { didSet { refreshRows() } }
+    @Published var query = "" { didSet { mapSelectionID = nil; refreshRows() } }
+    @Published var selectedKinds: Set<FileKind> = [] { didSet { mapSelectionID = nil; refreshRows() } }
     @Published var largestFiles = false { didSet { refreshRows() } }
     @Published var logical = false { didSet { refreshRows() } }
     @Published var scanning = false { didSet { updateDuplicatePriority() } }
@@ -35,6 +35,8 @@ import AtlasCore
     @Published var index: PresentationIndex?
     @Published var rows: [Entry] = [] { didSet { rowRevision += 1 } }
     @Published var rowRevision = 0
+    @Published var rowScrollRequest = 0
+    private var mapSelectionID: Int?
     @Published var rowCount = 0
     @Published var preparing = false { didSet { updateDuplicatePriority() } }
     @Published var loadingTitle: String?
@@ -196,8 +198,8 @@ import AtlasCore
         rowGeneration += 1
         rowsLoading = false
         guard let index else { rows = []; rowCount = 0; return }
-        let folder = folderID, logical = logical, query = query, kinds = selectedKinds, files = largestFiles, sort = sort, descending = sortDescending
-        if query.isEmpty && kinds.isEmpty && !files && (sort == .size || sort == .share) && descending {
+        let folder = folderID, logical = logical, query = query, kinds = selectedKinds, files = largestFiles, sort = sort, descending = sortDescending, included = mapSelectionID
+        if included == nil && query.isEmpty && kinds.isEmpty && !files && (sort == .size || sort == .share) && descending {
             let result = index.rows(folder: folder, logical: logical, query: "", kind: nil, filesOnly: false)
             rows = result.entries; rowCount = result.count
             return
@@ -208,7 +210,7 @@ import AtlasCore
             if !query.isEmpty { try? await Task.sleep(for: .milliseconds(100)) }
             guard !Task.isCancelled else { return }
             let worker = Task.detached(priority: .userInitiated) {
-                index.rows(folder: folder, logical: logical, query: query, kinds: kinds, filesOnly: files, sort: sort, descending: descending)
+                index.rows(folder: folder, logical: logical, query: query, kinds: kinds, filesOnly: files, sort: sort, descending: descending, including: included)
             }
             rowWorker = worker
             let result = await worker.value
@@ -347,6 +349,7 @@ import AtlasCore
     func scan(_ paths: [String]) {
         guard !scanning && !preparing && !deletingHistory else { return }
         let wantDuplicates = prepareDuplicateSearch && !duplicates.busy
+        if wantDuplicates { duplicates.options.kinds = [] }
         prepareDuplicateSearch = false
         scanning = true
         progressCount = 0
@@ -374,7 +377,7 @@ import AtlasCore
                     notice = L10n.text("Анализ остановлен · предыдущий снимок сохранён")
                 } else {
                     apply(result, index: prepared.1, metadataEstimate: progressMetadataBytes)
-                    if wantDuplicates { duplicates.prepare(result, id: activeHistoryID) }
+                    if wantDuplicates { duplicates.prepare(result, id: activeHistoryID, autoStart: true) }
                 }
             } catch { self.error = error.localizedDescription }
             scanning = false
@@ -411,6 +414,17 @@ import AtlasCore
         showDuplicates = false
         if !duplicates.busy { duplicates.select(value, id: historyID) }
         if historyID == nil { remember(value) }
+    }
+
+    func selectFromMap(_ id: Int) {
+        guard let snapshot = index?.snapshot, snapshot.entries.indices.contains(id),
+              let parent = snapshot.entries[id].parent else { return }
+        if parent != folderID { navigate(parent) }
+        else { query = ""; selectedKinds = [] }
+        mapSelectionID = id
+        selection = id
+        rowScrollRequest &+= 1
+        refreshRows()
     }
 
     func navigate(_ id: Int) {

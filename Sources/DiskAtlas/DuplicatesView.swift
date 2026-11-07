@@ -82,7 +82,7 @@ struct DuplicatesView: View {
                 .popover(isPresented: $parameters) {
                     VStack(alignment: .leading, spacing: 16) {
                         Text(L10n.text("Параметры поиска")).font(.system(size: 14, weight: .semibold))
-                        FileCriteria(options: settings).help(L10n.text("Давность выбирает группы с подходящей копией; более новые копии тоже сравниваются."))
+                        FileSizeRange(options: settings)
                         HStack(spacing: 6) {
                             ForEach([FileKind.video,.image,.audio,.document,.archive,.code,.other], id: \.self) { kind in
                                 Button { var value = session.options; if value.kinds.contains(kind) { value.kinds.remove(kind) } else { value.kinds.insert(kind) }; settings.wrappedValue = value } label: {
@@ -107,7 +107,7 @@ struct DuplicatesView: View {
                 .font(.system(size: 11)).foregroundStyle(Palette.sub).frame(height: 42)
         } else if session.running {
             VStack(alignment: .leading, spacing: 9) {
-                HStack { Text(session.phaseTitle); Spacer(); if let remaining = session.remaining { Text(remaining).foregroundStyle(Palette.sub) } }
+                HStack { Text(session.phaseTitle); Spacer(); Text(session.remaining ?? session.estimate).foregroundStyle(Palette.sub) }
                 if session.progress.phaseTotal > 0 { ProgressView(value: session.fraction).animation(reduceMotion ? nil : .linear(duration: 0.16), value: session.fraction) }
                 else { ProgressView().progressViewStyle(.linear) }
                 HStack { Text(byteString(session.progress.phaseBytes) + " / " + byteString(session.progress.phaseTotal)); Spacer(); if session.progress.metadataBytes > 0 { Text(L10n.text("Отчёт") + " ≈ " + byteString(session.progress.metadataBytes)) }; Text(L10n.text("Групп: ") + "\(session.groups.count)") }
@@ -126,6 +126,8 @@ struct DuplicatesView: View {
                 Spacer()
                 if report.cancelled || report.inputPartial == true { Label(L10n.text("Неполный результат"), systemImage: "stop.circle").font(.system(size: 10)).foregroundStyle(Palette.sub) }
             }.padding(.vertical, 4)
+        } else if let plan = session.plan, plan.candidateCount == 0 {
+            Label(L10n.text("Нет кандидатов для сравнения"), systemImage: "checkmark.circle").font(.system(size: 12)).foregroundStyle(Palette.sub)
         } else if let plan = session.plan {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .firstTextBaseline) {
@@ -213,7 +215,7 @@ struct DuplicateActivity: View {
                     }.contentShape(Rectangle())
                 }.buttonStyle(.plain).frame(maxWidth: .infinity, alignment: .leading)
                 if session.running {
-                    if let eta = session.remaining { Text(eta).font(.system(size: 9)).lineLimit(1) }
+                    Text(session.remaining ?? session.estimate).font(.system(size: 9)).lineLimit(1)
                     if session.progress.phaseTotal > 0 { ProgressView(value: session.fraction).frame(width: 56).animation(reduceMotion ? nil : .linear(duration: 0.16), value: session.fraction) }
                     Button { session.togglePause() } label: { Image(systemName: session.paused ? "play.fill" : "pause.fill") }.help(L10n.text(session.paused ? "Продолжить" : "Пауза")).disabled(session.foregroundPaused)
                 }

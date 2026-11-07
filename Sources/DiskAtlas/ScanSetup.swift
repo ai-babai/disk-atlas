@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 struct ScanSetup: View {
     @ObservedObject var store: AtlasStore
     @State private var targeted = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let places: [(String, String, String)] = [
         (L10n.text("Загрузки"), "arrow.down.circle", "Downloads"),
         (L10n.text("Рабочий стол"), "desktopcomputer", "Desktop"),
@@ -64,11 +65,12 @@ struct ScanSetup: View {
                 Toggle(L10n.text("Найти дубликаты"), isOn: $store.prepareDuplicateSearch)
                     .font(.system(size: 11)).disabled(store.duplicates.busy)
                 if store.prepareDuplicateSearch {
-                    Text(L10n.text("Долгая проверка содержимого. Сначала — оценка времени."))
+                    Text(L10n.text("После анализа — проверка в фоне. Чтение файлов может занять время."))
                         .font(.system(size: 10)).foregroundStyle(Palette.sub).fixedSize(horizontal: false, vertical: true)
-                    DuplicateStartOptions(session: store.duplicates)
+                    DuplicateStartOptions(session: store.duplicates).transition(.opacity)
                 }
             }
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: store.prepareDuplicateSearch)
             HStack(spacing: 16) {
                 Button(L10n.text("Анализировать"), systemImage: "chart.pie") { store.analyzeSelection() }
                     .buttonStyle(.borderedProminent).controlSize(.large)
@@ -104,7 +106,8 @@ struct ScanSetup: View {
 private struct DuplicateStartOptions: View {
     @ObservedObject var session: DuplicateSession
     var body: some View {
-        DisclosureGroup(L10n.text("Размер и дата")) { FileCriteria(options: $session.options).frame(maxWidth: 420).padding(.top, 12) }
-            .font(.system(size: 11)).disabled(session.busy)
+        FileSizeRange(options: $session.options)
+            .frame(maxWidth: 420, alignment: .leading).padding(.top, 8).padding(.leading, 20)
+            .disabled(session.busy)
     }
 }

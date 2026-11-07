@@ -44,8 +44,10 @@ regular, locally available files by logical size. It does not read contents.
 Options constrain size and type; date criteria retain groups with at least one
 matching copy, including other-age peers. New paths need a fresh ordinary scan.
 
-Only `run` reads contents, after GUI Start, CLI `--read-contents`, or MCP
-`readContents: true`. Equal-size buckets first receive 64 KiB prefix/suffix
+Only `run` reads contents: GUI opt-in before Analyze authorizes automatic
+background start after the map is ready; an existing scan uses Start comparison.
+CLI requires `--read-contents`, MCP requires `readContents: true`. The GUI has no
+date restriction; CLI/MCP retain optional date criteria. Equal-size buckets first receive 64 KiB prefix/suffix
 samples; files up to 1 MiB receive a complete SHA-256 once. Only sample survivors
 are fully hashed, then same-hash files are compared byte by byte. Buffers are at
 most 1 MiB; reads bypass normal caching with `F_NOCACHE`. Files are opened with
@@ -59,7 +61,8 @@ groups are batched, keeping updates out of the main map store. Pause and cancel
 checkpoints occur between read chunks. Foreground scanning/indexing temporarily
 pauses the background job. Confirmed groups survive stop as a partial report.
 A path-to-group lookup is built off the main thread for file-list badges. Keep
-marks affect reports only. No source-file cleanup action exists.
+marks affect reports only. No source-file cleanup action exists. A check that finishes before its scan
+archive is attached persists its report when the history UUID becomes available.
 
 ## Rendering and storage
 
@@ -71,7 +74,11 @@ first 1,000 matches render; the full match count remains visible.
 Size/date view filters construct a derived snapshot and index off the main thread;
 the saved snapshot remains unchanged. Native range controls preview locally while
 dragging and commit once on release. Table headers and cells share native column
-geometry, with a trailing gutter for percentages.
+geometry, with a trailing gutter for percentages. Nested canvas hit testing uses
+the same bounded layout as drawing; map selection reveals the parent, includes
+the selected entry in the bounded list and explicitly scrolls to it. Aggregate
+tiles are inert. Inspector content is constrained to its viewport width so long
+paths cannot stretch or shift the panel.
 
 Treemap work is bounded by visible tile count, geometry and nesting depth. Small
 objects are aggregated. The previous large index is retained through the visual

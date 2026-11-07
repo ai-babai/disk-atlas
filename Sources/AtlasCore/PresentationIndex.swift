@@ -78,8 +78,8 @@ public final class PresentationIndex: Sendable {
         rows(folder: folder, logical: logical, query: query, kinds: kind.map { [$0] } ?? [], filesOnly: filesOnly, limit: limit)
     }
 
-    public func rows(folder: Int, logical: Bool, query: String, kinds: Set<FileKind>, filesOnly: Bool, limit: Int = 1000, sort: EntrySort = .size, descending: Bool = true) -> (entries: [Entry], count: Int) {
-        if query.isEmpty && kinds.isEmpty && !filesOnly && (sort == .size || sort == .share) && descending {
+    public func rows(folder: Int, logical: Bool, query: String, kinds: Set<FileKind>, filesOnly: Bool, limit: Int = 1000, sort: EntrySort = .size, descending: Bool = true, including: Int? = nil) -> (entries: [Entry], count: Int) {
+        if including == nil && query.isEmpty && kinds.isEmpty && !filesOnly && (sort == .size || sort == .share) && descending {
             let ids = (logical ? logicalChildren[folder] : allocatedChildren[folder]) ?? []
             return (ids.prefix(limit).map { snapshot.entries[$0] }, ids.count)
         }
@@ -134,6 +134,12 @@ public final class PresentationIndex: Sendable {
                     heap.swapAt(child, parent); parent = child
                 }
             }
+        }
+        // A map hit must remain visible even outside the bounded first page.
+        if direct, limit > 0, let id = including, snapshot.entries.indices.contains(id),
+           snapshot.entries[id].parent == folder, snapshot.entries[folder].children.contains(id), !heap.contains(id) {
+            if heap.count == limit { heap.removeFirst() }
+            heap.append(id)
         }
         let result = heap.sorted { worse($1, $0) }.map { snapshot.entries[$0] }
         return (result, count)

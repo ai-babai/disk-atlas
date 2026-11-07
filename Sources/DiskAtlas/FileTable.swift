@@ -16,6 +16,7 @@ struct FileTable: NSViewRepresentable {
     var sortBy: (EntrySort) -> Void = { _ in }
     var duplicates: DuplicateLookup? = nil
     var showDuplicates: (String) -> Void = { _ in }
+    var scrollRequest = 0
     @Binding var selection: Int?
     var open: (Int) -> Void
     var reveal: (Entry) -> Void
@@ -101,6 +102,10 @@ struct FileTable: NSViewRepresentable {
             table.selectRowIndexes(desired < 0 ? [] : IndexSet(integer: desired), byExtendingSelection: false)
             coordinator.suppressSelection = false
         }
+        if scrollRequest > 0 && desired >= 0 && coordinator.scrollRequest != scrollRequest {
+            table.scrollRowToVisible(desired)
+            coordinator.scrollRequest = scrollRequest
+        }
         table.needsDisplay = true
     }
 
@@ -109,6 +114,7 @@ struct FileTable: NSViewRepresentable {
         weak var table: NSTableView?
         var duplicateID: UUID?
         var revision = -1
+        var scrollRequest = 0
         var language = ""
         var logical = false
         var showPaths = false

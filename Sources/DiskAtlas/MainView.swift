@@ -54,10 +54,14 @@ struct MainView: View {
                 }.pickerStyle(.segmented).labelsHidden().frame(width: 166)
                 Spacer(minLength: 0)
                 ViewFilterButton(store: store)
-                Picker(L10n.text("Размер"), selection: $store.logical) {
-                    Text(L10n.text("На диске")).tag(false)
-                    Text(L10n.text("Размер файлов")).tag(true)
-                }.pickerStyle(.segmented).labelsHidden().frame(width: 216)
+                Menu {
+                    Picker(L10n.text("Размер"), selection: $store.logical) {
+                        Text(L10n.text("На диске")).tag(false)
+                        Text(L10n.text("Размер файлов")).tag(true)
+                    }
+                } label: { Image(systemName: "ellipsis").frame(width: 28, height: 28).background(Palette.soft, in: RoundedRectangle(cornerRadius: 6)) }
+                    .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                    .help(L10n.text("Отображение")).accessibilityLabel(L10n.text("Отображение"))
             }
             if store.viewFiltersEnabled {
                 HStack {
@@ -154,12 +158,12 @@ struct MainView: View {
                       sort: store.sort, descending: store.sortDescending, sortBy: store.sortBy,
                       duplicates: store.duplicates.snapshotCreated == store.snapshot?.created ? store.duplicates.lookup : nil,
                       showDuplicates: store.showDuplicateGroup,
-                      selection: $store.selection, open: store.activate, reveal: store.reveal, copyPath: store.copy)
+                      scrollRequest: store.rowsLoading ? 0 : store.rowScrollRequest, selection: $store.selection, open: store.activate, reveal: store.reveal, copyPath: store.copy)
                 .frame(minHeight: store.largestFiles ? 260 : 130, idealHeight: store.largestFiles ? 600 : 210, maxHeight: store.largestFiles ? .infinity : 245)
                 .opacity(store.rowsLoading ? 0.5 : 1).disabled(store.rowsLoading)
                 .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: store.rowsLoading)
             if store.rowCount > 1000 {
-                Text(L10n.text("Первые 1 000 объектов. Уточни поиск для остальных.")).font(.system(size: 10)).foregroundStyle(Palette.sub).padding(.top, 5)
+                Text(L10n.text("Показаны 1 000 объектов. Уточни поиск для остальных.")).font(.system(size: 10)).foregroundStyle(Palette.sub).padding(.top, 5)
             }
             if rows.isEmpty { Text(L10n.text("Ничего не найдено")).font(.system(size: 11)).foregroundStyle(Palette.sub).padding(8) }
         }
