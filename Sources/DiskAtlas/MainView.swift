@@ -1,0 +1,243 @@
+import SwiftUI
+import AtlasCore
+
+struct MainView: View {
+    @ObservedObject var store: AtlasStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var body: some View {
+        HSplitView {
+            if store.snapshot != nil && store.sidebarVisible {
+                Sidebar(store: store).frame(minWidth: 180, idealWidth: 210, maxWidth: 350)
+            }
+            VStack(spacing: 0) {
+                if store.snapshot != nil {
+                    HSplitView {
+                        workspace.frame(minWidth: 480)
+                        if store.inspectorVisible {
+                            Inspector(store: store).frame(minWidth: 210, idealWidth: 250, maxWidth: 380)
+                        }
+                    }
+                } else { welcome }
+                footer
+            }
+        }
+        .disabled(store.loadingTitle != nil)
+        .background(Palette.paper).foregroundStyle(Palette.ink).tint(Palette.accent)
+        .overlay {
+            if let title = store.loadingTitle { SnapshotLoadingView(title: title, stage: store.loadingStage).transition(.opacity) }
+        }
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: store.loadingTitle)
+        .transaction { if reduceMotion { $0.animation = nil } }
+        .alert(L10n.text("Не удалось выполнить действие"), isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })) {
+            Button(L10n.text("Понятно")) { store.error = nil }
+        } message: { Text(store.error ?? "") }
+        .sheet(isPresented: $store.showIssues) { issuesSheet }
+        .sheet(isPresented: $store.showAgent) { AgentSheet(store: store) }
+        .sheet(isPresented: $store.showHistory) { HistorySheet(store: store) }
+        .sheet(isPresented: $store.showSourcePicker) {
+            VStack(alignment: .leading, spacing: 23) {
+                Text(L10n.text("Что будем анализировать?")).font(.system(size: 25, weight: .semibold))
+                ScanSetup(store: store)
+                HStack { Button(L10n.text("Отмена")) { store.showSourcePicker = false }.keyboardShortcut(.cancelAction); Spacer() }
+            }.padding(30).frame(width: 650).background(Palette.paper).foregroundStyle(Palette.ink)
+        }
+    }
+
+    private var workspace: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            heading
+            if store.scanning { progressBanner }
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    SectionLabel(text: L10n.text("Карта папки"))
+                    Spacer()
+                    Text(L10n.text("Двойной щелчок — внутрь")).font(.system(size: 10)).foregroundStyle(Palette.sub)
+                }
+                TreemapView(store: store).frame(minHeight: 150, idealHeight: 300, maxHeight: .infinity)
+                HStack(spacing: 13) {
+                    ForEach([FileKind.video, .image, .audio, .document, .archive, .code, .other], id: \.self) { kind in
+                        HStack(spacing: 4) {
+                            Circle().fill(kind.tint).frame(width: 5, height: 5)
+                            Text(kind.title).font(.system(size: 9))
+                        }.foregroundStyle(Palette.sub)
+                    }
+                }.lineLimit(1).id(store.language)
+            }
+            fileList
+        }.padding(24)
+    }
+
+    private var heading: some View {
+        VStack(alignment: .leading, spacing: 17) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(store.folder.map(store.name) ?? L10n.text("Обзор")).font(.system(size: 28, weight: .semibold, design: .rounded)).lineLimit(1)
+                    Text(store.folder.map(store.displayPath) ?? "").font(.system(size: 10, design: .monospaced)).foregroundStyle(Palette.sub).lineLimit(1).truncationMode(.middle).textSelection(.enabled)
+                }
+                Spacer()
+                Picker(L10n.text("Размер"), selection: $store.logical) {
+                    Text(L10n.text("На диске")).tag(false)
+                    Text(L10n.text("Размер файлов")).tag(true)
+                }.pickerStyle(.segmented).labelsHidden().frame(width: 216).help(L10n.text("Выделенные блоки или логический размер файлов"))
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 29) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(byteString(store.folder.map(store.size) ?? 0)).font(.system(size: 33, weight: .medium, design: .rounded)).monospacedDigit()
+                        .contentTransition(.numericText()).animation(.easeOut(duration: 0.18), value: store.logical)
+                    Text(store.logical ? L10n.text("размер файлов в папке") : L10n.text("занято файлами в папке")).font(.system(size: 10)).foregroundStyle(Palette.sub)
+                }
+                VStack(alignment: .leading, spacing: 6) {
+                    Text((store.folder?.fileCount ?? 0).formatted()).font(.system(size: 20, weight: .medium, design: .rounded)).monospacedDigit()
+                    Text(L10n.text("файлов")).font(.system(size: 10)).foregroundStyle(Palette.sub)
+                }
+                Spacer(minLength: 0)
+                if let snapshot = store.snapshot, !snapshot.isComposite {
+                    VStack(alignment: .trailing, spacing: 6) {
+                        Text(byteString(snapshot.volumeFree)).font(.system(size: 20, weight: .medium, design: .rounded)).monospacedDigit()
+                        Text(L10n.text("свободно на томе при сканировании")).font(.system(size: 9)).foregroundStyle(Palette.sub)
+                    }
+                }
+            }
+        }
+    }
+
+    private var fileList: some View {
+        let rows = store.rows
+        let showCreationDate = rows.contains { $0.created != nil }
+        return VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                SectionLabel(text: store.largestFiles ? L10n.text("Крупные файлы") : L10n.text("Содержимое"))
+                Text("\(store.rowCount)").font(.system(size: 10, design: .monospaced)).foregroundStyle(Palette.sub)
+                if let kind = store.kind {
+                    Button { store.kind = nil } label: {
+                        HStack(spacing: 4) { Text(kind.title); Image(systemName: "xmark").font(.system(size: 8)) }
+                    }.font(.system(size: 10)).buttonStyle(.bordered)
+                }
+                Spacer()
+                HStack(spacing: 6) {
+                    if store.rowsLoading { ProgressView().controlSize(.mini).help(L10n.text("Ищем…")) }
+                    else { Image(systemName: "magnifyingglass").foregroundStyle(Palette.sub) }
+                    TextField(L10n.text("Найти файл или папку"), text: $store.query).textFieldStyle(.plain)
+                        .accessibilityLabel(L10n.text("Поиск по имени в текущей папке и вложенных папках"))
+                    if !store.query.isEmpty { Button { store.query = "" } label: { Image(systemName: "xmark.circle.fill") }.buttonStyle(.plain) }
+                }.font(.system(size: 11)).padding(7).frame(width: 214)
+                    .background(Palette.soft, in: RoundedRectangle(cornerRadius: 6))
+            }.padding(.bottom, 11)
+            HStack(spacing: 0) {
+                Text(L10n.text("Имя"))
+                Spacer()
+                if showCreationDate { Text(L10n.text("Создан")).frame(width: 92, alignment: .leading) }
+                Text(L10n.text("Изменён")).frame(width: 92, alignment: .leading)
+                Text(L10n.text(store.logical ? "Размер ↓" : "На диске ↓")).frame(width: 100, alignment: .trailing)
+                Text(L10n.text("Доля")).frame(width: 65, alignment: .trailing)
+            }.font(.system(size: 10, weight: .medium)).foregroundStyle(Palette.sub).padding(.horizontal, 12).padding(.vertical, 9)
+            Divider().overlay(Palette.line)
+            FileTable(rows: rows, logical: store.logical, folderBytes: store.folder.map(store.size) ?? 0,
+                      revision: store.rowRevision, language: store.language,
+                      showPaths: store.largestFiles || !store.query.isEmpty || store.kind != nil,
+                      showCreationDate: showCreationDate,
+                      selection: $store.selection, open: store.activate, reveal: store.reveal, copyPath: store.copy)
+                .frame(minHeight: 130, idealHeight: 210, maxHeight: 245)
+                .opacity(store.rowsLoading ? 0.5 : 1).disabled(store.rowsLoading)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: store.rowsLoading)
+            if store.rowCount > 1000 {
+                Text(L10n.text("Первые 1 000 объектов. Уточни поиск для остальных.")).font(.system(size: 10)).foregroundStyle(Palette.sub).padding(.top, 5)
+            }
+            if rows.isEmpty { Text(L10n.text("Ничего не найдено")).font(.system(size: 11)).foregroundStyle(Palette.sub).padding(8) }
+        }
+    }
+
+    private var progressBanner: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(L10n.text("Сканирование…")).font(.system(size: 12, weight: .medium))
+                Spacer()
+                Text(L10n.text("\(store.progressCount.formatted()) объектов · \(byteString(store.progressBytes))")).font(.system(size: 10, design: .monospaced))
+            }
+            ProgressView().progressViewStyle(.linear)
+            Text(store.progressPath).font(.system(size: 9, design: .monospaced)).lineLimit(1).truncationMode(.middle).foregroundStyle(Palette.sub)
+        }.padding(12).background(Palette.soft, in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private var welcome: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            Spacer()
+            HStack(spacing: 12) {
+                AtlasMark()
+                Text("Disk Atlas").font(.system(size: 20, weight: .semibold))
+                Spacer()
+                LanguagePicker(store: store)
+                Menu {
+                    Button(L10n.text("Как в системе")) { store.appearance = "system" }
+                    Button(L10n.text("Светлая")) { store.appearance = "light" }
+                    Button(L10n.text("Тёмная")) { store.appearance = "dark" }
+                } label: { Image(systemName: "circle.lefthalf.filled") }
+                    .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                    .frame(width: 28, height: 28).help(L10n.text("Оформление"))
+            }.padding(.bottom, 3)
+            Text(store.scanning ? L10n.text("Собираем карту файлов.") : L10n.text("Что будем анализировать?")).font(.system(size: 31, weight: .medium, design: .rounded)).tracking(-0.5)
+            if store.scanning {
+                progressBanner.frame(maxWidth: 620)
+                Button(L10n.text("Остановить анализ")) { store.cancel() }.buttonStyle(.bordered)
+            } else {
+                ScanSetup(store: store)
+                Button(L10n.text("Открыть сохранённый снимок…")) { store.importSnapshot() }.buttonStyle(.plain).foregroundStyle(Palette.accent).font(.system(size: 12))
+                if !store.historyRecords.isEmpty {
+                    Button(L10n.text("История сканов…"), systemImage: "clock.arrow.circlepath") { store.showHistory = true }
+                        .buttonStyle(.plain).foregroundStyle(Palette.accent).font(.system(size: 12))
+                }
+            }
+            Spacer()
+            HStack(spacing: 25) {
+                Label(L10n.text("Без облака"), systemImage: "internaldrive")
+                Label(L10n.text("Только метаданные"), systemImage: "doc.text.magnifyingglass")
+                Label("CLI + MCP", systemImage: "terminal")
+            }.font(.system(size: 11)).foregroundStyle(Palette.sub).padding(.bottom, 32)
+        }.frame(maxWidth: 650, alignment: .leading).padding(.horizontal, 32)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var footer: some View {
+        HStack(spacing: 7) {
+            Circle().fill(store.scanning ? Color.orange : Palette.accent).frame(width: 5, height: 5)
+            if store.preparing { Text(L10n.text("Подготовка снимка…")); ProgressView().controlSize(.mini) }
+            else if store.scanning { Text(L10n.text("Сканирование")) }
+            else if let snapshot = store.snapshot {
+                Text(snapshot.cancelled ? L10n.text("Остановлено · неполный снимок") : L10n.text("Снимок · \(String(format: "%.2f", snapshot.elapsed)) с"))
+                if snapshot.issueCount > 0 {
+                    Button(L10n.text("Пропущено: \(snapshot.issueCount)")) { store.showIssues = true }.buttonStyle(.plain).foregroundStyle(.orange)
+                }
+            } else { Text(L10n.text("Готово к сканированию")) }
+            if store.savingHistory > 0 {
+                Text("· " + L10n.text("Сохранение истории…"))
+                ProgressView().controlSize(.mini)
+            }
+            Spacer()
+            Text(store.notice ?? L10n.text("Файлы остаются на своих местах"))
+        }.font(.system(size: 10)).foregroundStyle(Palette.sub).padding(.horizontal, 24).frame(height: 30)
+            .background(Palette.soft)
+    }
+
+    private var issuesSheet: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text(L10n.text("Что не удалось прочитать")).font(.title2.weight(.semibold))
+            Text(L10n.text("Недоступные папки не входят в итог. Для защищённых папок macOS может потребоваться полный доступ к диску в Системных настройках."))
+                .font(.callout).foregroundStyle(Palette.sub)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 15) {
+                    ForEach(Array((store.snapshot?.issues ?? []).enumerated()), id: \.offset) { _, issue in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(issue.path).font(.system(size: 11, design: .monospaced)).textSelection(.enabled)
+                            Text(L10n.text(issue.message)).font(.system(size: 11)).foregroundStyle(Palette.sub)
+                        }
+                    }
+                }.frame(maxWidth: .infinity, alignment: .leading)
+            }
+            HStack {
+                Text(L10n.text("Сохранены первые 200 сообщений")).font(.caption).foregroundStyle(Palette.sub)
+                Spacer()
+                Button(L10n.text("Готово")) { store.showIssues = false }.keyboardShortcut(.defaultAction)
+            }
+        }.padding(28).frame(width: 620, height: 450).background(Palette.paper)
+    }
+}

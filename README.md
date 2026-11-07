@@ -1,0 +1,158 @@
+---
+type: Project Guide
+description: Disk Atlas for macOS — installation, native disk exploration, local scan history, CLI and MCP.
+created: "2026-11-07"
+---
+<div align="center">
+  <img src="docs/images/atlas-mark.svg" width="88" alt="Disk Atlas icon">
+  <h1>Disk Atlas</h1>
+  <p><strong>Room for what matters.</strong></p>
+  <p>A native map of your Mac’s storage. Built for people and agents.</p>
+  <p><a href="https://github.com/ai-babai/disk-atlas/releases">Download for macOS</a> · <a href="README.ru.md">По-русски</a> · <a href="docs/ARCHITECTURE.md">Architecture</a></p>
+  <p>macOS 14+ · Apple Silicon & Intel · English / Русский · Early access</p>
+</div>
+
+![Disk Atlas in dark mode, showing a storage map, compact scan history and file dates](docs/images/workspace-dark.png)
+
+*Native interface preview with illustrative data. Your files stay on your Mac.*
+
+## Make space understandable
+
+Choose what to analyze first. Add several folders, review the selection, then
+start the scan. Explore the treemap, follow the largest folders, filter by type
+or find an item by name. Open an earlier scan whenever you need to return to it.
+
+- **A map and a real file list.** Allocated or logical sizes, scoped search,
+  largest files, creation/modification dates and a focused inspector.
+- **Your scope, your choice.** Multiple folders, drag and drop, common locations,
+  overlap detection and no scan until you press Analyze.
+- **History that remembers.** Local compressed results, dates and sizes; opening
+  a snapshot does not rescan its folders. Reading and map preparation have visible stages.
+- **Native comfort.** Resizable and collapsible sidebars, one compact toolbar,
+  light/dark themes and English/Russian UI. Double-click a file to reveal it in Finder.
+- **The same data for agents.** CLI, JSON output and an MCP server share the scan core.
+
+## Download & install
+
+1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases) while signed in
+   to a GitHub account with access to this private repository.
+2. Download **Disk-Atlas-0.1.0-universal.dmg**. The same app supports Apple Silicon
+   and Intel Macs running **macOS 14 Sonoma or later**.
+3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
+   then launch the app from Applications. A ZIP is also available.
+
+This ordinary build is **ad hoc signed and not notarized by Apple**. On another
+Mac, Gatekeeper may block the first launch. After verifying the download source,
+follow [Apple’s instructions](https://support.apple.com/102445): attempt to open
+it, then check **System Settings → Privacy & Security → Open Anyway**. Do not
+turn off Gatekeeper globally. A paid Apple Developer membership is not required
+to build this version; a notarized distribution would need a Developer ID setup.
+
+Optional integrity check, with both downloaded artifacts beside the checksum file:
+
+```sh
+shasum -a 256 -c SHA256SUMS.txt
+```
+
+## A quiet, deliberate workflow
+
+1. **Choose folders.** Drop folders, use the multiple-selection picker or quick locations.
+2. **Analyze.** See progress and stop when needed. Cancelling a new scan keeps the previous result.
+3. **Explore.** Single-click to select; double-click a folder to go inside or a file to reveal it in Finder.
+4. **Return later.** Use scan history, or export a portable `.atlas` snapshot.
+
+| Shortcut | Action |
+| --- | --- |
+| ⌘O / ⇧⌘O | New scan / open snapshot |
+| ⌘S / ⌘R / ⌘. | Export / rescan / stop |
+| ⌘↑ / Return | Go up / explore folder or reveal file |
+| ⌘B / ⌥⌘I | Toggle navigation / inspector |
+| ⇧⌘C | Copy the current scope as agent-friendly JSON |
+
+The list renders up to 1,000 matches and shows the total count. Search and type
+filters affect the list; the map keeps showing the whole current folder. Missing
+creation dates are omitted from the inspector, and the column hides when no
+visible row has that date. Dates describe the time of the scan, not live changes.
+
+## For agents
+
+The CLI is bundled inside the app. It can also be linked to a directory on your PATH.
+
+```sh
+ATLAS="/Applications/Disk Atlas.app/Contents/MacOS/disk-atlas"
+"$ATLAS" scan "$HOME/Downloads" "$HOME/Desktop" --json --output /tmp/scan.atlas
+"$ATLAS" inspect /tmp/scan.atlas --files --limit 20
+"$ATLAS" show /tmp/scan.atlas
+```
+
+MCP client configuration:
+
+```json
+{
+  "mcpServers": {
+    "disk-atlas": {
+      "command": "/Applications/Disk Atlas.app/Contents/MacOS/disk-atlas",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+Tools: `scan_directory` (`path` or `paths`, optional `output`),
+`inspect_snapshot` (`snapshot`, optional `path`, `files`, `limit`) and
+`show_snapshot` (`snapshot`). Sizes in JSON are bytes. `inspect` returns 1–500
+items, 50 by default. Existing snapshot files are never overwritten by CLI/MCP.
+Errors are structured JSON on stderr with exit code 1.
+
+MCP uses stdio, with no network listener. Requests run sequentially; per-request
+MCP progress and cancellation are not implemented yet. The GUI’s **For agents**
+button copies configuration using the app’s actual installation path.
+
+## Local by design
+
+The scanner reads **metadata**, includes hidden files and application packages,
+does not follow symlinks, and counts hard links once across selected roots. It
+has no deletion, moving, content execution, networking or privilege escalation
+operations. Protected directories can be skipped and appear in the issue list.
+
+- **On disk:** allocated blocks reported by `lstat.st_blocks × 512`.
+- **File size:** logical bytes reported by `lstat.st_size`.
+- APFS clones, shared blocks, snapshots and purgeable space mean these values
+  are **not guaranteed reclaimable space**. Folder metadata blocks are excluded.
+- This is a scan over time, not an atomic filesystem snapshot; changing files
+  can affect totals. The first 200 read errors are retained.
+
+History is stored in `~/Library/Application Support/Disk Atlas/History`, compressed
+with LZFSE. The directory uses mode 0700 and files use 0600. Old history is not
+pruned automatically. GUI history and requested exports are local writes; scanned
+source files remain untouched. Exported snapshots contain **private paths and names**:
+review them before sharing. Imports validate structure and totals, up to 2 GiB.
+
+## Build from source
+
+Requires Swift 6 / Xcode Command Line Tools on macOS. No external package dependencies.
+
+```sh
+git clone git@github.com:ai-babai/disk-atlas.git
+cd disk-atlas
+scripts/build.sh --install
+```
+
+The local installer uses `~/Applications` and adds `~/.local/bin/disk-atlas` if
+that name is free. Quit the running app before replacing its bundle.
+
+```sh
+scripts/release.sh
+```
+
+Builds arm64 and x86_64 executables, combines them into a universal app, verifies
+the ad hoc signature, and creates DMG, ZIP and SHA-256 files in `dist/release/`.
+See [architecture and validation](docs/ARCHITECTURE.md), [changelog](CHANGELOG.md)
+and [security policy](SECURITY.md). Initial release validation uses scratch checks
+and manual UI review; no committed test suite or CI is included yet.
+
+---
+
+Independent software inspired by the local-first, human-and-agent workflow of
+[Artcraft](https://getartcraft.com/). Not affiliated with Artcraft or WinDirStat.
+Private project. [All rights reserved](LICENSE).

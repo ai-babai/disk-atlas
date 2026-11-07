@@ -1,0 +1,36 @@
+DISK ATLAS — INSTALLATION / УСТАНОВКА
+
+macOS 14 Sonoma or later. Universal app: Apple Silicon + Intel.
+
+1. Drag Disk Atlas.app to Applications.
+2. Eject this disk image and open Disk Atlas from Applications.
+3. Select folders, then click Analyze. Selection alone never starts a scan.
+
+This early access build is ad hoc signed, without Apple notarization.
+If macOS blocks it, follow Apple's instructions for apps from an unidentified
+developer, after verifying you trust the download:
+https://support.apple.com/102445
+System Settings > Privacy & Security may offer Open Anyway after a launch attempt.
+Do not disable Gatekeeper globally.
+
+The app reads file metadata. It does not delete, move or execute scanned files.
+Protected folders may require permissions from macOS; unavailable paths are listed.
+Scan history stays in ~/Library/Application Support/Disk Atlas/History.
+
+---
+
+macOS 14 Sonoma или новее. Одна сборка для Apple Silicon и Intel.
+
+1. Перетащи Disk Atlas.app в Applications («Программы»).
+2. Извлеки образ диска и открой Disk Atlas из «Программ».
+3. Выбери папки и нажми «Анализировать». Выбор папок сам не запускает сканирование.
+
+Это ранняя сборка с подписью ad hoc, без нотарификации Apple.
+Если macOS блокирует запуск, проверь источник загрузки и следуй инструкции Apple:
+https://support.apple.com/102445
+После попытки запуска в «Системные настройки > Конфиденциальность и безопасность»
+может появиться «Всё равно открыть». Не отключай Gatekeeper целиком.
+
+Приложение читает метаданные, не удаляет, не перемещает и не запускает файлы.
+Недоступные папки видны в списке пропусков. История хранится локально:
+~/Library/Application Support/Disk Atlas/History.

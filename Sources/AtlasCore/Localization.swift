@@ -1,0 +1,137 @@
+import Foundation
+
+public enum L10n {
+    private static let lock = NSLock()
+    private static var cachedLanguage = UserDefaults.standard.string(forKey: "atlas.language") ?? "ru"
+    public static var language: String {
+        get { lock.lock(); defer { lock.unlock() }; return cachedLanguage }
+        set {
+            lock.lock(); cachedLanguage = newValue == "en" ? "en" : "ru"; lock.unlock()
+            UserDefaults.standard.set(newValue == "en" ? "en" : "ru", forKey: "atlas.language")
+        }
+    }
+    public static func text(_ source: String) -> String {
+        guard language == "en" else { return source }
+        if let exact = english[source] { return exact }
+        // Dynamic messages retain paths and values verbatim; only their UI phrases change.
+        var result = source
+        for (ru, en) in fragments { result = result.replacingOccurrences(of: ru, with: en) }
+        if result.hasPrefix("Snapshot ·"), result.hasSuffix(" с") { result = String(result.dropLast(2)) + " s" }
+        return result
+    }
+    public static func date(_ date: Date, time: Bool = true) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: language == "en" ? "en_US" : "ru_RU")
+        formatter.dateStyle = .medium
+        formatter.timeStyle = time ? .short : .none
+        return formatter.string(from: date)
+    }
+    public static func historyDate(_ date: Date) -> String {
+        let locale = Locale(identifier: language == "en" ? "en_US" : "ru_RU")
+        let time = date.formatted(.dateTime.locale(locale).hour().minute())
+        if Calendar.current.isDateInToday(date) { return text("Сегодня") + " · " + time }
+        if Calendar.current.isDateInYesterday(date) { return text("Вчера") + " · " + time }
+        let day = Calendar.current.component(.year, from: date) == Calendar.current.component(.year, from: Date())
+            ? date.formatted(.dateTime.locale(locale).day().month(.abbreviated))
+            : date.formatted(.dateTime.locale(locale).day().month(.abbreviated).year())
+        return day + " · " + time
+    }
+    private static let fragments: [(String, String)] = [
+        ("Выбрано: ", "Selected: "), ("Ещё ", "More: "), ("Пропущено: ", "Skipped: "),
+        ("Снимок · ", "Snapshot · "), (" объектов · ", " items · "),
+        ("Фильтр: ", "Filter: "), ("Убрать ", "Remove "), (" из анализа", " from analysis"),
+        ("Выбери папку для сканирования: ", "Choose a directory to scan: "),
+        ("Нет доступа к папке: ", "Cannot access directory: "),
+        ("Путь отсутствует в снимке: ", "Path is not in this snapshot: "),
+        (" должен быть абсолютным путём.", " must be an absolute path."),
+        ("Неизвестный инструмент: ", "Unknown tool: "),
+        ("Неизвестный или повторный параметр: ", "Unknown or repeated option: "),
+        ("Нет значения для ", "Missing value for "),
+        ("Файл уже существует: ", "File already exists: "), (". Выбери новое имя.", ". Choose a new name."),
+        ("Неизвестная команда: ", "Unknown command: "), (". Используй --help.", ". Use --help."),
+        ("\nДвойной щелчок — открыть папку", "\nDouble-click to open folder")
+    ]
+    private static let english: [String: String] = [
+        "Сегодня": "Today", "Вчера": "Yesterday", "Читаем снимок…": "Reading snapshot…",
+        "Готовим карту…": "Preparing the map…", "Сохраняем снимок…": "Saving snapshot…",
+        "Открываем снимок": "Opening snapshot", "Сохранённые данные · без повторного анализа": "Saved data · no rescan",
+        "Ищем…": "Searching…",
+        "Создан": "Created", "Дата создания не сохранена в этом снимке": "Creation date was not saved in this snapshot",
+        "История сканов": "Scan history", "История сканов…": "Scan history…", "Вся история…": "All scans…",
+        "Здесь появятся сохранённые сканы": "Saved scans will appear here",
+        "Сохранённые результаты. Открытие не запускает новый анализ.": "Saved results. Opening one does not start a new scan.",
+        "Сохранение истории…": "Saving history…",
+        "Не удалось открыть историю: ": "Could not open scan history: ", "Не удалось сохранить историю: ": "Could not save scan history: ",
+        "Скрыть навигацию": "Hide sidebar", "Показать навигацию": "Show sidebar",
+        "Скрыть подробности": "Hide details", "Показать подробности": "Show details",
+        "Скрыть навигацию · ⌘B": "Hide sidebar · ⌘B", "Показать навигацию · ⌘B": "Show sidebar · ⌘B",
+        "Скрыть подробности · ⌥⌘I": "Hide details · ⌥⌘I", "Показать подробности · ⌥⌘I": "Show details · ⌥⌘I",
+        "Подготовка снимка…": "Preparing snapshot…",
+        "Открыть весь снимок": "Open full snapshot",
+        "Папки": "Folders", "Видео": "Video", "Аудио": "Audio", "Изображения": "Images",
+        "Документы": "Documents", "Архивы": "Archives", "Код и данные": "Code & data", "Остальное": "Other", "Ссылки": "Links",
+        "Нужен обычный файл снимка размером до 2 ГБ.": "Choose a regular snapshot file up to 2 GB.",
+        "Неподдерживаемый или повреждённый снимок.": "Unsupported or damaged snapshot.",
+        "Нарушена структура снимка.": "Invalid snapshot structure.", "Нарушены связи снимка.": "Invalid snapshot links.",
+        "В снимке есть несвязанные объекты.": "The snapshot contains disconnected entries.",
+        "Повреждены размеры снимка.": "Invalid snapshot sizes.", "Итоги снимка не совпадают с содержимым.": "Snapshot totals do not match its contents.",
+        "Выбери хотя бы одну папку.": "Choose at least one folder.", "Выбранные папки": "Selected folders",
+        "Не удалось прочитать папку.": "Could not read the folder.", "Другой том: сканируется отдельно.": "Another volume: add it as a separate scan location.",
+        "Родительская папка недоступна.": "Parent directory is unavailable.",
+        "Приложение не установлено: запусти scripts/build.sh --install.": "App is not installed: run scripts/build.sh --install.",
+        "Не удалось открыть приложение.": "Could not open the app.",
+        "Укажи либо path, либо непустой массив абсолютных paths.": "Supply either path or a nonempty array of absolute paths.",
+        "Файл снимка уже существует. Выбери новое имя.": "Snapshot already exists. Choose a new name.",
+        "limit: от 1 до 500.": "limit must be between 1 and 500.", "Укажи путь. Используй --help.": "Supply a path. Use --help.",
+        "Новый анализ…": "New scan…", "Открыть снимок…": "Open snapshot…", "Сохранить снимок…": "Save snapshot…",
+        "Сканирование": "Scan", "Повторить": "Rescan", "Остановить": "Stop", "На уровень выше": "Go up",
+        "Контекст для агента": "Copy agent context", "Подробности": "Details", "На диске": "On disk", "Размер файлов": "File size",
+        "Файлов": "Files", "Изменён": "Modified", "Жёсткая ссылка. Размер учтён у другого имени этого файла.": "Hard link. Its size is counted under another name for this file.",
+        "Исследовать папку": "Explore folder", "Показать в Finder": "Show in Finder", "Скопировать путь": "Copy path",
+        "Скопировать текущую папку и 30 крупных объектов в JSON · ⇧⌘C": "Copy this folder and 30 largest entries as JSON · ⇧⌘C",
+        "APFS может разделять блоки между копиями. Размер здесь не равен гарантированно освобождаемому месту.": "APFS can share blocks between copies. These sizes are not guaranteed reclaimable space.",
+        "Типы в папке": "File types", "Все": "All", "В папке пока нет файлов": "No files in this folder",
+        "Один атлас. Два способа работать.": "One atlas. Two ways to work.",
+        "Ты исследуешь карту. Агент получает те же данные через CLI или MCP и может открыть свой снимок в этом окне.": "Explore the map yourself, or let an agent use the same data through CLI or MCP and open its snapshot here.",
+        "Подключение MCP": "MCP connection", "Копировать конфигурацию": "Copy configuration", "Сохранить текущий снимок…": "Save current snapshot…",
+        "Доступные операции": "Available tools", "Просканировать папку и сохранить снимок": "Scan folders and save a snapshot",
+        "Найти крупные файлы и исследовать папки": "Find large files and explore folders", "Открыть результат в приложении": "Open the result in the app",
+        "Снимки содержат имена, пути, размеры и даты. Содержимое файлов не читается. Команд удаления нет.": "Snapshots contain names, paths, sizes and dates. File contents are not read. No deletion commands.",
+        "Готово": "Done", "Нет занятых блоков": "No allocated blocks", "Папка пуста или данные недоступны.": "The folder is empty or unavailable.",
+        "Открыть папку": "Open folder", "Место для важного": "Room for what matters", "Обзор": "Explore", "Карта пространства": "Space map",
+        "Крупные файлы": "Largest files", "В этом анализе": "In this scan", "Добавить в анализ": "Add to scan",
+        "Домашняя папка": "Home folder", "Загрузки": "Downloads", "Приложения": "Applications", "Другие папки…": "Other folders…",
+        "Текущий снимок": "Current snapshot", "Данные на": "Data as of", "Анализ не завершён": "Incomplete scan", "Для агента": "For agents",
+        "Локально на твоём Mac": "Local to your Mac", "Как в системе": "System appearance", "Светлая": "Light", "Тёмная": "Dark",
+        "Оформление": "Appearance", "Оформление приложения": "App appearance",
+        "Можно добавить только локальную папку или подключённый диск.": "Add a local folder or a mounted drive.",
+        "Выбери папку, а не отдельный файл.": "Choose a folder, not an individual file.",
+        "Пересекающиеся папки объединены: каждый файл учитывается один раз": "Overlapping folders merged: each file is counted once",
+        "Выбрать": "Choose", "Выбери диск для анализа": "Choose a drive to analyze", "Выбери папку для анализа": "Choose folders to analyze",
+        "Анализ остановлен · предыдущий снимок сохранён": "Scan stopped · previous snapshot kept",
+        "Дождись завершения сканирования или останови его.": "Wait for the scan to finish or stop it first.",
+        "Открыт сохранённый снимок": "Saved snapshot opened", "Снимок сохранён": "Snapshot saved", "Скопировано": "Copied",
+        "Рабочий стол": "Desktop", "Музыка": "Music", "Добавь одну или несколько папок. Затем запусти анализ.": "Add one or more folders. Then start your scan.",
+        "Весь диск Mac": "Mac data volume", "Перетащи сюда папки": "Drop folders here", "или добавь их кнопкой ниже": "or add them using the buttons below",
+        "Добавить папки…": "Add folders…", "Другой диск…": "Another drive…", "Анализировать": "Analyze",
+        "Включая вложенные папки · без повторного подсчёта\nФайлы не изменяются": "Includes subfolders · no double counting\nYour files stay unchanged",
+        "Весь диск Mac · данные": "Mac · data volume", "Убрать из анализа": "Remove from scan",
+        "Не удалось выполнить действие": "Could not complete the action", "Понятно": "OK", "Что будем анализировать?": "What would you like to analyze?",
+        "Отмена": "Cancel", "На уровень выше · ⌘↑": "Go up · ⌘↑", "Обзор пространства": "Space overview",
+        "Повторить сканирование · ⌘R": "Rescan · ⌘R", "Сохранить снимок · ⌘S": "Save snapshot · ⌘S", "Новый анализ": "New scan",
+        "Карта папки": "Folder map", "Двойной щелчок — внутрь": "Double-click to explore", "Размер": "Size",
+        "Выделенные блоки или логический размер файлов": "Allocated blocks or logical file size",
+        "размер файлов в папке": "file size in this folder", "занято файлами в папке": "used by files in this folder", "файлов": "files",
+        "свободно на томе при сканировании": "available on volume at scan time", "Содержимое": "Contents", "Найти файл или папку": "Find a file or folder",
+        "Поиск по имени в текущей папке и вложенных папках": "Search by name in this folder and its subfolders",
+        "Имя": "Name", "Размер ↓": "Size ↓", "На диске ↓": "On disk ↓", "Доля": "Share",
+        "Первые 1 000 объектов. Уточни поиск для остальных.": "Showing the first 1,000 entries. Refine your search to see more.",
+        "Ничего не найдено": "No matches", "Сканирование…": "Scanning…", "Собираем карту файлов.": "Mapping your files.",
+        "Остановить анализ": "Stop scan", "Открыть сохранённый снимок…": "Open a saved snapshot…", "Без облака": "No cloud",
+        "Только метаданные": "Metadata only", "Остановлено · неполный снимок": "Stopped · incomplete snapshot",
+        "Готово к сканированию": "Ready to scan", "Файлы остаются на своих местах": "Your files stay in place",
+        "Что не удалось прочитать": "What could not be read",
+        "Недоступные папки не входят в итог. Для защищённых папок macOS может потребоваться полный доступ к диску в Системных настройках.": "Unavailable folders are excluded from totals. Protected macOS folders may require Full Disk Access in System Settings.",
+        "Сохранены первые 200 сообщений": "First 200 messages retained"
+    ]
+}
