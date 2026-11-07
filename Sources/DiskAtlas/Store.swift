@@ -527,19 +527,16 @@ import UniformTypeIdentifiers
     }
 
     func selectFromMap(_ id: Int) {
-        guard let snapshot = index?.snapshot, snapshot.entries.indices.contains(id),
-            let parent = snapshot.entries[id].parent
-        else { return }
-        if parent != folderID {
-            navigate(parent)
-        } else {
-            query = ""
-            selectedKinds = []
-        }
-        mapSelectionID = id
+        guard let snapshot = index?.snapshot, snapshot.entries.indices.contains(id) else { return }
+        // Inspect the exact hit without changing the map or list's directory scope.
+        query = ""
+        selectedKinds = []
         selection = id
-        rowScrollRequest &+= 1
-        refreshRows()
+        if snapshot.entries[id].parent == folderID {
+            mapSelectionID = id
+            rowScrollRequest &+= 1
+            refreshRows()
+        }
     }
 
     func navigate(_ id: Int) {

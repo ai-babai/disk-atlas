@@ -90,7 +90,8 @@ struct Inspector: View {
                     Button(L10n.text("Все")) { store.selectedKinds = [] }.font(.system(size: 10)).buttonStyle(.plain)
                 }
             }
-            Text(L10n.text("Фильтр списка · несколько типов")).font(.system(size: 9)).foregroundStyle(Palette.sub)
+            Text(L10n.text("Фильтр списка") + " · " + (store.folder.map(store.name) ?? "")).font(.system(size: 9))
+                .foregroundStyle(Palette.sub).lineLimit(1).truncationMode(.middle).help(store.folder?.path ?? "")
             ForEach(values, id: \.kind) { item in
                 Button {
                     store.toggleKind(item.kind)

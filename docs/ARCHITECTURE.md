@@ -82,8 +82,10 @@ Size/date view filters construct a derived snapshot and index off the main threa
 the saved snapshot remains unchanged. Native range controls preview locally while
 dragging and commit once on release. Table headers and cells share native column
 geometry, with a trailing gutter for percentages. Nested canvas hit testing uses
-the same bounded layout as drawing; map selection reveals the parent, includes
-the selected entry in the bounded list and explicitly scrolls to it. Aggregate
+the same bounded layout as drawing. A single map click selects the exact hit for
+the inspector without changing the current directory, including nested folders
+and files. Direct-child selections are included in the bounded list and scrolled
+to; deeper selections remain highlighted in the map and inspector. Aggregate
 tiles are inert. Inspector content is constrained to its viewport width so long
 paths cannot stretch or shift the panel.
 
@@ -92,7 +94,9 @@ moves the divider in 220 ms, preserving resized pane widths. SwiftUI environment
 values cross hosting boundaries, including Reduce Motion, appearance and disabled
 state. Map state is isolated from unrelated observable-store updates; only the
 selected branch invalidates nested Canvas artwork. Single clicks are immediate;
-the second click retains its first target across a parent reveal.
+activation requires a second click on the same entry. Folder entry is explicit
+through double-click, Explore folder or an Open action. The inspector's type
+filter names the current list directory separately from the selected item.
 
 Duplicate counts are precomputed per ancestor off-main. Folder links filter groups
 off-main before sorting and bounding the visible results. DuplicateTrashPlan

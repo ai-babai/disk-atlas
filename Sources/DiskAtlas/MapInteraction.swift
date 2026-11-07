@@ -1,8 +1,8 @@
 import AppKit
 import AtlasCore
 
-/// Respond to the first click immediately. The second click keeps the original
-/// target even if revealing its parent has already changed the visible map.
+/// Selection is immediate and never navigates. Activation requires a second
+/// click on the same entry; aggregate tiles remain inert.
 struct MapInteraction {
     enum Action: Equatable {
         case select(Int)
@@ -18,15 +18,15 @@ struct MapInteraction {
     private var previous: Hit?
 
     mutating func action(target: MapTarget, index: PresentationIndex, point: CGPoint, time: TimeInterval) -> Action {
-        if let hit = previous, hit.index == ObjectIdentifier(index), time - hit.time < NSEvent.doubleClickInterval,
-            hypot(point.x - hit.point.x, point.y - hit.point.y) < 5
-        {
-            previous = nil
-            return .activate(hit.id)
-        }
         guard case .entry(let id) = target else {
             previous = nil
             return .none
+        }
+        if let hit = previous, hit.id == id, hit.index == ObjectIdentifier(index),
+            time - hit.time < NSEvent.doubleClickInterval, hypot(point.x - hit.point.x, point.y - hit.point.y) < 5
+        {
+            previous = nil
+            return .activate(hit.id)
         }
         previous = Hit(index: ObjectIdentifier(index), id: id, point: point, time: time)
         return .select(id)

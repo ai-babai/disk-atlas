@@ -5,6 +5,12 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.5.2 — 2026-11-07
+
+- Single-click a map rectangle to inspect the exact file or folder without changing the current directory, including nested folders and files.
+- Keep navigation explicit through double-click, Explore folder and Open actions. A second click must hit the same entry; aggregate tiles stay inert.
+- Keep direct-child selection/scrolling in the list and show the current list directory beside the inspector's type filter, separately from the selected item.
+
 ## 0.5.1 — 2026-11-07
 
 - Combine scan metadata and duplicate activity into one stable 30-point status row, replacing the two stacked bars.

@@ -35,8 +35,10 @@ transition. A dragged 260-point navigation pane returned at 260 points. Transiti
 use AppKit's split item animator with a 220 ms ease-in/ease-out duration. No artificial
 loading delay is added. SwiftUI environment values cross the hosting boundaries.
 
-A separate interaction check covers immediate single-click selection, double-click
+The 0.4.0 interaction check covered immediate single-click selection, double-click
 target stability after revealing a parent, nested-file hits and inert aggregates.
+In 0.5.2, single-click selection no longer reveals/navigates to a parent directory;
+activation requires a second click on the same entry.
 Native clicks also verified selection and folder opening. `sample` call stacks
 were inspected during panel transitions; raw profiling files are local scratch
 material and are not committed or published.

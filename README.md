@@ -38,7 +38,7 @@ or find an item by name. Open an earlier scan whenever you need to return to it.
 ## Download & install
 
 1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Download **Disk-Atlas-0.5.1-universal.dmg**. The same app supports Apple Silicon
+2. Download **Disk-Atlas-0.5.2-universal.dmg**. The same app supports Apple Silicon
    and Intel Macs running **macOS 14 Sonoma or later**.
 3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
    then launch the app from Applications. A ZIP is also available.
@@ -87,9 +87,11 @@ creation dates are omitted from the inspector, and the column hides when no
 visible row has that date. Dates describe the time of the scan, not live changes.
 
 Allocated size (**On disk**) is the default. The **Size** menu with a drive icon contains
-**File size** when logical bytes are needed. Clicking a map tile selects and scrolls
-to its entry in the list; a nested file reveals its parent folder. Double-clicking
-a folder still opens it. Aggregated **More…** tiles do not select a file.
+**File size** when logical bytes are needed. A single map click selects the exact
+file or folder for the inspector, including nested rectangles, without changing
+the current directory. Direct children are also selected and scrolled into view
+in the list; nested selections stay in the map and inspector. Double-click a
+folder or choose **Explore folder** to enter it. Aggregated **More…** tiles are inert.
 
 ## Check duplicates when you need them
 
