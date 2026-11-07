@@ -617,9 +617,13 @@ import UniformTypeIdentifiers
         refreshRows()
         rowScrollRequest &+= 1
     }
-    func clearMapGroup() {
+    var hasMapSelection: Bool { selection != nil || mapGroup != nil || mapSelectionID != nil }
+    func clearMapSelection() {
+        let scoped = mapGroup != nil || mapSelectionID != nil
+        selection = nil
         mapGroup = nil
-        refreshRows()
+        mapSelectionID = nil
+        if scoped { refreshRows() }
     }
     func selectFromMap(_ id: Int) {
         mapGroup = nil

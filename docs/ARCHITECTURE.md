@@ -146,8 +146,11 @@ native QA checks exact nested rectangles, aggregates, deep fallback and mode sta
 
 More areas capture the exact omitted child IDs at click time, including nested
 aggregates. Their list scope shares the bounded RowQuery heap, filters and ordering
-with ordinary results; no second index or source scan is needed. The group chip
-clears scope without resetting search/types/mode. Navigation, size-basis and view
+with ordinary results; no second index or source scan is needed. The persistent-height selection strip shows Clear highlight and the group label.
+Clear highlight, empty workspace background and empty map gaps clear selection,
+group scope and contextual rows without resetting folder/search/types/mode or
+Trash checkboxes. Only background hit areas clear; child controls keep their own
+clicks. Clearing also resets map double-click history. Navigation, size-basis and view
 filter changes clear the group. Its inspector describes a collection, not a directory.
 
 Ordinary file-list Trash uses independent checkboxes and fixed leading/trailing

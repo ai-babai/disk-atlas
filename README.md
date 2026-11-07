@@ -43,7 +43,7 @@ remembered after resizing, hiding and returning from Home.
 ## Download & install
 
 1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Download **Disk-Atlas-0.11.0-universal.dmg**. The same app supports Apple Silicon
+2. Download **Disk-Atlas-0.11.1-universal.dmg**. The same app supports Apple Silicon
    and Intel Macs running **macOS 14 Sonoma or later**.
 3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
    then launch the app from Applications. A ZIP is also available.
@@ -98,8 +98,9 @@ creation dates are omitted from the inspector, and the column hides when no
 visible row has that date. Dates describe the time of the scan, not live changes.
 
 Click a **More** area to show its contents in the list without zooming or navigating.
-The visible **More ×** chip clears that temporary scope; search, type filters and
-Contents / Largest files mode still apply within it.
+Use **Clear highlight** below the map or click empty workspace background to clear
+the selection and temporary More scope. Search, type filters and Contents / Largest
+files mode stay unchanged. Trash checkboxes are independent.
 
 File-list checkboxes select items for Trash independently of the focused row.
 Use the fixed action bar for all checked items, or the Trash icon in a row for one

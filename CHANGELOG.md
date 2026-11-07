@@ -5,6 +5,11 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.11.1 — 2026-11-08
+
+- Clear map/list highlights and temporary More groups by clicking empty workspace background, empty map gaps or the explicit Clear highlight action below the map.
+- Preserve folder, search, filters, list mode and independent Trash checkboxes when clearing a highlight; remove its temporary context row without navigating.
+
 ## 0.11.0 — 2026-11-08
 
 - Make More areas selectable as temporary list groups, including nested map areas. Keep map scale, search and list mode; clear the group with its visible chip.

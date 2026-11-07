@@ -133,7 +133,9 @@ struct MainView: View {
                 }
                 // Mode changes must not reflow the map through different native row heights.
                 fileList(height: min(245, max(130, geometry.size.height - 600)))
-            }.padding(24).opacity(store.viewFiltering ? 0.65 : 1).animation(
+            }.padding(24).background {
+                Color.clear.contentShape(Rectangle()).onTapGesture { store.clearMapSelection() }
+            }.opacity(store.viewFiltering ? 0.65 : 1).animation(
                 reduceMotion ? nil : .easeOut(duration: 0.12), value: store.viewFiltering)
         }
     }
@@ -227,13 +229,14 @@ struct MainView: View {
                 }
             }
             HStack {
-                if let group = store.mapGroup {
-                    Button {
-                        store.clearMapGroup()
-                    } label: {
-                        Label(group.title, systemImage: "xmark.circle.fill")
-                    }.buttonStyle(.plain).font(.system(size: 10)).help(L10n.text("Показать весь список"))
-                }
+                Button {
+                    store.clearMapSelection()
+                } label: {
+                    Label(L10n.text("Снять выделение"), systemImage: "xmark.circle.fill")
+                }.buttonStyle(.plain).font(.system(size: 10)).opacity(store.hasMapSelection ? 1 : 0).disabled(
+                    !store.hasMapSelection
+                ).accessibilityHidden(!store.hasMapSelection)
+                if let group = store.mapGroup { Text(group.title).font(.system(size: 10)).foregroundStyle(Palette.sub) }
                 typeSelection
             }.frame(height: 20, alignment: .leading)
         }.padding(.bottom, 11)

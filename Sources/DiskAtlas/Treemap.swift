@@ -141,10 +141,10 @@ private struct TreemapSurface: View, Equatable {
                     case .select(let id): store.selectFromMap(id)
                     case .activate(let id): store.activate(id)
                     case .group(let group): store.selectMapGroup(group)
-                    case .none: break
+                    case .none: store.clearMapSelection()
                     }
                 })
-        }
+        }.onChange(of: selection) { _, value in if value == nil { interaction = MapInteraction() } }
     }
 
 }
