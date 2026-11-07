@@ -9,5 +9,8 @@
   "changed_core_crap_average_below": 5,
   "changed_core_crap_max": 30,
   "file_lines_max": 1000,
-  "legacy_revision": "e5f7721"
+  "legacy_revision": "e5f7721",
+  "changed_scripts_line_coverage_min": 80,
+  "changed_scripts_crap_average_below": 5,
+  "changed_scripts_crap_max": 30
 }

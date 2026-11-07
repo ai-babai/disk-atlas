@@ -1,0 +1,20 @@
+[
+  {
+    "id": "script-reversed-coverage-threshold",
+    "file": "scripts/quality/coverage_audit.py",
+    "from": "percent < thresholds[\"coverage_min\"]",
+    "to": "percent > thresholds[\"coverage_min\"]"
+  },
+  {
+    "id": "script-accepts-one-complexity-violation",
+    "file": "scripts/quality/source_audit.py",
+    "from": "item[\"cyclomatic\"] <= policy[\"cyclomatic_max\"] and item[\"cognitive\"] <= policy[\"cognitive_max\"]",
+    "to": "item[\"cyclomatic\"] <= policy[\"cyclomatic_max\"] or item[\"cognitive\"] <= policy[\"cognitive_max\"]"
+  },
+  {
+    "id": "script-checks-wrong-push-commit",
+    "file": "scripts/quality/hooks.py",
+    "from": "if commit != head:",
+    "to": "if False:"
+  }
+]

@@ -140,7 +140,13 @@ and x86_64, combines executables, signs ad hoc and packages DMG/ZIP with checksu
 
 The project uses [the shared quality gate](QUALITY.md), behavior/property tests,
 selected mutation checks and manual native UI validation. Complexity legacy debt
-and the changed-Core coverage/CRAP scope are reported explicitly. An Intel slice can be built on
+and the separate changed-Core and production-script coverage/CRAP scopes are reported explicitly.
+Shell entry points are thin POSIX adapters. `scripts/build.py` owns packaging;
+`scripts/quality` separates tool bootstrap, process orchestration, language adapters,
+structural rules and coverage calculation. Their Python imports must remain acyclic.
+Pinned tools live in a private ignored venv, and tooling tests live in `scripts/tests`.
+The gate audits its own production code and tests rather than exempting them.
+An Intel slice can be built on
 Apple Silicon, but this does not replace validation on physical Intel hardware.
 
 ## 0.3.0 validation scope

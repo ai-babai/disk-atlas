@@ -1,0 +1,6 @@
+target-version = "py39"
+line-length = 120
+cache-dir = ".build/quality-tools/ruff-cache"
+
+[lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B", "SIM"]

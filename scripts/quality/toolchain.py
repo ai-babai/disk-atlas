@@ -1,17 +1,28 @@
-#!/usr/bin/env python3
-"""The policy file is the single machine-readable toolchain source."""
-import json
-from pathlib import Path
+"""Validate the selected Xcode; policy.json is the only toolchain source."""
+
 import subprocess
 
-root = Path(__file__).resolve().parents[2]
-policy = json.loads((root / 'quality/policy.json').read_text())
-xcode = subprocess.check_output(['xcodebuild', '-version'], text=True).strip()
-expected = 'Xcode ' + policy['xcode'] + '\nBuild version ' + policy['xcode_build']
-if xcode != expected:
-    raise SystemExit('Use ' + expected.replace('\n', ', ') + '. See CONTRIBUTING.md.')
-swift = subprocess.check_output(['xcrun', 'swift', '--version'], text=True, stderr=subprocess.STDOUT)
-if 'Apple Swift version ' + policy['swift'] + ' ' not in swift:
-    raise SystemExit('Swift ' + policy['swift'] + ' is required by quality/policy.json.')
-if (root / '.swift-version').read_text().strip() != policy['swift']:
-    raise SystemExit('.swift-version and quality/policy.json disagree.')
+from .common import ROOT, policy, run
+
+
+def validate_versions(config, xcode, swift, swift_file):
+    expected = "Xcode " + config["xcode"] + "\nBuild version " + config["xcode_build"]
+    if xcode.strip() != expected:
+        raise ValueError("Use " + expected.replace("\n", ", ") + ". See CONTRIBUTING.md.")
+    if "Apple Swift version " + config["swift"] + " " not in swift:
+        raise ValueError("Swift " + config["swift"] + " is required by quality/policy.json.")
+    if swift_file.strip() != config["swift"]:
+        raise ValueError(".swift-version and quality/policy.json disagree.")
+
+
+def verify():
+    validate_versions(
+        policy(),
+        run("xcodebuild", "-version"),
+        run("xcrun", "swift", "--version", stderr=subprocess.STDOUT),
+        (ROOT / ".swift-version").read_text(),
+    )
+
+
+if __name__ == "__main__":
+    verify()

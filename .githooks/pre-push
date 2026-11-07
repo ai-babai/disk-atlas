@@ -1,21 +1,5 @@
 #!/bin/sh
 set -eu
-cd "$(git rev-parse --show-toplevel)"
-atlas_base=''
-atlas_check=false
-while read -r atlas_local_ref atlas_local_oid atlas_remote_ref atlas_remote_oid; do
-    case "$atlas_local_oid" in 0000000000000000000000000000000000000000) continue ;; esac
-    atlas_commit=$(git rev-parse "$atlas_local_oid^{commit}")
-    case "$atlas_local_ref" in
-        refs/tags/*) if git merge-base --is-ancestor "$atlas_commit" origin/main; then continue; fi ;;
-    esac
-    if [ "$atlas_commit" != "$(git rev-parse HEAD)" ]; then
-        echo 'Push the checked-out branch separately so the gate validates the exact commit.' >&2; exit 1
-    fi
-    case "$atlas_remote_oid" in
-        0000000000000000000000000000000000000000) atlas_base=$(git merge-base HEAD origin/main) ;;
-        *) atlas_base=$(git merge-base HEAD "$atlas_remote_oid") ;;
-    esac
-    atlas_check=true
-done
-if "$atlas_check"; then exec scripts/check.sh --base "$atlas_base" --require-clean; fi
+CDPATH=''
+cd "$(dirname "$0")/.."
+exec python3 -m scripts.quality.hooks "$@"

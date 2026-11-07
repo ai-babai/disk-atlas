@@ -219,7 +219,7 @@ the ad hoc signature, and creates DMG, ZIP and SHA-256 files in `dist/release/`.
 See [architecture and validation](docs/ARCHITECTURE.md), [changelog](CHANGELOG.md)
 and [security policy](SECURITY.md). Contributors share [one quality gate](docs/QUALITY.md): strict formatting/build,
 behavior and generated-property tests, coverage/CRAP, complexity and selected
-mutations. Run `scripts/setup-dev.sh`, then `scripts/check.sh`. Its scope and
+mutations, including checks of the maintenance scripts themselves. Run `scripts/setup-dev.sh`, then `scripts/check.sh`. Its scope and
 frozen pre-existing complexity debt are explicit. Native UI review remains required.
 
 ---

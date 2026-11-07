@@ -19,7 +19,9 @@ scripts/setup-dev.sh   # once per clone, Xcode 16.4 / Swift 6.1.2
 scripts/check.sh       # format, build, properties, coverage, metrics and mutations
 ```
 
-The pre-push hook and CI use this same command. Fix failures before sending a PR;
+The pre-push hook and CI use this same command. It checks maintenance scripts and
+their tests too; pinned lint/coverage tools install automatically into an ignored
+private venv, with no global package changes. Fix failures before sending a PR;
 `--no-verify`, threshold inflation and regenerated debt exceptions are not fixes.
 Use `scripts/format.sh` for formatting. The contract states the coverage scope and
 frozen existing complexity debt explicitly; a passing change gate is not a claim

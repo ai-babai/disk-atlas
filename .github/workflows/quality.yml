@@ -28,5 +28,7 @@ jobs:
           path: |
             .build/quality/report.json
             .build/quality/coverage.lcov
+            .build/quality/scripts.lcov
+            .build/quality/python-coverage.json
             .build/quality/mutations/*.log
           if-no-files-found: ignore

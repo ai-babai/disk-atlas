@@ -1,5 +1,5 @@
 #!/bin/sh
 set -eu
+CDPATH=''
 cd "$(dirname "$0")/.."
-scripts/quality/toolchain.sh
-exec xcrun swift-format format --in-place --recursive Sources Tests scripts/quality/metrics.swift Package.swift
+exec python3 -m scripts.quality.bootstrap format "$@"

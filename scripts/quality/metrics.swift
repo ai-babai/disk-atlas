@@ -165,8 +165,16 @@ func analyze(_ path: String) throws -> [FunctionMetric] {
     return visitor.metrics
 }
 
-let files = CommandLine.arguments.dropFirst()
-let metrics = try files.flatMap(analyze)
-let encoder = JSONEncoder()
-encoder.outputFormatting = [.sortedKeys, .prettyPrinted]
-print(String(decoding: try encoder.encode(metrics), as: UTF8.self))
+@main struct MetricsCommand {
+    static func main() {
+        do {
+            let metrics = try CommandLine.arguments.dropFirst().flatMap(analyze)
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.sortedKeys, .prettyPrinted]
+            print(String(decoding: try encoder.encode(metrics), as: UTF8.self))
+        } catch {
+            FileHandle.standardError.write(Data((error.localizedDescription + "\n").utf8))
+            exit(1)
+        }
+    }
+}

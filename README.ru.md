@@ -223,7 +223,8 @@ scripts/release.sh
 и создаёт DMG, ZIP и SHA-256 в `dist/release/`. См. [архитектуру и проверку](docs/ARCHITECTURE.md),
 [историю изменений](CHANGELOG.md) и [политику безопасности](SECURITY.md).
 Для контрибьюторов есть [единая проверка качества](docs/QUALITY.ru.md):
-`scripts/setup-dev.sh`, затем `scripts/check.sh`. Формат, сборка, поведение,
+`scripts/setup-dev.sh`, затем `scripts/check.sh`. Скрипты обслуживания и их тесты
+тоже входят в общий аудит. Формат, сборка, поведение,
 generated properties, coverage/CRAP, сложность и выбранные мутации. Область
 измерений и замороженный исходный долг указаны явно; нативный UI проверяется вручную.
 
