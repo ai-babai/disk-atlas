@@ -5,6 +5,15 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.5.0 — 2026-11-07
+
+- Make CLI the primary agent interface: per-command help, version, generated command/effect discovery, selected doctor diagnostics, safe idempotent installation and shell completion.
+- Read, query and export existing GUI history without rescanning; query snapshots by folder, name, type, metric and sort order using bounded top-K results.
+- Return versioned JSON automatically in pipes, bounded DTOs and explicit pages; distinguish usage, missing, partial and interrupted results. Keep data on stdout, diagnostics/progress on stderr, and add animated terminal activity and cooperative Ctrl-C/SIGTERM stop.
+- Keep duplicate content reads opt-in; page saved report groups/files without rereading contents. Preserve the existing MCP tools.
+- Add CLI process behavior tests to the shared gate, pin Apple's Swift Argument Parser, and reduce frozen CLI complexity debt by removing/refactoring old parsers.
+- Make the For agents sheet CLI-first, publish EN/RU guides, and ship a standalone universal CLI ZIP with third-party notices.
+
 ## 0.4.0 — 2026-11-07
 
 - Smooth native sidebar/inspector transitions preserve dragged widths and honor Reduce Motion.

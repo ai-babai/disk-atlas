@@ -1,0 +1,42 @@
+DISK ATLAS CLI / КОМАНДНАЯ СТРОКА
+
+macOS 14+, Apple Silicon + Intel. Ad hoc signed; not notarized by Apple.
+macOS 14+, Apple Silicon и Intel. Подпись ad hoc, без нотарификации Apple.
+
+Unzip into a permanent folder, then run / Распакуй в постоянную папку и запусти:
+
+./disk-atlas install
+./disk-atlas doctor
+
+install links this binary into ~/.local/bin; keep the original binary in place.
+Existing files/links are preserved. No sudo; shell configuration is not edited.
+If ~/.local/bin is not on PATH, add it in your shell configuration.
+
+install создаёт ссылку в ~/.local/bin; оставь исходный файл в постоянной папке.
+Чужие файлы и ссылки не перезаписываются. Без sudo и изменений оболочки.
+Если ~/.local/bin нет в PATH, добавь эту папку в настройках своей оболочки.
+
+Start / Начало:
+disk-atlas help
+disk-atlas schema inspect
+disk-atlas history list --json
+disk-atlas scan ~/Downloads --output scan.atlas
+disk-atlas inspect scan.atlas --files --limit 20
+disk-atlas duplicates ~/Downloads
+disk-atlas duplicates ~/Downloads --read-contents --output duplicates.json
+
+JSON is the default when piped. --json forces JSON, --text forces readable text.
+Progress/errors go to stderr. Ctrl-C stops work. No prompts, source deletion,
+network listener or privileged operations. Content reads require --read-contents.
+GUI history is reused if present; standalone scans do not require the app.
+show requires Disk Atlas.app to be installed.
+
+В конвейере выдаётся JSON. --json включает JSON, --text — читаемый текст.
+Прогресс и ошибки идут в stderr. Ctrl-C останавливает работу. Без вопросов,
+удаления исходных файлов, сетевого сервера и повышения привилегий.
+Для чтения содержимого нужен --read-contents. История GUI доступна при наличии;
+самостоятельному сканированию приложение не требуется. show требует установленный GUI.
+
+Reference / Справка:
+https://github.com/ai-babai/disk-atlas/blob/main/docs/CLI.md
+https://github.com/ai-babai/disk-atlas/blob/main/docs/CLI.ru.md

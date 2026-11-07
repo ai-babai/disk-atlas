@@ -38,7 +38,7 @@ or find an item by name. Open an earlier scan whenever you need to return to it.
 ## Download & install
 
 1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Download **Disk-Atlas-0.4.0-universal.dmg**. The same app supports Apple Silicon
+2. Download **Disk-Atlas-0.5.0-universal.dmg**. The same app supports Apple Silicon
    and Intel Macs running **macOS 14 Sonoma or later**.
 3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
    then launch the app from Applications. A ZIP is also available.
@@ -140,45 +140,27 @@ The info button beside **Size** explains allocated blocks versus content length.
 
 ## For agents
 
-The CLI is bundled inside the app. It can also be linked to a directory on your PATH.
+The CLI is the primary agent interface. No MCP setup is required. Install the app,
+then link its bundled command (use the app's actual installation path):
 
 ```sh
-ATLAS="/Applications/Disk Atlas.app/Contents/MacOS/disk-atlas"
-"$ATLAS" scan "$HOME/Downloads" "$HOME/Desktop" --json --output /tmp/scan.atlas
-"$ATLAS" inspect /tmp/scan.atlas --files --limit 20
-"$ATLAS" show /tmp/scan.atlas
-# Metadata estimate only; no content reading:
-"$ATLAS" duplicates "$HOME/Downloads" --min-bytes 100000000
-# Separately authorize content reading and save a new report:
-"$ATLAS" duplicates "$HOME/Downloads" --read-contents --output /tmp/duplicates.json
+"/Applications/Disk Atlas.app/Contents/MacOS/disk-atlas" install
+disk-atlas doctor
+disk-atlas schema inspect
+disk-atlas history list --json
+disk-atlas history inspect latest --files --limit 20 --json
 ```
 
-MCP client configuration:
+For a new scan: `disk-atlas scan ~/Downloads --output scan.atlas --json`.
+Duplicate estimates read only metadata; `duplicates --read-contents` explicitly
+authorizes comparison. JSON is automatic when piped, lists are bounded, and
+progress/errors use stderr. Ctrl-C stops work. There are no CLI cleanup commands.
 
-```json
-{
-  "mcpServers": {
-    "disk-atlas": {
-      "command": "/Applications/Disk Atlas.app/Contents/MacOS/disk-atlas",
-      "args": ["mcp"]
-    }
-  }
-}
-```
-
-Tools: `scan_directory` (`path` or `paths`, optional `output`),
-`inspect_snapshot` (`snapshot`, optional `path`, `files`, `limit`) and
-`show_snapshot` (`snapshot`), plus `plan_duplicates` (metadata only) and
-`find_duplicates` (requires explicit `readContents: true`). Duplicate tools take
-`paths`, optional `minimumBytes`, `maximumBytes`, ISO 8601 `modifiedAfter` /
-`modifiedBefore` and `kinds`. CLI equivalents are `--min-bytes`, `--max-bytes`,
-`--modified-after`, `--modified-before` and `--types`. Sizes in JSON are bytes. `inspect` returns 1–500
-items, 50 by default. Existing snapshot files are never overwritten by CLI/MCP.
-Errors are structured JSON on stderr with exit code 1.
-
-MCP uses stdio, with no network listener. Requests run sequentially; per-request
-MCP progress and cancellation are not implemented yet. The GUI’s **For agents**
-button copies configuration using the app’s actual installation path.
+[CLI guide and contract](docs/CLI.md) · [Русская версия](docs/CLI.ru.md).
+A standalone universal CLI ZIP is also available in Releases. The GUI's **For
+agents** sheet copies CLI commands; optional MCP configuration is collapsed below.
+MCP still provides the five existing stdio tools without a network listener;
+per-request MCP progress/cancellation are not implemented.
 
 ## Local by design
 

@@ -14,7 +14,8 @@ System Settings > Privacy & Security may offer Open Anyway after a launch attemp
 Do not disable Gatekeeper globally.
 
 Ordinary scans read metadata. Duplicate checks read content only when explicitly
-started. The app does not delete, move or execute scanned files.
+started. Source cleanup is GUI-only: explicit selection, mandatory review, recoverable Trash.
+CLI commands never move/delete source files or execute their contents.
 Protected folders may require permissions from macOS; unavailable paths are listed.
 Scan history stays in ~/Library/Application Support/Disk Atlas/History.
 
@@ -33,6 +34,23 @@ https://support.apple.com/102445
 может появиться «Всё равно открыть». Не отключай Gatekeeper целиком.
 
 Обычный анализ читает метаданные. Проверка дубликатов читает содержимое только
-после отдельного запуска. Приложение не удаляет, не перемещает и не запускает файлы.
+после отдельного запуска. Перенос в Корзину доступен только в GUI после выбора
+и обязательной проверки списка. CLI не перемещает, не удаляет и не запускает файлы.
 Недоступные папки видны в списке пропусков. История хранится локально:
 ~/Library/Application Support/Disk Atlas/History.
+
+
+COMMAND LINE / КОМАНДНАЯ СТРОКА
+
+The app includes the CLI. / CLI уже внутри приложения:
+"/Applications/Disk Atlas.app/Contents/MacOS/disk-atlas" install
+
+Then / Затем:
+disk-atlas doctor
+disk-atlas help
+disk-atlas schema inspect
+
+If ~/.local/bin is not on PATH, add it in your shell configuration.
+Если ~/.local/bin отсутствует в PATH, добавь эту папку в настройках своей оболочки.
+No sudo or shell configuration changes are performed by install.
+install не требует sudo и не меняет настройки оболочки.

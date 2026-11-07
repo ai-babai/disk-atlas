@@ -14,6 +14,7 @@ Requires **Xcode 16.4 (16F6), Apple Swift 6.1.2**, and Python 3.9+. No pip,
 Homebrew, paid service, account or API key is needed. Set `DEVELOPER_DIR` for that
 Xcode if several versions are installed. The compiler, `swift-format`, SwiftSyntax
 parser and LLVM coverage tools come from the selected, checked toolchain.
+The first build fetches pinned Swift Argument Parser 1.8.2 from its public repository.
 Versions and thresholds are committed in [policy.json](../quality/policy.json).
 
 Fix formatting with `scripts/format.sh`. For another comparison base, use
@@ -54,7 +55,9 @@ A switch adds one cognitive break, its cases only affect CC. An `else if` adds o
 without another nesting level. Nested named functions are measured separately.
 These are **project-defined structural metrics**, not a SonarQube certification;
 recursion/call-graph analysis and every Swift semantic construct are not modeled.
-The analyzer has executable self-checks.
+The analyzer has executable self-checks. CLI process tests also exercise help/discovery,
+pagination, errors, private exports, explicit duplicate reads, signals, install conflicts
+and MCP compatibility on temporary synthetic data. The CLI is built before those tests.
 
 Coverage uses LLVM's executable-line records, not regex guesses about Swift.
 Formatting-only function bodies are identified by syntax-token hashes and do not
@@ -74,8 +77,8 @@ behavior tests and an explicit contract update.
 ## Existing debt is visible
 
 The first audit of revision `e5f7721` found 29 functions/accessor blocks over the
-complexity limits. Nine responsibilities have since been refactored, including
-map tiles, inspector sections, preparation/status and MCP dispatch, leaving **20**
+complexity limits. Thirteen responsibilities have since been removed or refactored, including
+map tiles, inspector sections, preparation/status and CLI/MCP dispatch, leaving **16**
 frozen historical exceptions.
 [legacy.json](../quality/legacy.json) records only those pre-existing bodies and
 exact hashes. An edited body loses its exception even if its score did not grow;

@@ -171,22 +171,25 @@ struct AgentSheet: View {
                     "Ты исследуешь карту. Агент получает те же данные через CLI или MCP и может открыть свой снимок в этом окне."
                 )
             ).font(.system(size: 13)).foregroundStyle(Palette.sub).lineSpacing(4)
-            SectionLabel(text: L10n.text("Подключение MCP"))
-            Text(config).font(.system(size: 11, design: .monospaced)).textSelection(.enabled).padding(15).frame(
+            SectionLabel(text: "CLI")
+            Text(commands).font(.system(size: 11, design: .monospaced)).textSelection(.enabled).padding(15).frame(
                 maxWidth: .infinity, alignment: .leading
             ).background(Palette.soft, in: RoundedRectangle(cornerRadius: 9))
             HStack {
-                Button(L10n.text("Копировать конфигурацию")) { store.copy(config) }
+                Button(L10n.text("Копировать команды")) { store.copy(commands) }
                 Button(L10n.text("Сохранить текущий снимок…")) { store.exportSnapshot() }.disabled(
                     store.snapshot == nil)
             }
-            SectionLabel(text: L10n.text("Доступные операции"))
-            VStack(alignment: .leading, spacing: 10) {
-                operation("scan_directory", L10n.text("Просканировать папку и сохранить снимок"))
-                operation("inspect_snapshot", L10n.text("Найти крупные файлы и исследовать папки"))
-                operation("show_snapshot", L10n.text("Открыть результат в приложении"))
-                operation("plan_duplicates", L10n.text("Оценить поиск дубликатов"))
-                operation("find_duplicates", L10n.text("Проверить копии · явное readContents: true"))
+            Text(L10n.text("История доступна через history. Справка для агента — disk-atlas schema.")).font(
+                .system(size: 12)
+            ).foregroundStyle(Palette.sub)
+            DisclosureGroup(L10n.text("Подключение MCP")) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(config).font(.system(size: 11, design: .monospaced)).textSelection(.enabled).padding(15).frame(
+                        maxWidth: .infinity, alignment: .leading
+                    ).background(Palette.soft, in: RoundedRectangle(cornerRadius: 9))
+                    Button(L10n.text("Копировать конфигурацию")) { store.copy(config) }
+                }.padding(.vertical, 4)
             }
             Text(
                 L10n.text(
@@ -199,11 +202,13 @@ struct AgentSheet: View {
             }
         }.padding(30).frame(width: 660).background(Palette.paper).foregroundStyle(Palette.ink)
     }
-    private func operation(_ name: String, _ description: String) -> some View {
-        HStack {
-            Text(name).font(.system(size: 11, weight: .medium, design: .monospaced)).frame(
-                width: 150, alignment: .leading)
-            Text(description).font(.system(size: 11)).foregroundStyle(Palette.sub)
-        }
+    private var commands: String {
+        let quoted = "'" + command.replacingOccurrences(of: "'", with: "'\\''") + "'"
+        return """
+            \(quoted) install
+            disk-atlas history list --json
+            disk-atlas history inspect latest --files --limit 20
+            disk-atlas schema inspect
+            """
     }
 }

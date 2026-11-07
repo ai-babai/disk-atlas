@@ -17,33 +17,50 @@ let duplicateProperties: [String: Any] = [
 
 func duplicateOptions(_ args: [String: Any]) throws -> DuplicateOptions {
     var value = DuplicateOptions()
-    for key in ["minimumBytes", "maximumBytes"] {
-        if let input = args[key] {
-            guard let n = input as? NSNumber, CFGetTypeID(n) != CFBooleanGetTypeID(), n.doubleValue.isFinite,
-                n.doubleValue >= 0, n.doubleValue < Double(Int64.max), n.doubleValue.rounded() == n.doubleValue
-            else { throw AtlasError.message("\(key): expected a non-negative integer.") }
-            if key == "minimumBytes" { value.minimumBytes = n.int64Value } else { value.maximumBytes = n.int64Value }
-        }
+    value.minimumBytes = try duplicateBytes(args["minimumBytes"], key: "minimumBytes") ?? 0
+    value.maximumBytes = try duplicateBytes(args["maximumBytes"], key: "maximumBytes")
+    value.kinds = try duplicateKinds(args["kinds"])
+    value.modifiedAfter = try duplicateDate(args["modifiedAfter"], key: "modifiedAfter")
+    value.modifiedBefore = try duplicateDate(args["modifiedBefore"], key: "modifiedBefore")
+    try validateDuplicateRange(value)
+    return value
+}
+
+private func validateDuplicateRange(_ options: DuplicateOptions) throws {
+    if let maximum = options.maximumBytes, maximum < options.minimumBytes {
+        throw AtlasError.message("maximumBytes must be at least minimumBytes.")
     }
-    if let input = args["kinds"] {
-        guard let kinds = input as? [String] else {
-            throw AtlasError.message("kinds: expected an array of file types.")
-        }
-        for name in kinds {
+    if let after = options.modifiedAfter, let before = options.modifiedBefore, after > before {
+        throw AtlasError.message("modifiedAfter must not be later than modifiedBefore.")
+    }
+}
+
+private func duplicateBytes(_ input: Any?, key: String) throws -> Int64? {
+    guard let input else { return nil }
+    guard let n = input as? NSNumber, CFGetTypeID(n) != CFBooleanGetTypeID(), n.doubleValue.isFinite,
+        n.doubleValue >= 0, n.doubleValue < Double(Int64.max), n.doubleValue.rounded() == n.doubleValue
+    else { throw AtlasError.message("\(key): expected a non-negative integer.") }
+    return n.int64Value
+}
+
+private func duplicateKinds(_ input: Any?) throws -> Set<FileKind> {
+    guard let input else { return [] }
+    guard let names = input as? [String] else { throw AtlasError.message("kinds: expected an array of file types.") }
+    return try Set(
+        names.map { name in
             guard let kind = FileKind(rawValue: name), kind != .folder && kind != .link else {
                 throw AtlasError.message("Unknown file type: \(name)")
             }
-            value.kinds.insert(kind)
-        }
+            return kind
+        })
+}
+
+private func duplicateDate(_ input: Any?, key: String) throws -> Date? {
+    guard let input else { return nil }
+    guard let text = input as? String, let date = ISO8601DateFormatter().date(from: text) else {
+        throw AtlasError.message("\(key): expected an ISO 8601 date.")
     }
-    let formatter = ISO8601DateFormatter()
-    for key in ["modifiedAfter", "modifiedBefore"] where args[key] != nil {
-        guard let text = args[key] as? String, let date = formatter.date(from: text) else {
-            throw AtlasError.message("\(key): expected an ISO 8601 date.")
-        }
-        if key == "modifiedAfter" { value.modifiedAfter = date } else { value.modifiedBefore = date }
-    }
-    return value
+    return date
 }
 
 func duplicatePlanSummary(_ plan: DuplicatePlan) -> [String: Any] {
@@ -59,6 +76,29 @@ func duplicatePlanSummary(_ plan: DuplicatePlan) -> [String: Any] {
 }
 
 func runDuplicateTool(_ args: [String: Any], read: Bool) throws -> [String: Any] {
+    let paths = try duplicateToolPaths(args, read: read)
+    let options = try duplicateOptions(args)
+    let output = try duplicateToolOutput(args["output"])
+    let snapshot = try DiskScanner().scan(paths: paths)
+    let plan = try DuplicateFinder().prepare(snapshot, options: options)
+    if !read { return duplicatePlanSummary(plan) }
+    let report = try DuplicateFinder().run(plan)
+    if let output { try saveReport(report, to: output) }
+    var page = PageOptions()
+    page.limit = 50
+    var result = try reportResult(report, page: page, group: nil)
+    result["groups"] = try report.groups.prefix(50).map { group in
+        [
+            "id": group.id, "copies": group.files.count, "fileBytes": group.fileBytes,
+            "repeatedLogicalBytes": group.repeatedBytes, "files": try object(Array(group.files.prefix(20))),
+        ] as [String: Any]
+    }
+    result["bounded"] = true
+    if let output { result["report"] = output.path }
+    return result
+}
+
+private func duplicateToolPaths(_ args: [String: Any], read: Bool) throws -> [String] {
     guard let paths = args["paths"] as? [String], !paths.isEmpty, paths.allSatisfy({ $0.hasPrefix("/") }) else {
         throw AtlasError.message("paths: supply absolute selected directory paths.")
     }
@@ -66,80 +106,13 @@ func runDuplicateTool(_ args: [String: Any], read: Bool) throws -> [String: Any]
         guard let flag = args["readContents"] as? NSNumber, CFGetTypeID(flag) == CFBooleanGetTypeID(), flag.boolValue
         else { throw AtlasError.message("Explicit readContents: true is required to read file contents.") }
     }
-    let options = try duplicateOptions(args)
-    if args["output"] != nil && args["output"] as? String == nil {
-        throw AtlasError.message("output: expected a new absolute JSON report path.")
-    }
-    let output = args["output"] as? String
-    if let output {
-        guard output.hasPrefix("/"), !FileManager.default.fileExists(atPath: output) else {
-            throw AtlasError.message("Output must be a new absolute file path.")
-        }
-    }
-    let snapshot = try DiskScanner().scan(paths: paths)
-    let plan = try DuplicateFinder().prepare(snapshot, options: options)
-    if !read { return duplicatePlanSummary(plan) }
-    let report = try DuplicateFinder().run(plan)
-    if let output {
-        let data = try Snapshot.encoder.encode(report)
-        let fd = output.withCString { Darwin.open($0, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, 0o600) }
-        guard fd >= 0 else { throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno)) }
-        let handle = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
-        try handle.write(contentsOf: data)
-        try handle.close()
-    }
-    let groups: [[String: Any]] = try report.groups.prefix(50).map { group in
-        [
-            "id": group.id, "copies": group.files.count, "fileBytes": group.fileBytes,
-            "repeatedLogicalBytes": group.repeatedBytes, "files": try object(Array(group.files.prefix(20))),
-        ]
-    }
-    var result: [String: Any] = [
-        "roots": report.roots, "groupCount": report.groups.count, "groups": groups,
-        "repeatedLogicalBytes": report.repeatedBytes, "guaranteedReclaimableBytes": NSNull(),
-        "readBytes": report.readBytes, "elapsed": report.elapsed, "cancelled": report.cancelled,
-        "skipped": report.skipped, "hardLinks": report.hardLinks, "issues": try object(report.issues), "bounded": true,
-        "readContents": true,
-    ]
-    if let output { result["report"] = output }
-    return result
+    return paths
 }
 
-func duplicateCLI(_ args: [String]) throws {
-    let paths = Array(args.prefix { !$0.hasPrefix("--") })
-    var value: [String: Any] = ["paths": paths]
-    var position = paths.count
-    var seen = Set<String>()
-    let keys = [
-        "--min-bytes": "minimumBytes", "--max-bytes": "maximumBytes", "--modified-after": "modifiedAfter",
-        "--modified-before": "modifiedBefore", "--types": "kinds", "--output": "output",
-    ]
-    var read = false
-    while position < args.count {
-        let key = args[position]
-        guard seen.insert(key).inserted else { throw AtlasError.message("Repeated option: \(key)") }
-        if key == "--read-contents" {
-            read = true
-            value["readContents"] = true
-            position += 1
-            continue
-        }
-        guard let name = keys[key], position + 1 < args.count else {
-            throw AtlasError.message("Unknown option or missing value: \(key)")
-        }
-        let raw = args[position + 1]
-        if name == "minimumBytes" || name == "maximumBytes" {
-            guard let number = Int64(raw), number >= 0 else { throw AtlasError.message("Invalid byte size: \(raw)") }
-            value[name] = number
-        } else if name == "kinds" {
-            value[name] = raw.split(separator: ",").map(String.init)
-        } else {
-            value[name] = raw
-        }
-        position += 2
+private func duplicateToolOutput(_ input: Any?) throws -> URL? {
+    guard let input else { return nil }
+    guard let path = input as? String, path.hasPrefix("/") else {
+        throw AtlasError.message("output: expected a new absolute JSON report path.")
     }
-    if !read && value["output"] != nil {
-        throw AtlasError.message("--output requires --read-contents; a metadata estimate does not produce a report.")
-    }
-    print(try json(runDuplicateTool(value, read: read)))
+    return try newOutput(path)
 }

@@ -6,3 +6,4 @@ dist/
 *.duplicates.json
 
 __pycache__/
+*.profraw

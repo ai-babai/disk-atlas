@@ -1,0 +1,4 @@
+Disk Atlas CLI includes Swift Argument Parser 1.8.2, statically linked.
+Copyright (c) 2020 Apple Inc. and the Swift project authors.
+Apache License 2.0 with Swift Runtime Library Exception; see the adjacent license.
+https://github.com/apple/swift-argument-parser

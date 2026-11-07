@@ -21,6 +21,13 @@ flowchart LR
 uses SwiftUI for layout and a virtualized AppKit table for rows. CLI and MCP share
 the scanner and JSON snapshot model; neither needs the GUI or a network listener.
 
+CLI command declarations generate parsing and help through Swift Argument Parser.
+`schema` exposes that same help in a compact effect catalog. Query DTOs omit internal
+child arrays and fingerprints; scoped index queries retain only offset + limit
+candidates. History commands load existing archives without source scans. One
+foreground worker handles each CLI call, with a separate progress timer and
+cooperative signal cancellation. See [CLI.md](CLI.md) for JSON and exit contracts.
+
 ## Data and safety
 
 The scanner reads metadata with `lstat`, includes hidden files and application
@@ -116,8 +123,8 @@ a running duplicate job is stopped and its partial result saved.
 
 ## Build and validation
 
-Swift 6 / Xcode Command Line Tools, macOS 14+ deployment target, no external package
-dependencies. `scripts/build.sh` builds locally; `scripts/release.sh` compiles arm64
+Swift 6 / Xcode Command Line Tools, macOS 14+ deployment target. The CLI statically links Apple Swift Argument Parser
+1.8.2 (pinned with its lockfile and license); AtlasCore and GUI have no external package dependencies. `scripts/build.sh` builds locally; `scripts/release.sh` compiles arm64
 and x86_64, combines executables, signs ad hoc and packages DMG/ZIP with checksums.
 
 The project uses [the shared quality gate](QUALITY.md), behavior/property tests,

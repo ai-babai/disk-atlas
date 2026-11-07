@@ -37,7 +37,7 @@ created: "2026-11-07"
 ## Скачать и установить
 
 1. Открой [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Скачай **Disk-Atlas-0.4.0-universal.dmg**. Одна сборка подходит для Apple Silicon
+2. Скачай **Disk-Atlas-0.5.0-universal.dmg**. Одна сборка подходит для Apple Silicon
    и Intel с **macOS 14 Sonoma или новее**.
 3. Открой DMG, перетащи **Disk Atlas.app** в **Applications («Программы»)**,
    извлеки образ и запусти приложение из «Программ». Также доступен ZIP.
@@ -145,45 +145,27 @@ Hard links считаются один раз; ссылки, специальн�
 
 ## Для агента
 
-CLI включён в приложение; при желании его можно добавить в PATH.
+Основной интерфейс для агента — CLI, без настройки MCP. После установки приложения
+добавь команду в PATH (укажи фактический путь приложения):
 
 ```sh
-ATLAS="/Applications/Disk Atlas.app/Contents/MacOS/disk-atlas"
-"$ATLAS" scan "$HOME/Downloads" "$HOME/Desktop" --json --output /tmp/scan.atlas
-"$ATLAS" inspect /tmp/scan.atlas --files --limit 20
-"$ATLAS" show /tmp/scan.atlas
-# Только оценка по метаданным, без чтения содержимого:
-"$ATLAS" duplicates "$HOME/Downloads" --min-bytes 100000000
-# Отдельное разрешение читать содержимое и сохранить новый отчёт:
-"$ATLAS" duplicates "$HOME/Downloads" --read-contents --output /tmp/duplicates.json
+"/Applications/Disk Atlas.app/Contents/MacOS/disk-atlas" install
+disk-atlas doctor
+disk-atlas schema inspect
+disk-atlas history list --json
+disk-atlas history inspect latest --files --limit 20 --json
 ```
 
-Конфигурация MCP-клиента:
+Новый анализ: `disk-atlas scan ~/Downloads --output scan.atlas --json`.
+Оценка дубликатов читает метаданные; `duplicates --read-contents` отдельно разрешает
+сравнение содержимого. В конвейере автоматически выдаётся JSON, списки ограничены,
+прогресс и ошибки идут в stderr. Ctrl-C останавливает работу. Команд очистки в CLI нет.
 
-```json
-{
-  "mcpServers": {
-    "disk-atlas": {
-      "command": "/Applications/Disk Atlas.app/Contents/MacOS/disk-atlas",
-      "args": ["mcp"]
-    }
-  }
-}
-```
-
-Инструменты: `scan_directory` (`path` или `paths`, необязательный `output`),
-`inspect_snapshot` (`snapshot`, необязательные `path`, `files`, `limit`) и
-`show_snapshot` (`snapshot`), а также `plan_duplicates` (только метаданные) и
-`find_duplicates` (требует явного `readContents: true`). Поиск принимает `paths`,
-необязательные `minimumBytes`, `maximumBytes`, даты ISO 8601 `modifiedAfter` /
-`modifiedBefore` и `kinds`. В CLI: `--min-bytes`, `--max-bytes`, `--modified-after`,
-`--modified-before`, `--types`. Размеры в JSON — байты. `inspect` возвращает 1–500
-объектов, по умолчанию 50. CLI/MCP не перезаписывают существующие снимки.
-Ошибки — JSON в stderr с кодом выхода 1.
-
-MCP работает через stdio, без сетевого порта. Запросы последовательные; отдельные
-MCP progress/cancellation пока не реализованы. Кнопка **«Для агента»** в GUI
-копирует конфигурацию с фактическим путём установленного приложения.
+[Руководство и контракт CLI](docs/CLI.ru.md) · [English](docs/CLI.md).
+В релизах есть и отдельный универсальный CLI ZIP. Кнопка **«Для агента»** в GUI
+копирует CLI-команды; необязательная конфигурация MCP свёрнута ниже. MCP сохраняет
+пять инструментов stdio без сетевого порта; прогресс/отмена отдельных MCP-запросов
+пока не реализованы.
 
 ## Локально и бережно
 

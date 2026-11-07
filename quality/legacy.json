@@ -3,42 +3,6 @@
   "note": "Frozen, pre-existing violations. Changed bodies lose the exception; do not regenerate to pass a check.",
   "functions": [
     {
-      "bodyHash": "a35f4d0b8c5fc100ed3a91fa382d77299e57c20ba968311fbd34717f8056e717",
-      "cognitive": 19,
-      "cyclomatic": 13,
-      "end": 47,
-      "file": "Sources/AtlasCLI/DuplicateCommands.swift",
-      "identity": ".duplicateOptions(_:[String: Any])",
-      "start": 18
-    },
-    {
-      "bodyHash": "1954272477ab6a69c6697d2101a377867f22af19634727be55e8ccb503d71a71",
-      "cognitive": 11,
-      "cyclomatic": 12,
-      "end": 106,
-      "file": "Sources/AtlasCLI/DuplicateCommands.swift",
-      "identity": ".runDuplicateTool(_:[String: Any],read:Bool)",
-      "start": 61
-    },
-    {
-      "bodyHash": "a78a434e3e09e91eb98b8a5c86be069d9e420d6c361376cb39ae0fb17d3ea39c",
-      "cognitive": 13,
-      "cyclomatic": 11,
-      "end": 145,
-      "file": "Sources/AtlasCLI/DuplicateCommands.swift",
-      "identity": ".duplicateCLI(_:[String])",
-      "start": 108
-    },
-    {
-      "bodyHash": "1cf15e26b9c718766b5014b7d29b1edb267c8896d7e490995b7723eb64b87968",
-      "cognitive": 11,
-      "cyclomatic": 13,
-      "end": 171,
-      "file": "Sources/AtlasCLI/main.swift",
-      "identity": ".callTool(_:String,_:[String: Any])",
-      "start": 126
-    },
-    {
       "bodyHash": "2cfd4c849e2e346e7c2fa98aad096bb9bc6368c4af682fffce55da79470563c7",
       "cognitive": 20,
       "cyclomatic": 17,

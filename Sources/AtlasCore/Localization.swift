@@ -291,6 +291,8 @@ public enum L10n {
         "Что не удалось прочитать": "What could not be read",
         "Недоступные папки не входят в итог. Для защищённых папок macOS может потребоваться полный доступ к диску в Системных настройках.":
             "Unavailable folders are excluded from totals. Protected macOS folders may require Full Disk Access in System Settings.",
-        "Сохранены первые 200 сообщений": "First 200 messages retained",
+        "Сохранены первые 200 сообщений": "First 200 messages retained", "Копировать команды": "Copy commands",
+        "История доступна через history. Справка для агента — disk-atlas schema.":
+            "Reuse saved scans with history. Discover commands with disk-atlas schema.",
     ]
 }

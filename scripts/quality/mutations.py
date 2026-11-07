@@ -30,7 +30,8 @@ def main():
         directory = Path(temporary)
         for name in ['Sources', 'Tests']:
             shutil.copytree(ROOT / name, directory / name)
-        shutil.copyfile(ROOT / 'Package.swift', directory / 'Package.swift')
+        for name in ['Package.swift', 'Package.resolved']:
+            shutil.copyfile(ROOT / name, directory / name)
         code, output = test(directory)
         (LOGS / 'baseline.log').write_text(output)
         if code:
