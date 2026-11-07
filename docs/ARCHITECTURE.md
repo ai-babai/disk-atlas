@@ -60,8 +60,8 @@ filesystem snapshot guarantee; reports are dated observations.
 groups are batched, keeping updates out of the main map store. Pause and cancel
 checkpoints occur between read chunks. Foreground scanning/indexing temporarily
 pauses the background job. Confirmed groups survive stop as a partial report.
-A path-to-group lookup is built off the main thread for file-list badges. Keep
-marks affect reports only. No source-file cleanup action exists. A check that finishes before its scan
+A path-to-group lookup is built off the main thread for file-list badges. Trash
+selection marks mean Trash candidates. A mandatory review identifies selected paths and any unselected copies; fully selected groups are explicitly warned; confirmation starts off-main revalidation and native recoverable Trash moves. No permanent deletion or CLI/MCP cleanup exists. A check that finishes before its scan
 archive is attached persists its report when the history UUID becomes available.
 
 ## Rendering and storage
@@ -79,6 +79,24 @@ the same bounded layout as drawing; map selection reveals the parent, includes
 the selected entry in the bounded list and explicitly scrolls to it. Aggregate
 tiles are inert. Inspector content is constrained to its viewport width so long
 paths cannot stretch or shift the panel.
+
+Native NSSplitViewController items remain mounted when collapsed; their animator
+moves the divider in 220 ms, preserving resized pane widths. SwiftUI environment
+values cross hosting boundaries, including Reduce Motion, appearance and disabled
+state. Map state is isolated from unrelated observable-store updates; only the
+selected branch invalidates nested Canvas artwork. Single clicks are immediate;
+the second click retains its first target across a parent reveal.
+
+Duplicate counts are precomputed per ancestor off-main. Folder links filter groups
+off-main before sorting and bounding the visible results. DuplicateTrashPlan
+requires valid scope, distinct file identities and unique selected paths. It records
+remaining copies separately from a comparison reference. Every checkbox is
+editable; selecting a group selects all its copies.
+DuplicateTrashExecutor rechecks all selected byte pairs before the first move,
+then revalidates reference/file metadata before each native Trash call. If every
+copy is selected, the reference moves last; no keeper is silently imposed. Errors and
+cancellation stop the batch, retain completed moves and update/persist only those
+paths. A live filesystem still offers no atomic multi-file snapshot guarantee.
 
 Treemap work is bounded by visible tile count, geometry and nesting depth. Small
 objects are aggregated. The previous large index is retained through the visual

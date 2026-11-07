@@ -16,10 +16,12 @@ import SwiftUI
     @Published private(set) var groups: [DuplicateGroup] = [] { didSet { refreshOrder() } }
     @Published private(set) var orderedGroups: [DuplicateGroup] = []
     @Published private(set) var sorting = false
+    @Published private(set) var orderedCount = 0
+    @Published private(set) var orderedRepeatedBytes: Int64 = 0
     @Published var sort: DuplicateSort = .repeatedBytes { didSet { refreshOrder() } }
     @Published var sortDescending = true { didSet { refreshOrder() } }
     private var orderTask: Task<Void, Never>?
-    private var orderWorker: Task<[DuplicateGroup], Error>?
+    private var orderWorker: Task<(groups: [DuplicateGroup], count: Int, bytes: Int64), Error>?
     private var orderGeneration = 0
     @Published private(set) var metadataBytes: Int64 = 0
     @Published private(set) var roots: [String] = []
@@ -28,6 +30,19 @@ import SwiftUI
     @Published var focusedGroupID: String?
     @Published var error: String?
     private(set) var ownerID: UUID?
+    @Published var trashSelection = DuplicateTrashSelection()
+    @Published var trashReview: DuplicateTrashPlan?
+    @Published private(set) var trashPreparing = false
+    @Published private(set) var trashing = false
+    @Published private(set) var trashProgress = DuplicateTrashProgress()
+    @Published private(set) var trashMovedCount: Int?
+    var trashNotice: String? {
+        guard let trashMovedCount else { return nil }
+        return L10n.text("В корзине: ") + String(trashMovedCount) + ". "
+            + L10n.text("Обнови анализ для актуальных размеров.")
+    }
+    @Published var scopePath: String? { didSet { refreshOrder() } }
+    private var trashControl: DuplicateControl?
     private let history: ScanHistory
     private var task: Task<Void, Never>?
     private var worker: Task<DuplicatePlan, Error>?
@@ -37,11 +52,8 @@ import SwiftUI
 
     var title: String { roots.map { URL(fileURLWithPath: $0).lastPathComponent }.joined(separator: " + ") }
     var phaseTitle: String {
-        if savingReport { return L10n.text("Сохраняем отчёт…") }
-        if loadingReport { return L10n.text("Читаем отчёт…") }
-        if foregroundPaused { return L10n.text("Пауза · основной анализ") }
-        if running && progress.phase == .finished { return L10n.text("Сохраняем отчёт…") }
-        if paused { return L10n.text("Приостановлено") }
+        if let title = preparationTitle { return title }
+        if let title = activityTitle { return title }
         switch progress.phase {
         case .preparing: return L10n.text("Отбираем кандидатов…")
         case .sampling: return L10n.text("Проверяем начало и конец…")
@@ -51,6 +63,22 @@ import SwiftUI
             return L10n.text(report?.cancelled == true ? "Остановлено · неполный результат" : "Проверка завершена")
         }
     }
+    private var preparationTitle: String? {
+        if trashPreparing { return L10n.text("Готовим список…") }
+        if trashing {
+            return L10n.text(trashProgress.stage == .verifying ? "Проверяем копии…" : "Перемещаем в Корзину…")
+        }
+        if savingReport { return L10n.text("Сохраняем отчёт…") }
+        if loadingReport { return L10n.text("Загружаем отчёт…") }
+        return nil
+    }
+    private var activityTitle: String? {
+        if foregroundPaused { return L10n.text("Пауза · основной анализ") }
+        if running && progress.phase == .finished { return L10n.text("Сохраняем отчёт…") }
+        if paused { return L10n.text("Приостановлено") }
+        return nil
+    }
+    var canChangeOptions: Bool { !running && !loadingReport && !savingReport && !trashing && !trashPreparing }
     var fraction: Double {
         progress.phaseTotal > 0 ? min(1, Double(progress.phaseBytes) / Double(progress.phaseTotal)) : 0
     }
@@ -86,6 +114,7 @@ import SwiftUI
         let key = generation
         task?.cancel()
         worker?.cancel()
+        clearTrashSelection()
         roots = snapshot.scanRoots
         snapshotCreated = snapshot.created
         ownerID = id
@@ -145,7 +174,7 @@ import SwiftUI
         }
     }
     func prepare(_ snapshot: Snapshot, id: UUID?, debounce: Bool = false, autoStart: Bool = false) {
-        guard !running && !savingReport else { return }
+        guard !running && !savingReport && !trashing && !trashPreparing else { return }
         task?.cancel()
         worker?.cancel()
         control?.cancel()
@@ -155,6 +184,7 @@ import SwiftUI
         settings.modifiedAfter = nil
         settings.modifiedBefore = nil
         options = settings
+        clearTrashSelection()
         roots = snapshot.scanRoots
         snapshotCreated = snapshot.created
         ownerID = id
@@ -173,32 +203,42 @@ import SwiftUI
         let token = DuplicateControl()
         control = token
         task = Task {
-            defer {
-                if generation == key {
-                    busy = false
-                    preparing = false
-                    control = nil
+            await preparePlan(
+                snapshot, settings: settings, key: key, token: token, debounce: debounce, autoStart: autoStart)
+        }
+    }
+    private func preparePlan(
+        _ snapshot: Snapshot, settings: DuplicateOptions, key: UUID, token: DuplicateControl, debounce: Bool,
+        autoStart: Bool
+    ) async {
+        defer {
+            if generation == key {
+                busy = false
+                preparing = false
+                control = nil
+            }
+        }
+        do {
+            if debounce { try await Task.sleep(for: .milliseconds(350)) }
+            try Task.checkCancellation()
+            let job = Task.detached(priority: .utility) {
+                try DuplicateFinder().prepare(snapshot, options: settings, control: token) { [weak self] update in
+                    Task { @MainActor in if self?.generation == key { self?.progress = update } }
                 }
             }
-            do {
-                if debounce { try await Task.sleep(for: .milliseconds(350)) }
-                try Task.checkCancellation()
-                let job = Task.detached(priority: .utility) {
-                    try DuplicateFinder().prepare(snapshot, options: settings, control: token) { [weak self] update in
-                        Task { @MainActor in if self?.generation == key { self?.progress = update } }
-                    }
-                }
-                worker = job
-                let result = try await job.value
-                guard generation == key, !Task.isCancelled else { return }
-                plan = result
-                if autoStart && result.candidateCount > 0 {
-                    preparing = false
-                    busy = false
-                    control = nil
-                    start()
-                }
-            } catch is CancellationError {} catch { if generation == key { self.error = error.localizedDescription } }
+            worker = job
+            let result = try await job.value
+            acceptPlan(result, key: key, autoStart: autoStart)
+        } catch is CancellationError {} catch { if generation == key { self.error = error.localizedDescription } }
+    }
+    private func acceptPlan(_ result: DuplicatePlan, key: UUID, autoStart: Bool) {
+        guard generation == key, !Task.isCancelled else { return }
+        plan = result
+        if autoStart && result.candidateCount > 0 {
+            preparing = false
+            busy = false
+            control = nil
+            start()
         }
     }
     func start() {
@@ -264,6 +304,8 @@ import SwiftUI
         control?.pause(busy, foreground: true)
     }
     func stop() {
+        if trashPreparing { task?.cancel() }
+        trashControl?.cancel()
         control?.cancel()
         if preparing || loadingReport {
             worker?.cancel()
@@ -283,6 +325,7 @@ import SwiftUI
         task?.cancel()
         worker?.cancel()
         retireResults()
+        clearTrashSelection()
         plan = nil
         report = nil
         groups = []
@@ -307,24 +350,34 @@ import SwiftUI
         orderGeneration &+= 1
         guard !groups.isEmpty else {
             orderedGroups = []
+            orderedCount = 0
+            orderedRepeatedBytes = 0
             sorting = false
             return
         }
         let generation = orderGeneration
         let values = groups
         let key = sort
+        let scope = scopePath
+        let lookup = lookup
         let descending = sortDescending
         sorting = true
         orderTask = Task {
             do {
                 let worker = Task.detached(priority: .userInitiated) {
-                    let ordered = try key.ordered(values, descending: descending)
-                    return Array(ordered.prefix(500))
+                    let candidates = scope.flatMap { lookup?.groups(in: $0) } ?? values
+                    let ordered = try key.ordered(candidates, descending: descending)
+                    return (
+                        groups: Array(ordered.prefix(500)), count: ordered.count,
+                        bytes: candidates.reduce(Int64(0)) { $0 + $1.repeatedBytes }
+                    )
                 }
                 orderWorker = worker
                 let ordered = try await worker.value
                 guard !Task.isCancelled, orderGeneration == generation else { return }
-                orderedGroups = ordered
+                orderedGroups = ordered.groups
+                orderedCount = ordered.count
+                orderedRepeatedBytes = ordered.bytes
                 sorting = false
             } catch is CancellationError {} catch {
                 if orderGeneration == generation {
@@ -337,25 +390,81 @@ import SwiftUI
     func reveal(_ file: DuplicateFile) {
         NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: file.path)])
     }
-    func prefer(_ file: DuplicateFile, in group: DuplicateGroup) {
-        guard !busy, var value = report, let index = value.groups.firstIndex(where: { $0.id == group.id }) else {
-            return
-        }
-        value.groups[index].preferredPath = value.groups[index].preferredPath == file.path ? nil : file.path
-        report = value
-        groups = value.groups
-        guard let ownerID else { return }
+    private func clearTrashSelection() {
+        trashSelection = DuplicateTrashSelection()
+        trashReview = nil
+        trashMovedCount = nil
+        scopePath = nil
+    }
+    func reviewTrash(_ paths: Set<String>? = nil) {
+        guard !busy, let report else { return }
+        let selected = paths ?? trashSelection.paths
         busy = true
-        savingReport = true
-        Task {
+        trashPreparing = true
+        error = nil
+        task = Task {
             defer {
                 busy = false
-                savingReport = false
+                trashPreparing = false
             }
-            do { metadataBytes = try await history.saveDuplicates(value, id: ownerID) } catch {
-                self.error = error.localizedDescription
+            do {
+                let plan = try await Task.detached(priority: .userInitiated) {
+                    try DuplicateTrashPlan(report: report, paths: selected)
+                }.value
+                if !Task.isCancelled { trashReview = plan }
+            } catch { self.error = error.localizedDescription }
+        }
+    }
+    func reviewTrash(_ group: DuplicateGroup) {
+        let selected = Set(group.files.map(\.path)).intersection(trashSelection.paths)
+        reviewTrash(selected.isEmpty ? Set(group.files.map(\.path)) : selected)
+    }
+    func trash(_ plan: DuplicateTrashPlan) {
+        guard !busy, let report, report.checkedAt == plan.checkedAt, report.snapshotCreated == plan.snapshotCreated
+        else { return }
+        trashReview = nil
+        busy = true
+        trashing = true
+        trashProgress = DuplicateTrashProgress()
+        trashMovedCount = nil
+        error = nil
+        let control = DuplicateControl()
+        trashControl = control
+        task = Task {
+            defer {
+                busy = false
+                trashing = false
+                trashControl = nil
+            }
+            let outcome = await Task.detached(priority: .utility) {
+                DuplicateTrashExecutor.run(plan, control: control) { [weak self] progress in
+                    Task { @MainActor in self?.trashProgress = progress }
+                }
+            }.value
+            await applyTrash(outcome, to: report)
+        }
+    }
+    private func applyTrash(_ outcome: DuplicateTrashOutcome, to original: DuplicateReport) async {
+        if !outcome.moved.isEmpty {
+            let prepared = await Task.detached(priority: .utility) {
+                let updated = original.removing(outcome.moved)
+                return (updated, DuplicateLookup(updated))
+            }.value
+            let updated = prepared.0
+            retireResults()
+            report = updated
+            lookup = prepared.1
+            groups = updated.groups
+            trashSelection = DuplicateTrashSelection()
+            trashMovedCount = outcome.moved.count
+            if let ownerID {
+                do { metadataBytes = try await history.saveDuplicates(updated, id: ownerID) } catch {
+                    self.error = error.localizedDescription
+                }
             }
         }
+        if let error = outcome.error { self.error = error }
+        if outcome.cancelled { self.error = L10n.text("Остановлено. Уже перемещённые файлы находятся в Корзине.") }
     }
     func export() {
         guard let report else { return }

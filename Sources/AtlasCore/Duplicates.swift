@@ -369,7 +369,7 @@ public struct DuplicateFinder: Sendable {
         _ = fcntl(fd, F_NOCACHE, 1)
         return fd
     }
-    private func validate(_ file: DuplicateFile) throws {
+    public func validate(_ file: DuplicateFile) throws {
         let fd = try openFile(file)
         close(fd)
     }
@@ -461,6 +461,15 @@ public struct DuplicateFinder: Sendable {
         }
         return true
     }
+    /// Reconfirm a reviewed pair in bounded chunks before a GUI Trash operation.
+    public func confirm(
+        _ file: DuplicateFile, matches keeper: DuplicateFile, control: DuplicateControl,
+        advanced: (Int) -> Void = { _ in }
+    ) throws -> Bool {
+        guard file.bytes == keeper.bytes else { return false }
+        try control.checkpoint()
+        return try equal(file, keeper, control: control, advanced: advanced)
+    }
     private func posix() -> NSError { NSError(domain: NSPOSIXErrorDomain, code: Int(errno)) }
 }
 
@@ -469,15 +478,35 @@ public final class DuplicateLookup: Sendable {
     public let byPath: [String: String]
     public let groups: [String: DuplicateGroup]
     public let checkedAt: Date
+    public let folderCounts: [String: Int]
     public init(_ report: DuplicateReport) {
+        var counts: [String: Int] = [:]
         var paths: [String: String] = [:]
         var groups: [String: DuplicateGroup] = [:]
         for group in report.groups {
             groups[group.id] = group
-            for file in group.files { paths[file.path] = group.id }
+            for file in group.files {
+                paths[file.path] = group.id
+                var folder = URL(fileURLWithPath: file.path).deletingLastPathComponent()
+                while true {
+                    counts[folder.path, default: 0] += 1
+                    if folder.path == "/" { break }
+                    folder.deleteLastPathComponent()
+                }
+            }
         }
         byPath = paths
         self.groups = groups
         checkedAt = report.checkedAt
+        folderCounts = counts
+    }
+    public func count(in path: String, directory: Bool) -> Int {
+        directory ? folderCounts[path] ?? 0 : byPath[path] == nil ? 0 : 1
+    }
+    public func groups(in path: String) -> [DuplicateGroup] {
+        let prefix = path == "/" ? "/" : path + "/"
+        return groups.values.filter { group in
+            !Task.isCancelled && group.files.contains { $0.path == path || $0.path.hasPrefix(prefix) }
+        }
     }
 }

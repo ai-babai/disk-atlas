@@ -292,6 +292,7 @@ import UniformTypeIdentifiers
 
     private func updateDuplicatePriority() { duplicates.foreground(scanning || preparing || viewFiltering) }
     func openDuplicates() {
+        duplicates.scopePath = nil
         showDuplicates = true
         guard let snapshot else { return }
         if !duplicates.busy && duplicates.snapshotCreated != snapshot.created {
@@ -301,10 +302,17 @@ import UniformTypeIdentifiers
             duplicates.prepare(snapshot, id: activeHistoryID)
         }
     }
+    func openDuplicateScope(_ entry: Entry) {
+        guard duplicates.snapshotCreated == snapshot?.created, duplicates.lookup != nil else { return }
+        duplicates.scopePath = entry.isDirectory && !isVirtual(entry) ? entry.path : nil
+        duplicates.focusedGroupID = entry.isDirectory ? nil : duplicates.lookup?.byPath[entry.path]
+        showDuplicates = true
+    }
     func showDuplicateGroup(for path: String) {
         guard duplicates.snapshotCreated == snapshot?.created, let groupID = duplicates.lookup?.byPath[path] else {
             return
         }
+        duplicates.scopePath = nil
         duplicates.focusedGroupID = groupID
         showDuplicates = true
     }

@@ -11,49 +11,9 @@ struct Inspector: View {
                 VStack(alignment: .leading, spacing: 22) {
                     SectionLabel(text: L10n.text("Подробности"))
                     if let entry = store.selected {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Image(systemName: entry.kind.symbol).font(.system(size: 29, weight: .light))
-                                .foregroundStyle(entry.kind.tint).frame(width: 58, height: 58).background(
-                                    Palette.soft, in: RoundedRectangle(cornerRadius: 13))
-                            Text(store.name(entry)).font(.system(size: 18, weight: .semibold)).lineLimit(3)
-                                .truncationMode(.middle).fixedSize(horizontal: false, vertical: true).frame(
-                                    maxWidth: .infinity, alignment: .leading
-                                ).textSelection(.enabled).help(store.name(entry))
-                            Text(store.displayPath(entry)).font(.system(size: 10, design: .monospaced)).foregroundStyle(
-                                Palette.sub
-                            ).lineLimit(3).truncationMode(.middle).fixedSize(horizontal: false, vertical: true).frame(
-                                maxWidth: .infinity, alignment: .leading
-                            ).textSelection(.enabled).help(store.displayPath(entry))
-                        }
-                        VStack(spacing: 13) {
-                            detail(L10n.text("На диске"), value: byteString(entry.bytes))
-                            detail(L10n.text("Размер файлов"), value: byteString(entry.logicalBytes))
-                            if entry.isDirectory { detail(L10n.text("Файлов"), value: entry.fileCount.formatted()) }
-                            if !store.isVirtual(entry) {
-                                if let created = entry.created {
-                                    detail(L10n.text("Создан"), value: L10n.date(created))
-                                }
-                                detail(L10n.text("Изменён"), value: L10n.date(entry.modified))
-                            }
-                        }
-                        if entry.sharedLink {
-                            Text(L10n.text("Жёсткая ссылка. Размер учтён у другого имени этого файла.")).font(
-                                .system(size: 10)
-                            ).foregroundStyle(Palette.sub)
-                        }
-                        VStack(spacing: 8) {
-                            if entry.isDirectory, entry.id != store.folderID {
-                                action(L10n.text("Исследовать папку"), icon: "arrow.down.right") {
-                                    store.navigate(entry.id)
-                                }
-                            }
-                            if !store.isVirtual(entry) {
-                                action(L10n.text("Показать в Finder"), icon: "arrow.up.forward.square") {
-                                    store.reveal(entry)
-                                }
-                                action(L10n.text("Скопировать путь"), icon: "doc.on.doc") { store.copy(entry.path) }
-                            }
-                        }
+                        selectionHeader(entry)
+                        selectionFacts(entry)
+                        selectionActions(entry)
                     }
                     Divider().overlay(Palette.line)
                     composition
@@ -73,6 +33,50 @@ struct Inspector: View {
                 }.frame(width: max(0, geometry.size.width - 44), alignment: .leading).padding(22)
             }.clipped()
         }.background(Palette.paper)
+    }
+
+    private func selectionHeader(_ entry: Entry) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Image(systemName: entry.kind.symbol).font(.system(size: 29, weight: .light)).foregroundStyle(
+                entry.kind.tint
+            ).frame(width: 58, height: 58).background(Palette.soft, in: RoundedRectangle(cornerRadius: 13))
+            Text(store.name(entry)).font(.system(size: 18, weight: .semibold)).lineLimit(3).truncationMode(.middle)
+                .fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
+                .textSelection(.enabled).help(store.name(entry))
+            Text(store.displayPath(entry)).font(.system(size: 10, design: .monospaced)).foregroundStyle(Palette.sub)
+                .lineLimit(3).truncationMode(.middle).fixedSize(horizontal: false, vertical: true).frame(
+                    maxWidth: .infinity, alignment: .leading
+                ).textSelection(.enabled).help(store.displayPath(entry))
+        }
+    }
+    private func selectionFacts(_ entry: Entry) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(spacing: 13) {
+                detail(L10n.text("На диске"), value: byteString(entry.bytes))
+                detail(L10n.text("Размер файлов"), value: byteString(entry.logicalBytes))
+                DuplicateSummary(entry: entry, store: store, session: store.duplicates, style: .detail)
+                if entry.isDirectory { detail(L10n.text("Файлов"), value: entry.fileCount.formatted()) }
+                if !store.isVirtual(entry) {
+                    if let created = entry.created { detail(L10n.text("Создан"), value: L10n.date(created)) }
+                    detail(L10n.text("Изменён"), value: L10n.date(entry.modified))
+                }
+            }
+            if entry.sharedLink {
+                Text(L10n.text("Жёсткая ссылка. Размер учтён у другого имени этого файла.")).font(.system(size: 10))
+                    .foregroundStyle(Palette.sub)
+            }
+        }
+    }
+    private func selectionActions(_ entry: Entry) -> some View {
+        VStack(spacing: 8) {
+            if entry.isDirectory, entry.id != store.folderID {
+                action(L10n.text("Исследовать папку"), icon: "arrow.down.right") { store.navigate(entry.id) }
+            }
+            if !store.isVirtual(entry) {
+                action(L10n.text("Показать в Finder"), icon: "arrow.up.forward.square") { store.reveal(entry) }
+                action(L10n.text("Скопировать путь"), icon: "doc.on.doc") { store.copy(entry.path) }
+            }
+        }
     }
 
     private var composition: some View {

@@ -60,6 +60,44 @@ public enum L10n {
         (". Используй --help.", ". Use --help."), ("\nДвойной щелчок — открыть папку", "\nDouble-click to open folder"),
     ]
     private static let english: [String: String] = [
+        "В корзину группу…": "Move group to Trash…", "В корзину копии группы": "Move group copies to Trash",
+
+        "Все копии выбраны": "All copies selected",
+        "В некоторых группах не останется копий": "Some groups will have no copies left",
+        "Останется: ": "Will remain: ", "Останется": "Will remain",
+        "Выбрать все копии группы для корзины": "Select every copy in this group for Trash",
+        "Выбрать все копии группы": "Select every copy in this group",
+
+        "Других копий: ": "Other copies: ", "Файлов: ": "Files: ", "Файлы с копиями": "Files with copies",
+        "Некорректный суммарный размер файлов.": "Invalid total file size.", "Все группы": "All groups",
+        "Переместить в Корзину?": "Move to Trash?", "Переместить в Корзину": "Move to Trash",
+        "Проверь список. Выбранные файлы будут перемещены в Корзину; их можно восстановить через Finder.":
+            "Review the list. Selected files will move to Trash and can be restored through Finder.",
+        "Сохранится": "Keep this copy",
+        "Выбрать повторы для корзины · одна копия останется": "Select repeats for Trash · keep one copy",
+        "Выбрать повторы для корзины": "Select repeats for Trash", "В корзину повторы…": "Trash repeats…",
+        "В корзину повторы": "Trash repeats", "Выбрать для корзины": "Select for Trash",
+        "Хотя бы одна копия должна остаться": "At least one copy must stay", "В корзину…": "Move to Trash…",
+        "В корзину": "Move to Trash", "Выбрано: ": "Selected: ", "Снять выбор": "Clear selection",
+        "Готовим список…": "Preparing review…", "Проверяем копии…": "Rechecking copies…",
+        "Перемещаем в Корзину…": "Moving to Trash…", "В корзине: ": "Moved to Trash: ",
+        "Обнови анализ для актуальных размеров.": "Rescan to update storage sizes.",
+        "Остановлено. Уже перемещённые файлы находятся в Корзине.": "Stopped. Files already moved are in Trash.",
+        "Файлов с копиями: ": "Files with copies: ", "файлов с копиями": "files with copies",
+        "Дубликаты внутри": "Duplicates inside",
+        "Файлы с подтверждёнными копиями, включая вложенные папки": "Files with confirmed copies, including subfolders",
+        "На диске — выделенные файлу блоки. Размер файлов — длина содержимого. Сжатие и разреженные файлы уменьшают место на диске; APFS-копии могут разделять блоки.":
+            "On disk is the space allocated to a file. File size is the length of its contents. Compression and sparse files can use less disk space; APFS copies may share blocks.",
+        "Выбери копии для корзины.": "Select copies for Trash.",
+        "Выбор не соответствует отчёту. Повтори поиск дубликатов.":
+            "Selection does not match the report. Run duplicate search again.",
+        "В каждой группе должна остаться хотя бы одна копия.": "At least one copy must remain in each group.",
+        "Некорректная группа или жёсткие ссылки. Повтори поиск дубликатов.":
+            "Invalid group or hard links. Run duplicate search again.",
+        "Файл вне области поиска или группа повреждена.": "File is outside the scan scope or the group is invalid.",
+        "Содержимое копий различается. Повтори поиск дубликатов.":
+            "Copies differ in content. Run duplicate search again.", "Загружаем отчёт…": "Loading report…",
+
         "Оценить поиск дубликатов": "Estimate duplicate search",
         "Проверить копии · явное readContents: true": "Compare copies · explicit readContents: true", "Пауза": "Pause",
         "Продолжить": "Resume", "Совпадения ещё не подтверждены": "No matches confirmed yet",

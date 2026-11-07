@@ -30,7 +30,7 @@ or find an item by name. Open an earlier scan whenever you need to return to it.
   overlap detection and no scan until you press Analyze.
 - **History that remembers.** Local compressed results, dates and sizes; opening
   a snapshot does not rescan its folders. Reading and map preparation have visible stages.
-- **Native comfort.** Resizable and collapsible sidebars, one compact toolbar,
+- **Native comfort.** Smooth native pane transitions preserve dragged widths and honor Reduce Motion. Resizable and collapsible sidebars, one compact toolbar,
   light/dark themes and English/Russian UI, with a compact language menu in the
   toolbar. Double-click a file to reveal it in Finder.
 - **The same data for agents.** CLI, JSON output and an MCP server share the scan core.
@@ -38,7 +38,7 @@ or find an item by name. Open an earlier scan whenever you need to return to it.
 ## Download & install
 
 1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Download **Disk-Atlas-0.3.2-universal.dmg**. The same app supports Apple Silicon
+2. Download **Disk-Atlas-0.4.0-universal.dmg**. The same app supports Apple Silicon
    and Intel Macs running **macOS 14 Sonoma or later**.
 3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
    then launch the app from Applications. A ZIP is also available.
@@ -121,8 +121,22 @@ and matching content affect the result. The GUI compares files of any age;
 advanced date criteria remain available through CLI/MCP. A check uses files known
 to the source scan; rescan to include newly added files. Results carry their check
 date and can become stale. Stopping preserves confirmed groups as a partial report.
-**Keep** is only a report mark; no source-file deletion is implemented. Repeated
-logical bytes are not guaranteed reclaimable APFS space.
+Checkboxes select copies for **Trash**. A group checkbox selects **every copy**. Individual checkboxes have no hidden
+keep-one restriction. Fully selected groups show **All copies selected**, even
+when collapsed, and the review warns that no copy will remain. Row/group trash buttons
+and the selection bar always open a review listing every selected path and any
+remaining copies. After confirmation, the GUI rechecks contents in the background,
+checks identities again, then moves files to macOS Trash. It never permanently
+deletes them or falls back to deletion if Trash fails. Stop preserves already
+moved files in Trash; changed/unavailable files abort the operation. Finder can
+restore trashed files. Rescan to update the dated storage map. Repeated logical
+bytes are not guaranteed reclaimable APFS space.
+
+The overview and folder inspector link to confirmed copies within that folder;
+no empty duplicate badge is shown before a result. Sort using table headings.
+The info button beside **Size** explains allocated blocks versus content length.
+
+<img src="docs/images/trash-review-en.png" width="600" alt="Mandatory review of selected duplicate paths and the copy that stays">
 
 ## For agents
 
@@ -194,8 +208,10 @@ pruned automatically. Delete one scan with its trash button or context menu, or 
 to remove all app-owned snapshots and metadata, including duplicate reports. A confirmation includes **Don’t ask
 again**; turn confirmations back on in the history window. Deleting history never
 deletes source files or separately exported snapshots. GUI history and requested exports are local writes; scanned
-source files remain untouched. Exported snapshots and duplicate reports contain **private paths and names**:
+source files remain untouched by scans/history cleanup; only the separately confirmed GUI Trash action moves copies. Exported snapshots and duplicate reports contain **private paths and names**:
 review them before sharing. Imports validate structure and totals, up to 2 GiB.
+
+Performance measurements and their limits: [PERFORMANCE.md](docs/PERFORMANCE.md).
 
 ## Build from source
 

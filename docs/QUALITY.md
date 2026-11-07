@@ -74,9 +74,9 @@ behavior tests and an explicit contract update.
 ## Existing debt is visible
 
 The first audit of revision `e5f7721` found 29 functions/accessor blocks over the
-complexity limits. The modified duplicate-results body was split into cohesive
-sections and the version-touched MCP handler was split by responsibility,
-reducing the frozen exceptions to **27**.
+complexity limits. Nine responsibilities have since been refactored, including
+map tiles, inspector sections, preparation/status and MCP dispatch, leaving **20**
+frozen historical exceptions.
 [legacy.json](../quality/legacy.json) records only those pre-existing bodies and
 exact hashes. An edited body loses its exception even if its score did not grow;
 new or changed code must satisfy the thresholds. Existing exceptions and all

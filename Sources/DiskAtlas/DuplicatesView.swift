@@ -32,16 +32,20 @@ struct DuplicatesView: View {
                     errorBanner
                     scopeSwitch
                     status
+                    trashSelectionBar
                     results
                     reportFooter
                 }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
             }.onAppear { focus(reader) }.onChange(of: session.focusedGroupID) { _, _ in focus(reader) }
-        }.background(Palette.paper)
+        }.background(Palette.paper).sheet(item: $session.trashReview) { plan in
+            DuplicateTrashReview(plan: plan, cancel: { session.trashReview = nil }, confirm: { session.trash(plan) })
+        }
     }
     @ViewBuilder private var errorBanner: some View {
         if let error = session.error {
-            Label(error, systemImage: "exclamationmark.circle").font(.system(size: 11)).foregroundStyle(.orange)
-                .textSelection(.enabled)
+            Label(L10n.text(error), systemImage: "exclamationmark.circle").font(.system(size: 11)).foregroundStyle(
+                .orange
+            ).textSelection(.enabled)
         }
     }
     @ViewBuilder private var scopeSwitch: some View {
@@ -59,7 +63,7 @@ struct DuplicatesView: View {
     @ViewBuilder private var results: some View {
         if !session.groups.isEmpty {
             groupTable
-            if session.groups.count > 500 {
+            if session.orderedCount > 500 {
                 Text(L10n.text("Показаны первые 500 групп. Полный результат доступен в экспорте.")).font(
                     .system(size: 10)
                 ).foregroundStyle(Palette.sub)
@@ -74,13 +78,14 @@ struct DuplicatesView: View {
     private var groupTable: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                sortHeading("Файлы", key: .name).padding(.leading, 38)
+                sortHeading("Файлы", key: .name).padding(.leading, 70)
                 Spacer()
                 if session.sorting { ProgressView().controlSize(.mini) }
                 sortHeading("Копии", key: .copies).frame(width: 52, alignment: .trailing)
                 sortHeading("Повторы", key: .repeatedBytes).frame(width: 100, alignment: .trailing).help(
                     L10n.text(
                         "Повторный объём не равен гарантированно освобождаемому месту: APFS может разделять блоки."))
+                Color.clear.frame(width: 24)
             }.font(.system(size: 10, weight: .medium)).foregroundStyle(Palette.sub).padding(.horizontal, 12).padding(
                 .bottom, 10)
             Divider().overlay(Palette.line)
@@ -95,6 +100,20 @@ struct DuplicatesView: View {
     }
     private func setExpanded(_ id: String, value: Bool) {
         if value { expanded.insert(id) } else { expanded.remove(id) }
+    }
+    @ViewBuilder private var trashSelectionBar: some View {
+        if !session.trashSelection.paths.isEmpty {
+            HStack(spacing: 12) {
+                Text(L10n.text("Выбрано: ") + String(session.trashSelection.paths.count)).monospacedDigit()
+                Button(L10n.text("Снять выбор")) { session.trashSelection = DuplicateTrashSelection() }.buttonStyle(
+                    .plain)
+                Spacer()
+                Button(L10n.text("В корзину…"), systemImage: "trash") { session.reviewTrash() }.buttonStyle(
+                    .borderedProminent)
+            }.font(.system(size: 11)).padding(12).background(Palette.soft, in: RoundedRectangle(cornerRadius: 8))
+                .disabled(session.busy)
+        }
+        if let notice = session.trashNotice { Text(notice).font(.system(size: 11)).foregroundStyle(Palette.sub) }
     }
     @ViewBuilder private var reportFooter: some View {
         if let report = session.report {
@@ -126,59 +145,52 @@ struct DuplicatesView: View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 5) {
                 Text(L10n.text("Дубликаты")).font(.system(size: 26, weight: .semibold, design: .rounded))
-                Text(session.title).font(.system(size: 11)).foregroundStyle(Palette.sub).lineLimit(1).help(
+                Text(session.scopePath.map { URL(fileURLWithPath: $0).lastPathComponent } ?? session.title).font(
+                    .system(size: 11)
+                ).foregroundStyle(Palette.sub).lineLimit(1).help(
                     (session.snapshotCreated.map { L10n.text("По снимку от ") + L10n.date($0) } ?? "") + "\n"
                         + L10n.text(
                             "Новые файлы после снимка попадут в поиск после повторного анализа. Облачные файлы без локального содержимого пропускаются."
                         ))
             }
             Spacer()
-            Menu {
-                Picker(L10n.text("Сортировка"), selection: $session.sort) {
-                    ForEach(DuplicateSort.allCases, id: \.self) { key in Text(key.title).tag(key) }
-                }
-                Toggle(L10n.text("По убыванию"), isOn: $session.sortDescending)
-            } label: {
-                Label(session.sort.title + (session.sortDescending ? " ↓" : " ↑"), systemImage: "arrow.up.arrow.down")
-                    .font(.system(size: 11)).padding(.horizontal, 10).frame(height: 28).background(
-                        Palette.soft, in: RoundedRectangle(cornerRadius: 6))
-            }.menuStyle(.borderlessButton).fixedSize().help(L10n.text("Сортировка"))
-            tool(
-                "slider.horizontal.3", "Параметры",
-                disabled: session.running || session.loadingReport || session.savingReport
-            ) { parameters.toggle() }.popover(isPresented: $parameters) {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text(L10n.text("Параметры поиска")).font(.system(size: 14, weight: .semibold))
-                    FileSizeRange(options: settings)
-                    HStack(spacing: 6) {
-                        ForEach([FileKind.video, .image, .audio, .document, .archive, .code, .other], id: \.self) {
-                            kind in
-                            Button {
-                                var value = session.options
-                                if value.kinds.contains(kind) {
-                                    value.kinds.remove(kind)
-                                } else {
-                                    value.kinds.insert(kind)
-                                }
-                                settings.wrappedValue = value
-                            } label: {
-                                Image(systemName: kind.symbol).frame(width: 28, height: 26).foregroundStyle(
-                                    session.options.kinds.contains(kind) ? Palette.accent : Palette.sub
-                                ).background(
-                                    session.options.kinds.contains(kind) ? Palette.mark : Palette.soft,
-                                    in: RoundedRectangle(cornerRadius: 5))
-                            }.buttonStyle(.plain).help(kind.title).accessibilityLabel(kind.title)
-                                .accessibilityAddTraits(session.options.kinds.contains(kind) ? .isSelected : [])
-                        }
-                        Spacer(minLength: 0)
-                        Button(L10n.text("Все")) {
-                            var value = session.options
-                            value.kinds = []
-                            settings.wrappedValue = value
-                        }.buttonStyle(.plain).font(.system(size: 10))
-                    }
-                }.padding(20).frame(width: 360).background(Palette.paper)
+            if session.scopePath != nil {
+                Button(L10n.text("Все группы")) { session.scopePath = nil }.font(.system(size: 11)).buttonStyle(.plain)
             }
+            tool("slider.horizontal.3", "Параметры", disabled: !session.canChangeOptions) { parameters.toggle() }
+                .popover(isPresented: $parameters) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text(L10n.text("Параметры поиска")).font(.system(size: 14, weight: .semibold))
+                        FileSizeRange(options: settings)
+                        HStack(spacing: 6) {
+                            ForEach([FileKind.video, .image, .audio, .document, .archive, .code, .other], id: \.self) {
+                                kind in
+                                Button {
+                                    var value = session.options
+                                    if value.kinds.contains(kind) {
+                                        value.kinds.remove(kind)
+                                    } else {
+                                        value.kinds.insert(kind)
+                                    }
+                                    settings.wrappedValue = value
+                                } label: {
+                                    Image(systemName: kind.symbol).frame(width: 28, height: 26).foregroundStyle(
+                                        session.options.kinds.contains(kind) ? Palette.accent : Palette.sub
+                                    ).background(
+                                        session.options.kinds.contains(kind) ? Palette.mark : Palette.soft,
+                                        in: RoundedRectangle(cornerRadius: 5))
+                                }.buttonStyle(.plain).help(kind.title).accessibilityLabel(kind.title)
+                                    .accessibilityAddTraits(session.options.kinds.contains(kind) ? .isSelected : [])
+                            }
+                            Spacer(minLength: 0)
+                            Button(L10n.text("Все")) {
+                                var value = session.options
+                                value.kinds = []
+                                settings.wrappedValue = value
+                            }.buttonStyle(.plain).font(.system(size: 10))
+                        }
+                    }.padding(20).frame(width: 360).background(Palette.paper)
+                }
         }
     }
     private func sortHeading(_ label: String, key: DuplicateSort) -> some View {
@@ -198,59 +210,83 @@ struct DuplicatesView: View {
         }.buttonStyle(.plain).disabled(disabled).help(L10n.text(label)).accessibilityLabel(L10n.text(label))
     }
     @ViewBuilder private var status: some View {
-        if session.preparing || session.loadingReport || session.savingReport {
+        if session.trashing || session.trashPreparing || session.preparing || session.loadingReport
+            || session.savingReport
+        {
+            workingStatus
+        } else if session.running {
+            runningStatus
+        } else if let report = session.report {
+            finishedStatus(report)
+        } else if let plan = session.plan {
+            readyStatus(plan)
+        } else {
+            Button(L10n.text("Оценить проверку")) { store.prepareDuplicates() }
+        }
+    }
+    private var workingStatus: some View {
+        VStack(alignment: .leading, spacing: 9) {
             HStack(spacing: 10) {
                 ProgressView().controlSize(.small)
                 Text(session.phaseTitle)
                 Spacer()
-                Text("\(session.progress.examined.formatted())").monospacedDigit()
-            }.font(.system(size: 11)).foregroundStyle(Palette.sub).frame(height: 42)
-        } else if session.running {
-            VStack(alignment: .leading, spacing: 9) {
-                HStack {
-                    Text(session.phaseTitle)
-                    Spacer()
-                    Text(session.remaining ?? session.estimate).foregroundStyle(Palette.sub)
-                }
-                if session.progress.phaseTotal > 0 {
-                    ProgressView(value: session.fraction).animation(
-                        reduceMotion ? nil : .linear(duration: 0.16), value: session.fraction)
-                } else {
-                    ProgressView().progressViewStyle(.linear)
-                }
-                HStack {
-                    Text(byteString(session.progress.phaseBytes) + " / " + byteString(session.progress.phaseTotal))
-                    Spacer()
-                    if session.progress.metadataBytes > 0 {
-                        Text(L10n.text("Отчёт") + " ≈ " + byteString(session.progress.metadataBytes))
-                    }
-                    Text(L10n.text("Групп: ") + "\(session.groups.count)")
-                }.font(.system(size: 9)).foregroundStyle(Palette.sub).monospacedDigit()
-            }.font(.system(size: 12)).padding(.vertical, 6)
-        } else if let report = session.report {
-            HStack(alignment: .firstTextBaseline, spacing: 24) {
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(byteString(report.repeatedBytes)).font(.system(size: 28, weight: .medium, design: .rounded))
-                        .monospacedDigit()
-                    Text(L10n.text("повторных копий")).font(.system(size: 10)).foregroundStyle(Palette.sub)
-                }.help(
-                    L10n.text(
-                        "Повторный объём не равен гарантированно освобождаемому месту: APFS может разделять блоки."))
-                VStack(alignment: .leading, spacing: 5) {
-                    Text("\(report.groups.count)").font(.system(size: 22, weight: .medium, design: .rounded))
-                        .monospacedDigit()
-                    Text(L10n.text("групп")).font(.system(size: 10)).foregroundStyle(Palette.sub)
-                }
+                Button(L10n.text("Остановить")) { session.stop() }.disabled(session.savingReport)
+            }
+            if session.trashing && session.trashProgress.total > 0 {
+                ProgressView(value: Double(session.trashProgress.completed), total: Double(session.trashProgress.total))
+            }
+        }.font(.system(size: 11)).foregroundStyle(Palette.sub).padding(.vertical, 10)
+    }
+    private var runningStatus: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack {
+                Text(session.phaseTitle)
                 Spacer()
-                if report.cancelled || report.inputPartial == true {
-                    Label(L10n.text("Неполный результат"), systemImage: "stop.circle").font(.system(size: 10))
-                        .foregroundStyle(Palette.sub)
+                Text(session.remaining ?? session.estimate).foregroundStyle(Palette.sub)
+            }
+            if session.progress.phaseTotal > 0 {
+                ProgressView(value: session.fraction).animation(
+                    reduceMotion ? nil : .linear(duration: 0.16), value: session.fraction)
+            } else {
+                ProgressView().progressViewStyle(.linear)
+            }
+            HStack {
+                Text(byteString(session.progress.phaseBytes) + " / " + byteString(session.progress.phaseTotal))
+                Spacer()
+                if session.progress.metadataBytes > 0 {
+                    Text(L10n.text("Отчёт") + " ≈ " + byteString(session.progress.metadataBytes))
                 }
-            }.padding(.vertical, 4)
-        } else if let plan = session.plan, plan.candidateCount == 0 {
+                Text(L10n.text("Групп: ") + "\(session.groups.count)")
+            }.font(.system(size: 9)).foregroundStyle(Palette.sub).monospacedDigit()
+        }.font(.system(size: 12)).padding(.vertical, 6)
+    }
+    private func finishedStatus(_ report: DuplicateReport) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 24) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text(byteString(session.scopePath == nil ? report.repeatedBytes : session.orderedRepeatedBytes)).font(
+                    .system(size: 28, weight: .medium, design: .rounded)
+                ).monospacedDigit()
+                Text(L10n.text("повторных копий")).font(.system(size: 10)).foregroundStyle(Palette.sub)
+            }.help(
+                L10n.text("Повторный объём не равен гарантированно освобождаемому месту: APFS может разделять блоки."))
+            VStack(alignment: .leading, spacing: 5) {
+                Text("\(session.scopePath == nil ? report.groups.count : session.orderedCount)").font(
+                    .system(size: 22, weight: .medium, design: .rounded)
+                ).monospacedDigit()
+                Text(L10n.text("групп")).font(.system(size: 10)).foregroundStyle(Palette.sub)
+            }
+            Spacer()
+            if report.cancelled || report.inputPartial == true {
+                Label(L10n.text("Неполный результат"), systemImage: "stop.circle").font(.system(size: 10))
+                    .foregroundStyle(Palette.sub)
+            }
+        }.padding(.vertical, 4)
+    }
+    @ViewBuilder private func readyStatus(_ plan: DuplicatePlan) -> some View {
+        if plan.candidateCount == 0 {
             Label(L10n.text("Нет кандидатов для сравнения"), systemImage: "checkmark.circle").font(.system(size: 12))
                 .foregroundStyle(Palette.sub)
-        } else if let plan = session.plan {
+        } else {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .firstTextBaseline) {
                     Text("\(plan.candidateCount.formatted()) " + L10n.text("файлов")).font(
@@ -273,100 +309,9 @@ struct DuplicatesView: View {
                             || store.viewFiltering)
                 }
             }.padding(16).background(Palette.soft, in: RoundedRectangle(cornerRadius: 8))
-        } else {
-            Button(L10n.text("Оценить проверку")) { store.prepareDuplicates() }
         }
     }
-}
 
-private struct DuplicateGroupRow: View {
-    let group: DuplicateGroup
-    @ObservedObject var session: DuplicateSession
-    @Binding var expanded: Bool
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    private var representative: DuplicateFile? { group.files.first }
-    private var locations: String {
-        (group.locations ?? group.files.first.map {
-            [URL(fileURLWithPath: $0.path).deletingLastPathComponent().lastPathComponent]
-        } ?? []).joined(separator: " · ")
-    }
-    var body: some View {
-        VStack(spacing: 0) {
-            Button {
-                withAnimation(reduceMotion ? nil : .easeOut(duration: 0.15)) { expanded.toggle() }
-            } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: expanded ? "chevron.down" : "chevron.right").font(
-                        .system(size: 8, weight: .semibold)
-                    ).frame(width: 8)
-                    Image(
-                        systemName: representative.map { FileKind.classify(URL(fileURLWithPath: $0.path)).symbol }
-                            ?? "doc"
-                    ).font(.system(size: 14)).foregroundStyle(Palette.accent).frame(width: 14)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(
-                            group.displayName ?? representative.map { URL(fileURLWithPath: $0.path).lastPathComponent }
-                                ?? ""
-                        ).font(.system(size: 12, weight: .medium)).lineLimit(1).truncationMode(.middle)
-                        Text(locations).font(.system(size: 9)).foregroundStyle(Palette.sub).lineLimit(1)
-                    }
-                    Spacer(minLength: 8)
-                    Text("\(group.files.count)").frame(width: 52, alignment: .trailing)
-                    Text(byteString(group.repeatedBytes)).fontWeight(.medium).frame(width: 100, alignment: .trailing)
-                }.font(.system(size: 11)).monospacedDigit().padding(.horizontal, 12).padding(.vertical, 12)
-                    .contentShape(Rectangle())
-            }.buttonStyle(.plain).help(L10n.text("Показать все копии"))
-            if expanded {
-                VStack(spacing: 0) {
-                    ForEach(group.files.prefix(200)) { file in
-                        HStack(spacing: 10) {
-                            Button {
-                                session.prefer(file, in: group)
-                            } label: {
-                                Label(
-                                    L10n.text("Оставить"),
-                                    systemImage: group.preferredPath == file.path ? "checkmark.circle.fill" : "circle"
-                                ).font(.system(size: 10)).frame(width: 76, height: 28, alignment: .leading)
-                                    .foregroundStyle(Palette.accent)
-                            }.buttonStyle(.plain).disabled(session.busy).help(L10n.text("Отметить копию для отчёта"))
-                                .accessibilityLabel(
-                                    L10n.text("Оставить") + ": " + URL(fileURLWithPath: file.path).lastPathComponent)
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(URL(fileURLWithPath: file.path).lastPathComponent).font(
-                                    .system(size: 11, weight: .medium)
-                                ).lineLimit(1)
-                                Text(file.path).font(.system(size: 9)).foregroundStyle(Palette.sub).lineLimit(1)
-                                    .truncationMode(.middle)
-                            }
-                            Spacer(minLength: 4)
-                            VStack(alignment: .trailing, spacing: 4) {
-                                Text(byteString(file.bytes)).font(.system(size: 10)).monospacedDigit()
-                                Text(L10n.date(file.modified, time: false)).font(.system(size: 9)).foregroundStyle(
-                                    Palette.sub)
-                            }
-                            Button {
-                                session.reveal(file)
-                            } label: {
-                                Image(systemName: "arrow.up.forward.square").frame(width: 24, height: 28)
-                            }.buttonStyle(.plain).help(L10n.text("Показать в Finder"))
-                        }.padding(.leading, 30).padding(.trailing, 12).padding(.vertical, 10).contentShape(Rectangle())
-                            .onTapGesture(count: 2) { session.reveal(file) }.contextMenu {
-                                Button(L10n.text("Показать в Finder")) { session.reveal(file) }
-                                Button(L10n.text("Скопировать путь")) {
-                                    NSPasteboard.general.clearContents()
-                                    NSPasteboard.general.setString(file.path, forType: .string)
-                                }
-                            }
-                    }
-                    if group.files.count > 200 {
-                        Text(L10n.text("Остальные копии доступны в экспорте.")).font(.caption).foregroundStyle(
-                            Palette.sub)
-                    }
-                }.background(Palette.soft.opacity(0.6)).padding(.bottom, 6)
-            }
-            Divider().overlay(Palette.line)
-        }
-    }
 }
 
 struct DuplicateActivity: View {

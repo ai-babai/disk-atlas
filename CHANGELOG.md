@@ -5,6 +5,14 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.4.0 — 2026-11-07
+
+- Smooth native sidebar/inspector transitions preserve dragged widths and honor Reduce Motion.
+- Isolate map invalidation: only the selected branch repaints; progress updates leave the map alone. Single clicks no longer wait for a potential double click.
+- Select duplicate copies for recoverable Trash moves, with row/group actions, a mandatory full-path review, explicit remaining/all-selected indicators, cancellable background byte/identity revalidation, partial-failure reporting and updated saved results.
+- Add clickable duplicate counts to the overview and inspector, scoped folder results, and a Size info explanation. Keep sorting in table headings.
+- Add selection/full-group, scope, report-reconciliation and content-revalidation tests; reduce frozen complexity debt from 27 to 20 without relaxing thresholds.
+
 ## 0.3.2 — 2026-11-07
 
 - Sort duplicate groups by repeated bytes, copy size, copy count or name, with reversible headings and background preparation.

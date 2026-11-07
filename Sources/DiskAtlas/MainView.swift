@@ -5,29 +5,14 @@ struct MainView: View {
     @ObservedObject var store: AtlasStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
-        HSplitView {
-            if store.snapshot != nil && store.sidebarVisible {
-                Sidebar(store: store).frame(minWidth: 180, idealWidth: 210, maxWidth: 350)
-            }
-            VStack(spacing: 0) {
-                if store.snapshot != nil {
-                    HSplitView {
-                        Group {
-                            if store.showDuplicates {
-                                DuplicatesView(store: store, session: store.duplicates)
-                            } else {
-                                workspace
-                            }
-                        }.frame(minWidth: 480)
-                        if store.inspectorVisible && !store.showDuplicates {
-                            Inspector(store: store).frame(minWidth: 210, idealWidth: 250, maxWidth: 380)
-                        }
-                    }
-                } else {
+        Group {
+            if store.snapshot != nil {
+                resultPanes
+            } else {
+                VStack(spacing: 0) {
                     welcome
+                    footer
                 }
-                DuplicateActivity(store: store, session: store.duplicates)
-                footer
             }
         }.disabled(store.loadingTitle != nil).background(Palette.paper).foregroundStyle(Palette.ink).tint(
             Palette.accent
@@ -60,6 +45,27 @@ struct MainView: View {
         }
     }
 
+    private var resultPanes: some View {
+        CollapsiblePane(
+            isVisible: $store.sidebarVisible, kind: .navigation, pane: Sidebar(store: store),
+            content: VStack(spacing: 0) {
+                CollapsiblePane(
+                    isVisible: Binding(
+                        get: { store.inspectorVisible && !store.showDuplicates },
+                        set: { if !store.showDuplicates { store.inspectorVisible = $0 } }), kind: .inspector,
+                    pane: Inspector(store: store),
+                    content: Group {
+                        if store.showDuplicates {
+                            DuplicatesView(store: store, session: store.duplicates)
+                        } else {
+                            workspace
+                        }
+                    })
+                DuplicateActivity(store: store, session: store.duplicates)
+                footer
+            })
+    }
+
     private var workspace: some View {
         VStack(alignment: .leading, spacing: 18) {
             heading
@@ -82,6 +88,7 @@ struct MainView: View {
                 }.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help(
                     L10n.text("Как считается размер")
                 ).accessibilityLabel(L10n.text("Как считается размер"))
+                SizeInfo()
             }
             if store.viewFiltersEnabled {
                 HStack {
@@ -134,30 +141,45 @@ struct MainView: View {
                 Spacer()
 
             }
-            HStack(alignment: .firstTextBaseline, spacing: 29) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(byteString(store.folder.map(store.size) ?? 0)).font(
-                        .system(size: 33, weight: .medium, design: .rounded)
-                    ).monospacedDigit().contentTransition(.numericText()).animation(
-                        .easeOut(duration: 0.18), value: store.logical)
-                    Text(store.logical ? L10n.text("размер файлов в папке") : L10n.text("занято файлами в папке")).font(
-                        .system(size: 10)
-                    ).foregroundStyle(Palette.sub)
-                }
-                VStack(alignment: .leading, spacing: 6) {
-                    Text((store.folder?.fileCount ?? 0).formatted()).font(
-                        .system(size: 20, weight: .medium, design: .rounded)
-                    ).monospacedDigit()
-                    Text(L10n.text("файлов")).font(.system(size: 10)).foregroundStyle(Palette.sub)
-                }
-                Spacer(minLength: 0)
-                if let snapshot = store.snapshot, !snapshot.isComposite {
-                    VStack(alignment: .trailing, spacing: 6) {
-                        Text(byteString(snapshot.volumeFree)).font(.system(size: 20, weight: .medium, design: .rounded))
-                            .monospacedDigit()
-                        Text(L10n.text("свободно на томе при сканировании")).font(.system(size: 9)).foregroundStyle(
-                            Palette.sub)
+            ViewThatFits(in: .horizontal) {
+                headingMetrics(duplicates: true)
+                VStack(alignment: .leading, spacing: 12) {
+                    headingMetrics(duplicates: false)
+                    if let entry = store.folder {
+                        DuplicateSummary(entry: entry, store: store, session: store.duplicates, style: .inline)
                     }
+                }
+            }
+        }
+    }
+
+    private func headingMetrics(duplicates: Bool) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 24) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(byteString(store.folder.map(store.size) ?? 0)).font(
+                    .system(size: 33, weight: .medium, design: .rounded)
+                ).monospacedDigit().contentTransition(.numericText()).animation(
+                    .easeOut(duration: 0.18), value: store.logical)
+                Text(store.logical ? L10n.text("размер файлов в папке") : L10n.text("занято файлами в папке")).font(
+                    .system(size: 10)
+                ).foregroundStyle(Palette.sub)
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                Text((store.folder?.fileCount ?? 0).formatted()).font(
+                    .system(size: 20, weight: .medium, design: .rounded)
+                ).monospacedDigit()
+                Text(L10n.text("файлов")).font(.system(size: 10)).foregroundStyle(Palette.sub)
+            }
+            if duplicates, let entry = store.folder {
+                DuplicateSummary(entry: entry, store: store, session: store.duplicates)
+            }
+            Spacer(minLength: 0)
+            if let snapshot = store.snapshot, !snapshot.isComposite {
+                VStack(alignment: .trailing, spacing: 6) {
+                    Text(byteString(snapshot.volumeFree)).font(.system(size: 20, weight: .medium, design: .rounded))
+                        .monospacedDigit()
+                    Text(L10n.text("свободно на томе при сканировании")).font(.system(size: 9)).foregroundStyle(
+                        Palette.sub)
                 }
             }
         }
@@ -320,22 +342,26 @@ struct MainView: View {
                 Text("· " + L10n.text("Сохранение истории…"))
                 ProgressView().controlSize(.mini)
             }
-            if !store.scanning, store.snapshot != nil {
-                if let bytes = store.snapshotArchiveBytes {
-                    Label(L10n.text("Снимок") + " " + byteString(bytes), systemImage: "archivebox").help(
-                        L10n.text("Размер сжатого файла снимка на диске. Исходные файлы в этот размер не входят."))
-                } else if store.savingHistory > 0, let estimate = store.snapshotMetadataEstimate {
-                    Text(L10n.text("Снимок") + " ≈ " + byteString(estimate) + " · " + L10n.text("до сжатия")).help(
-                        L10n.text("Оценка несжатых метаданных. После сохранения появится точный размер сжатого снимка.")
-                    )
-                } else if store.savingHistory == 0 {
-                    Text(L10n.text("Снимок не сохранён"))
-                }
-            }
+            snapshotFootnote
             Spacer()
-            Text(store.notice ?? L10n.text("Файлы остаются на своих местах")).lineLimit(1)
+            Text(store.notice ?? store.duplicates.trashNotice ?? L10n.text("Файлы остаются на своих местах")).lineLimit(
+                1)
         }.font(.system(size: 10)).foregroundStyle(Palette.sub).padding(.horizontal, 24).frame(height: 30).background(
             Palette.soft)
+    }
+
+    @ViewBuilder private var snapshotFootnote: some View {
+        if !store.scanning, store.snapshot != nil {
+            if let bytes = store.snapshotArchiveBytes {
+                Label(L10n.text("Снимок") + " " + byteString(bytes), systemImage: "archivebox").help(
+                    L10n.text("Размер сжатого файла снимка на диске. Исходные файлы в этот размер не входят."))
+            } else if store.savingHistory > 0, let estimate = store.snapshotMetadataEstimate {
+                Text(L10n.text("Снимок") + " ≈ " + byteString(estimate) + " · " + L10n.text("до сжатия")).help(
+                    L10n.text("Оценка несжатых метаданных. После сохранения появится точный размер сжатого снимка."))
+            } else if store.savingHistory == 0 {
+                Text(L10n.text("Снимок не сохранён"))
+            }
+        }
     }
 
     private var issuesSheet: some View {

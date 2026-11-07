@@ -111,24 +111,6 @@
       "start": 8
     },
     {
-      "bodyHash": "6b8f5e2d0d6acff19d29e829a067d5f5f3d0c6484b071574d4005189780b39ff",
-      "cognitive": 7,
-      "cyclomatic": 12,
-      "end": 46,
-      "file": "Sources/DiskAtlas/DuplicateSession.swift",
-      "identity": "DuplicateSession.property:phaseTitle",
-      "start": 32
-    },
-    {
-      "bodyHash": "ceb96e76aeffcd904f783f442c3660f1162c8ba589d10d7f16d6eafb4a27836e",
-      "cognitive": 22,
-      "cyclomatic": 12,
-      "end": 196,
-      "file": "Sources/DiskAtlas/DuplicateSession.swift",
-      "identity": "DuplicateSession.prepare(_:Snapshot,id:UUID?,debounce:Bool,autoStart:Bool)",
-      "start": 140
-    },
-    {
       "bodyHash": "170d30e714e8f486001d66efef4e85d86d742f3626355c40d73f871ab730186e",
       "cognitive": 16,
       "cyclomatic": 7,
@@ -136,15 +118,6 @@
       "file": "Sources/DiskAtlas/DuplicateSession.swift",
       "identity": "DuplicateSession.start()",
       "start": 197
-    },
-    {
-      "bodyHash": "1c6440e34a51ed4efd55fe0df788259adaa0ea44eb1302852189ca05968c6d17",
-      "cognitive": 20,
-      "cyclomatic": 16,
-      "end": 252,
-      "file": "Sources/DiskAtlas/DuplicatesView.swift",
-      "identity": "DuplicatesView.property:status",
-      "start": 173
     },
     {
       "bodyHash": "8621a06f302aef25fd49b1efbde23e4d0a82d20d2d6c0d7ec30f2f240fc78c16",
@@ -165,24 +138,6 @@
       "start": 70
     },
     {
-      "bodyHash": "df2b623a02c271da3ad06a8f4098064a98d5f18304f8f6cd32586ab64e9ae20b",
-      "cognitive": 40,
-      "cyclomatic": 8,
-      "end": 76,
-      "file": "Sources/DiskAtlas/Inspector.swift",
-      "identity": "Inspector.property:body",
-      "start": 8
-    },
-    {
-      "bodyHash": "595da9139e9c4e877bbe9e76a43b8c824051bd1e8f2f69a2ee9ef2f5636a0e66",
-      "cognitive": 26,
-      "cyclomatic": 10,
-      "end": 61,
-      "file": "Sources/DiskAtlas/MainView.swift",
-      "identity": "MainView.property:body",
-      "start": 7
-    },
-    {
       "bodyHash": "5580da6deaf7cd301c5c076a59aea28c7b85326f9301734214fa5fec6cc5ba1d",
       "cognitive": 17,
       "cyclomatic": 8,
@@ -190,15 +145,6 @@
       "file": "Sources/DiskAtlas/MainView.swift",
       "identity": "MainView.property:fileList",
       "start": 164
-    },
-    {
-      "bodyHash": "abbb8b1f3848807746300602a3c235ad8cd5b9ee5cde89c1c2a1c271310987fe",
-      "cognitive": 17,
-      "cyclomatic": 10,
-      "end": 337,
-      "file": "Sources/DiskAtlas/MainView.swift",
-      "identity": "MainView.property:footer",
-      "start": 296
     },
     {
       "bodyHash": "dedae9294c9d21c08e6ba0be4d6646ee97298644aee92f60c8eb449b014729a3",
@@ -235,15 +181,6 @@
       "file": "Sources/DiskAtlas/Treemap.swift",
       "identity": "TreemapLayout.tiles(_:[Entry],logical:Bool,in:CGRect,limit:Int,totalCount:Int?,totalBytes:Int64?)",
       "start": 15
-    },
-    {
-      "bodyHash": "40824f3d2c405991fef44a56e1b70323d0cc2d0ad32dcc81f1fa5d32006c24d0",
-      "cognitive": 26,
-      "cyclomatic": 13,
-      "end": 159,
-      "file": "Sources/DiskAtlas/Treemap.swift",
-      "identity": "TreemapView.tileView(_:MapTile,snapshot:Snapshot,index:PresentationIndex)",
-      "start": 110
     }
   ]
 }
