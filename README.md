@@ -8,7 +8,7 @@ created: "2026-11-07"
   <h1>Disk Atlas</h1>
   <p><strong>Room for what matters.</strong></p>
   <p>A native map of your Mac’s storage. Built for people and agents.</p>
-  <p><a href="https://github.com/ai-babai/disk-atlas/releases">Download for macOS</a> · <a href="README.ru.md">По-русски</a> · <a href="docs/ARCHITECTURE.md">Architecture</a></p>
+  <p><a href="https://github.com/ai-babai/disk-atlas/releases">Download for macOS</a> · <a href="README.ru.md">По-русски</a> · <a href="docs/ARCHITECTURE.md">Architecture</a> · <a href="#contact">Contact</a></p>
   <p>macOS 14+ · Apple Silicon & Intel · English / Русский · Early access</p>
 </div>
 
@@ -164,6 +164,17 @@ the ad hoc signature, and creates DMG, ZIP and SHA-256 files in `dist/release/`.
 See [architecture and validation](docs/ARCHITECTURE.md), [changelog](CHANGELOG.md)
 and [security policy](SECURITY.md). Initial release validation uses scratch checks
 and manual UI review; no committed test suite or CI is included yet.
+
+---
+
+## Contact
+
+For questions, feedback or collaboration, contact the maintainer:
+
+- Telegram: [@SkifMax](https://t.me/SkifMax)
+- Email: [wip.maks.craft@yandex.com](mailto:wip.maks.craft@yandex.com)
+
+For reproducible bugs, [open an issue](https://github.com/ai-babai/disk-atlas/issues). For security reports, follow the [security policy](SECURITY.md).
 
 ---
 

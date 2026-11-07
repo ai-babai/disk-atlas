@@ -8,7 +8,7 @@ created: "2026-11-07"
   <h1>Disk Atlas</h1>
   <p><strong>Место для важного.</strong></p>
   <p>Нативная карта занятого места на Mac — для человека и агента.</p>
-  <p><a href="https://github.com/ai-babai/disk-atlas/releases">Скачать для macOS</a> · <a href="README.md">English</a> · <a href="docs/ARCHITECTURE.md">Архитектура</a></p>
+  <p><a href="https://github.com/ai-babai/disk-atlas/releases">Скачать для macOS</a> · <a href="README.md">English</a> · <a href="docs/ARCHITECTURE.md">Архитектура</a> · <a href="#контакты">Контакты</a></p>
   <p>macOS 14+ · Apple Silicon и Intel · English / Русский · Ранний доступ</p>
 </div>
 
@@ -166,6 +166,17 @@ scripts/release.sh
 и создаёт DMG, ZIP и SHA-256 в `dist/release/`. См. [архитектуру и проверку](docs/ARCHITECTURE.md),
 [историю изменений](CHANGELOG.md) и [политику безопасности](SECURITY.md).
 Начальная версия проверена временными проверками и вручную; постоянных тестов и CI пока нет.
+
+---
+
+## Контакты
+
+По вопросам, предложениям и сотрудничеству пиши автору:
+
+- Telegram: [@SkifMax](https://t.me/SkifMax)
+- Почта: [wip.maks.craft@yandex.com](mailto:wip.maks.craft@yandex.com)
+
+Для воспроизводимых ошибок есть [Issues](https://github.com/ai-babai/disk-atlas/issues). Об уязвимостях сообщай по [политике безопасности](SECURITY.md).
 
 ---
 

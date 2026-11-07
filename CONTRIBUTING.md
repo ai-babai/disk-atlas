@@ -8,6 +8,8 @@ created: "2026-11-07"
 Small, focused contributions are welcome. Start with [README.md](README.md) and
 [the architecture guide](docs/ARCHITECTURE.md). Contributions are under the MIT License.
 
+For questions or collaboration, contact the maintainer through [Telegram or email](README.md#contact). English and Russian are welcome.
+
 ## Build
 
 On macOS with Swift 6 / Xcode Command Line Tools:

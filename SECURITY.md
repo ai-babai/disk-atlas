@@ -8,6 +8,8 @@ created: "2026-11-07"
 Report security issues through [GitHub private vulnerability reporting](https://github.com/ai-babai/disk-atlas/security/advisories/new). Include the app version,
 macOS version and a minimal reproduction using synthetic paths and files.
 
+You can also contact the maintainer privately via Telegram [@SkifMax](https://t.me/SkifMax) or email [wip.maks.craft@yandex.com](mailto:wip.maks.craft@yandex.com). English and Russian are welcome.
+
 Do not attach a real `.atlas` snapshot, history archive, absolute personal paths or
 file listings without reviewing their contents. Snapshots contain names, paths,
 sizes and dates even though file contents are not read.
