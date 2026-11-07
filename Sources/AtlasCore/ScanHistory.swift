@@ -63,13 +63,13 @@ public actor ScanHistory {
         return record
     }
 
-    public func load(_ record: ScanHistoryRecord) throws -> Snapshot {
+    public nonisolated func load(_ record: ScanHistoryRecord) async throws -> Snapshot {
         let data = try Data(contentsOf: url(for: record))
         let decoded = try (data as NSData).decompressed(using: .lzfse) as Data
         return try Snapshot.decode(decoded)
     }
 
-    private func url(for record: ScanHistoryRecord) -> URL {
+    private nonisolated func url(for record: ScanHistoryRecord) -> URL {
         directory.appendingPathComponent(record.id.uuidString + ".atlas.lzfse")
     }
 
