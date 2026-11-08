@@ -5,6 +5,12 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.14.0 — 2026-11-08
+
+- Match Saved snapshots to the app palette, with storage summary cards, lightweight separators, visible Open actions and snapshot-size headings instead of a system striped table.
+- Put Add to analysis before Saved snapshots in navigation. Start the snapshot section collapsed and replace the ellipsis menu with an explicit All snapshots button.
+- Restore per-snapshot size and delete controls in expanded sidebar history. Keep snapshot and duplicate-report weights distinct, with source-file safety explained in delete help and the existing confirmation flow.
+
 ## 0.13.1 — 2026-11-08
 
 - Rename history to Saved snapshots throughout the window, sidebar, menus and links; use Recent snapshots on Home and Name in the storage table.

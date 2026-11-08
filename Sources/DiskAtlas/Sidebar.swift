@@ -3,6 +3,8 @@ import SwiftUI
 
 struct Sidebar: View {
     @ObservedObject var store: AtlasStore
+    @State private var historyExpanded = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             brand
@@ -63,8 +65,8 @@ struct Sidebar: View {
     @ViewBuilder private var snapshotNavigation: some View {
         if let snapshot = store.index?.snapshot {
             scanRoots(snapshot)
-            scanHistory
             quickPlaces
+            scanHistory
         }
     }
     private func scanRoots(_ snapshot: Snapshot) -> some View {
@@ -79,31 +81,34 @@ struct Sidebar: View {
         }
     }
     private var scanHistory: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 6) {
-                SectionLabel(text: L10n.text("Сохранённые снимки"))
-                Spacer(minLength: 4)
-                if store.savingHistory > 0 { ProgressView().controlSize(.mini) }
-                Menu {
-                    Button(L10n.text("Сохранённые снимки…")) { store.showHistory = true }
-                    Divider()
-                    Button(L10n.text("Очистить историю…"), role: .destructive) { store.requestHistoryDeletion() }
-                        .disabled(store.historyBusy || (store.historyRecords.isEmpty && store.historyStorageBytes == 0))
-                } label: {
-                    Image(systemName: "ellipsis")
-                }.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().accessibilityLabel(
-                    L10n.text("Действия с историей"))
-            }.padding(.top, 24).padding(.bottom, 8)
-            ForEach(store.historyRecords.prefix(5)) { record in HistoryRow(store: store, record: record) }
-            if store.historyRecords.count > 5 {
-                Button(L10n.text("Сохранённые снимки…")) { store.showHistory = true }.font(.system(size: 11))
-                    .buttonStyle(.plain).foregroundStyle(Palette.accent).padding(.top, 8)
-            }
-            if store.historyRecords.isEmpty && store.savingHistory == 0 {
-                Text(L10n.text("Здесь появятся сохранённые сканы")).font(.system(size: 10)).foregroundStyle(Palette.sub)
-            }
-
-        }
+        VStack(alignment: .leading, spacing: 8) {
+            DisclosureGroup(isExpanded: $historyExpanded) {
+                VStack(spacing: 2) {
+                    ForEach(store.historyRecords.prefix(5)) { record in
+                        HistoryRow(store: store, record: record, showsStorageControls: true)
+                    }
+                    if store.historyRecords.isEmpty && store.savingHistory == 0 {
+                        Text(L10n.text("Здесь появятся сохранённые снимки")).font(.system(size: 10)).foregroundStyle(
+                            Palette.sub
+                        ).padding(.vertical, 8)
+                    }
+                }.padding(.top, 8)
+            } label: {
+                HStack(spacing: 4) {
+                    Text(L10n.text("Сохранённые снимки")).font(.system(size: 11, weight: .semibold)).lineLimit(1)
+                    Spacer(minLength: 0)
+                    if store.savingHistory > 0 { ProgressView().controlSize(.mini) }
+                }.foregroundStyle(Palette.sub)
+            }.tint(Palette.sub).animation(
+                reduceMotion ? nil : .easeInOut(duration: Motion.quick), value: historyExpanded)
+            Button {
+                store.showHistory = true
+            } label: {
+                Label(L10n.text("Все снимки…"), systemImage: "archivebox").font(.system(size: 11, weight: .medium))
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(8).background(
+                        Palette.paper, in: RoundedRectangle(cornerRadius: 6))
+            }.buttonStyle(.plain).foregroundStyle(Palette.accent)
+        }.padding(.top, 24)
     }
     private var quickPlaces: some View {
         VStack(alignment: .leading, spacing: 0) {

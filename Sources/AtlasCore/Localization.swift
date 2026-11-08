@@ -60,7 +60,15 @@ public enum L10n {
         (". Используй --help.", ". Use --help."), ("\nДвойной щелчок — открыть папку", "\nDouble-click to open folder"),
     ]
     private static let english: [String: String] = [
-        "Название": "Name", "Сохранённые снимки": "Saved snapshots", "Сохранённые снимки…": "Saved snapshots…",
+        "Все снимки…": "All snapshots…", "Вес снимка": "Snapshot size", "Открыть снимок": "Open snapshot",
+        "Здесь появятся сохранённые снимки": "Saved snapshots will appear here",
+        "Вес сжатого снимка. Отчёт о дубликатах хранится отдельно.":
+            "Compressed snapshot size. The duplicate report is stored separately.",
+        "Удалить сохранённый снимок и его отчёт. Исходные файлы останутся на месте.":
+            "Delete the saved snapshot and its report. Source files stay in place.",
+        "Открывай снимки без повторного сканирования. Здесь указан вес сохранённых данных.":
+            "Open snapshots without rescanning. Sizes here refer to saved data.", "Название": "Name",
+        "Сохранённые снимки": "Saved snapshots", "Сохранённые снимки…": "Saved snapshots…",
         "Последние снимки": "Recent snapshots",
         "Открывай готовые результаты без нового анализа. Здесь показан вес сохранённых данных, а не размер исходных папок.":
             "Open saved results without scanning again. Sizes here refer to stored analysis data, not source folders.",
