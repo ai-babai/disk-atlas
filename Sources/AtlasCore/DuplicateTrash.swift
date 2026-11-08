@@ -3,17 +3,22 @@ import Foundation
 /// An ephemeral selection. A checked box always means “move to Trash”.
 public struct DuplicateTrashSelection: Sendable {
     public private(set) var paths = Set<String>()
+    public private(set) var bytes: Int64 = 0
     public init() {}
     public func count(in group: DuplicateGroup) -> Int { group.files.filter { paths.contains($0.path) }.count }
     public mutating func toggle(_ file: DuplicateFile, in group: DuplicateGroup) {
         guard group.files.contains(where: { $0.path == file.path }) else { return }
-        if paths.remove(file.path) == nil { paths.insert(file.path) }
+        set(file, selected: !paths.contains(file.path))
     }
     public mutating func toggle(_ group: DuplicateGroup) {
-        if count(in: group) == group.files.count {
-            paths.subtract(group.files.map(\.path))
-        } else {
-            paths.formUnion(group.files.map(\.path))
+        let select = count(in: group) != group.files.count
+        for file in group.files { set(file, selected: select) }
+    }
+    private mutating func set(_ file: DuplicateFile, selected: Bool) {
+        if selected {
+            if paths.insert(file.path).inserted { bytes += file.bytes }
+        } else if paths.remove(file.path) != nil {
+            bytes -= file.bytes
         }
     }
 }

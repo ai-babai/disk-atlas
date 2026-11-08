@@ -234,7 +234,7 @@ struct MainView: View {
                 typeSelection
                 Spacer(minLength: 4)
                 FileTrashControls(session: store.fileTrash, store: store, compact: true).id(store.language).frame(
-                    maxWidth: 310, alignment: .trailing)
+                    maxWidth: 400, alignment: .trailing)
             }.frame(height: 28, alignment: .leading)
         }.padding(.bottom, 6)
     }

@@ -4,6 +4,8 @@ import SwiftUI
 /// This slot remains mounted at a fixed height, including with no checked items.
 struct TrashSelectionBar: View {
     let count: Int
+    let bytes: Int64?
+    let sizeHelp: String
     let busy: Bool
     var notice: String? = nil
     let clear: () -> Void
@@ -12,21 +14,16 @@ struct TrashSelectionBar: View {
     var compact = false
     var body: some View {
         Group {
-            if compact {
-                ViewThatFits(in: .horizontal) {
-                    actions(labels: true)
-                    actions(labels: false)
-                }
-            } else {
+            ViewThatFits(in: .horizontal) {
                 actions(labels: true)
+                actions(labels: false)
             }
         }.font(.system(size: 11)).padding(.horizontal, compact ? 6 : 10).frame(height: compact ? 28 : 40).background(
             Palette.soft.opacity(count > 0 || busy ? 1 : 0), in: RoundedRectangle(cornerRadius: 6))
     }
     private func actions(labels: Bool) -> some View {
         HStack(spacing: compact ? 6 : 10) {
-            Text(count > 0 ? (labels ? L10n.text("Выбрано: ") : "") + count.formatted() : "").monospacedDigit()
-                .lineLimit(1).frame(width: labels ? (compact ? 80 : 110) : 28, alignment: .leading)
+            selectionSummary(labels: labels)
             Button(action: clear) {
                 if labels { Text(L10n.text("Снять выбор")) } else { Image(systemName: "xmark.circle") }
             }.buttonStyle(.plain).opacity(count > 0 ? 1 : 0).disabled(count == 0 || busy).accessibilityHidden(
@@ -41,6 +38,12 @@ struct TrashSelectionBar: View {
             }
             trashAction(labels: labels)
         }.fixedSize(horizontal: compact, vertical: false)
+    }
+    private func selectionSummary(labels: Bool) -> some View {
+        let amount = bytes.map(byteString) ?? "…"
+        return Text(count > 0 ? (labels ? L10n.text("Выбрано: ") : "") + count.formatted() + " · " + amount : "")
+            .monospacedDigit().lineLimit(1).frame(width: labels ? 170 : 120, alignment: .leading).help(sizeHelp)
+            .accessibilityLabel(L10n.text("Выбрано: ") + count.formatted() + " · " + amount + ". " + sizeHelp)
     }
     @ViewBuilder private func trashAction(labels: Bool) -> some View {
         if busy {
@@ -59,11 +62,33 @@ struct FileTrashControls: View {
     @ObservedObject var session: FileTrashSession
     let store: AtlasStore
     var compact = false
+    @State private var total: Int64?
+    @State private var calculated: SummaryRequest?
+    private struct SummaryRequest: Hashable {
+        let selected: Set<Int>
+        let snapshot: Date?
+        let logical: Bool
+    }
+    private var request: SummaryRequest {
+        SummaryRequest(selected: session.selected, snapshot: store.snapshot?.created, logical: store.logical)
+    }
     var body: some View {
         TrashSelectionBar(
-            count: session.selected.count, busy: session.busy, notice: session.message,
-            clear: { session.selected = [] }, review: { store.reviewFileTrash() }, stop: session.stop, compact: compact
-        ).sheet(item: $session.review) { plan in
+            count: session.selected.count, bytes: calculated == request ? total : nil,
+            sizeHelp: L10n.text(store.logical ? "Размер файлов" : "На диске") + ". "
+                + L10n.text("По снимку. Папки учтены целиком, вложенные выбранные объекты не считаются повторно."),
+            busy: session.busy, notice: session.message, clear: { session.selected = [] },
+            review: { store.reviewFileTrash() }, stop: session.stop, compact: compact
+        ).task(id: request) {
+            let key = request
+            guard let snapshot = store.snapshot else { return }
+            let value = await Task.detached(priority: .utility) {
+                FileTrashSelection.bytes(in: snapshot, selected: key.selected, logical: key.logical)
+            }.value
+            guard !Task.isCancelled else { return }
+            total = value
+            calculated = key
+        }.sheet(item: $session.review) { plan in
             FileTrashReview(plan: plan, cancel: { session.review = nil }) {
                 session.move(plan, applied: store.applyFileTrash)
             }

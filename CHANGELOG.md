@@ -5,6 +5,12 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.12.1 — 2026-11-08
+
+- Show checked-item count and total size together in both Trash selection bars, within the existing fixed-height action row. Keep the amount visible when narrow layouts use icon actions.
+- Sum ordinary files and complete folders from snapshot metadata off the main thread, using the selected size metric and counting folder/child overlaps once. Duplicate selections include every checked copy, including all copies of a group.
+- Present optional Full Disk Access guidance as a calm shield card with an explanation, System Settings and Not now actions; never infer permission by probing protected files.
+
 ## 0.12.0 — 2026-11-08
 
 - Expand folders inline with native disclosure arrows in Contents. Browse multiple levels without changing the map or current folder; retain flat search and Largest files.

@@ -140,9 +140,12 @@ struct DuplicatesView: View {
     }
     private var trashSelectionBar: some View {
         TrashSelectionBar(
-            count: session.trashSelection.paths.count, busy: session.trashPreparing || session.trashing,
-            notice: session.trashNotice, clear: { session.trashSelection = DuplicateTrashSelection() },
-            review: { session.reviewTrash() }, stop: session.stop
+            count: session.trashSelection.paths.count, bytes: session.trashSelection.bytes,
+            sizeHelp: L10n.text(
+                "Размер содержимого всех выбранных копий. APFS может разделять блоки; это не гарантированно освобождаемое место."
+            ), busy: session.trashPreparing || session.trashing, notice: session.trashNotice,
+            clear: { session.trashSelection = DuplicateTrashSelection() }, review: { session.reviewTrash() },
+            stop: session.stop
         ).id(store.language).disabled(session.busy && !session.trashPreparing && !session.trashing)
     }
     @ViewBuilder private var reportFooter: some View {

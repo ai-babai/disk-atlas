@@ -26,6 +26,28 @@ final class FileTrashTests: XCTestCase {
         XCTAssertThrowsError(try FileTrashPlan(snapshot: snapshot, selected: [-1]))
         XCTAssertThrowsError(try FileTrashPlan(snapshot: snapshot, selected: [100]))
     }
+    func testSelectionTotalsUseSnapshotMetricAndCountFolderContentsOnce() throws {
+        let root = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        try Data("abc".utf8).write(to: root.appendingPathComponent("Folder-copy.txt"))
+        let snapshot = try DiskScanner().scan(path: root.path)
+        let folder = try XCTUnwrap(snapshot.entries.first { $0.name == "Folder" })
+        let child = try XCTUnwrap(snapshot.entries.first { $0.name == "a.txt" })
+        let sibling = try XCTUnwrap(snapshot.entries.first { $0.name == "Folder-copy.txt" })
+        let other = try XCTUnwrap(snapshot.entries.first { $0.name == "b.txt" })
+        let selected: Set<Int> = [folder.id, child.id, sibling.id, other.id]
+        XCTAssertEqual(FileTrashSelection.roots(in: snapshot, selected: selected).count, 3)
+        XCTAssertEqual(FileTrashSelection.bytes(in: snapshot, selected: selected, logical: true), 17)
+        let allocated = folder.bytes + sibling.bytes + other.bytes
+        XCTAssertEqual(FileTrashSelection.bytes(in: snapshot, selected: selected, logical: false), allocated)
+        XCTAssertEqual(try FileTrashPlan(snapshot: snapshot, selected: selected).bytes, allocated)
+        XCTAssertEqual(FileTrashSelection.bytes(in: snapshot, selected: [], logical: true), 0)
+        XCTAssertEqual(FileTrashSelection.bytes(in: snapshot, selected: [-1, 100], logical: false), 0)
+        // Checkbox feedback is metadata-only, even if sources have disappeared since the scan.
+        try FileManager.default.removeItem(at: root.appendingPathComponent("Folder"))
+        XCTAssertEqual(FileTrashSelection.bytes(in: snapshot, selected: selected, logical: true), 17)
+        XCTAssertEqual(FileTrashSelection.bytes(in: snapshot, selected: [0, folder.id, child.id], logical: true), 17)
+    }
     func testChangedOrReplacedFilesAreRejectedAfterReview() throws {
         let root = try fixture()
         defer { try? FileManager.default.removeItem(at: root) }

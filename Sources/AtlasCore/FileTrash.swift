@@ -61,13 +61,8 @@ public struct FileTrashPlan: Identifiable, Sendable {
         guard !selected.isEmpty, selected.allSatisfy(snapshot.entries.indices.contains) else {
             throw AtlasError.message("Выбери файлы или папки для корзины.")
         }
-        let entries = selected.map { snapshot.entries[$0] }.sorted { $0.path.count < $1.path.count }
-        var roots: [Entry] = []
-        for entry in entries {
-            try Self.validatePath(entry, snapshot: snapshot)
-            if !roots.contains(where: { $0.isDirectory && entry.path.hasPrefix($0.path + "/") }) { roots.append(entry) }
-        }
-        items = try roots.map(FileTrashItem.init)
+        for id in selected { try Self.validatePath(snapshot.entries[id], snapshot: snapshot) }
+        items = try FileTrashSelection.roots(in: snapshot, selected: selected).map(FileTrashItem.init)
     }
     private static func validatePath(_ entry: Entry, snapshot: Snapshot) throws {
         let url = URL(fileURLWithPath: entry.path)

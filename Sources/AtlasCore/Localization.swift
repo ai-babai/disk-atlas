@@ -60,7 +60,13 @@ public enum L10n {
         (". Используй --help.", ". Use --help."), ("\nДвойной щелчок — открыть папку", "\nDouble-click to open folder"),
     ]
     private static let english: [String: String] = [
-        "Доступ к файлам…": "File access…", "Доступ к файлам": "File access",
+        "По снимку. Папки учтены целиком, вложенные выбранные объекты не считаются повторно.":
+            "From the snapshot. Folders include all contents; selected descendants are counted only once.",
+        "Размер содержимого всех выбранных копий. APFS может разделять блоки; это не гарантированно освобождаемое место.":
+            "Content size of every selected copy. APFS may share blocks; this is not guaranteed reclaimable space.",
+        "Почта, Сообщения и данные других приложений могут быть недоступны. Пропущенные папки не входят в подсчитанный размер.":
+            "Mail, Messages and other apps’ data may be inaccessible. Skipped folders are not included in the measured size.",
+        "Не сейчас": "Not now", "Доступ к файлам…": "File access…", "Доступ к файлам": "File access",
         "Обычно достаточно запросов macOS при обращении к защищённым папкам. Ты можешь разрешить или отклонить каждый запрос. Недоступные папки будут пропущены и показаны в отчёте.":
             "Normally, macOS asks when you access protected folders. You can allow or deny each request. Unavailable folders are skipped and listed in the report.",
         "Полный доступ к диску — по желанию": "Full Disk Access is optional",

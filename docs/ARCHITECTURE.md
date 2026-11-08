@@ -166,7 +166,12 @@ filter changes clear the group. Its inspector describes a collection, not a dire
 
 Ordinary file-list Trash uses independent checkboxes and fixed leading/trailing
 native columns. Only available button cells update when checks change; row focus
-and Quick Look stay separate. A fixed 40-point action slot is shared with duplicates.
+and Quick Look stay separate. The shared Trash bar reserves 28 points in the compact
+file header and 40 in duplicates, including with no checks. Both show count and total
+size together. Ordinary totals use the original snapshot and active size metric off-main;
+complete folders include their contents once, even when list filters hide children.
+The review uses the same overlap normalization. Duplicate selection maintains its
+content-byte total as paths are toggled, without traversing the report on every render.
 Duplicate remaining-copy badges reserve their width, and streamed sorting leaves
 existing results at full opacity with a fixed spinner slot.
 

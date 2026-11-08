@@ -23,20 +23,25 @@ final class DuplicateTrashTests: XCTestCase {
                 let file = value.files[Int(random.next() % UInt64(copies))]
                 selection.toggle(file, in: value)
                 XCTAssertLessThanOrEqual(selection.count(in: value), copies)
+                XCTAssertEqual(selection.bytes, Int64(selection.paths.count) * 100)
             }
             selection = DuplicateTrashSelection()
             selection.toggle(value)
             XCTAssertTrue(selection.paths.contains(value.files[0].path))
             XCTAssertEqual(selection.count(in: value), copies)
+            XCTAssertEqual(selection.bytes, Int64(copies) * 100)
             selection.toggle(value)
             XCTAssertTrue(selection.paths.isEmpty)
+            XCTAssertEqual(selection.bytes, 0)
             selection.toggle(value.files[0], in: value)
             selection.toggle(value)
             XCTAssertEqual(selection.count(in: value), copies)
+            XCTAssertEqual(selection.bytes, Int64(copies) * 100)
             let foreign = try Fixtures.file("/outside", bytes: 1)
             let before = selection.paths
             selection.toggle(foreign, in: value)
             XCTAssertEqual(selection.paths, before)
+            XCTAssertEqual(selection.bytes, Int64(before.count) * 100)
         }
     }
     func testReviewIdentifiesExactlyTheSelectedFilesAndTheKeeper() throws {
