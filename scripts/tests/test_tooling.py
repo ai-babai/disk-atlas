@@ -217,6 +217,10 @@ class BuildTests(unittest.TestCase):
             build.assemble(self.app, binaries)
             self.assertEqual((self.app / "Contents/MacOS/DiskAtlas").read_text(), "DiskAtlas")
             self.assertTrue((self.app / "Contents/Resources/LICENSE.txt").is_file())
+            self.assertEqual(
+                (self.app / "Contents/Resources/Credits.rtf").read_bytes(),
+                (build.ROOT / "Resources/Credits.rtf").read_bytes(),
+            )
             icon.assert_called_once_with("icon", [str(self.app / "Contents/Resources")])
             self.assertIn("--verify", execute.call_args.args[0])
             stage = self.root / "stage"

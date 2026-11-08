@@ -5,6 +5,10 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.14.2 — 2026-11-08
+
+- Credit Maksim Popkov as the author in About, copyright, MIT license and both READMEs. Include a clickable GitHub repository link in About.
+
 ## 0.14.1 — 2026-11-08
 
 - Use the shared sidebar section typography for Saved snapshots. Clicking anywhere on its heading expands or collapses the initially closed history.

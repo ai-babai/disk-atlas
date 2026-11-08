@@ -58,7 +58,7 @@ created: "2026-11-07"
 ## Скачать и установить
 
 1. Открой [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Скачай **Disk-Atlas-0.14.1-universal.dmg**. Одна сборка подходит для Apple Silicon
+2. Скачай **Disk-Atlas-0.14.2-universal.dmg**. Одна сборка подходит для Apple Silicon
    и Intel с **macOS 14 Sonoma или новее**.
 3. Открой DMG, перетащи **Disk Atlas.app** в **Applications («Программы»)**,
    извлеки образ и запусти приложение из «Программ». Также доступен ZIP.
@@ -327,6 +327,8 @@ generated properties, coverage/CRAP, сложность и выбранные м
 ---
 
 ## Контакты
+
+Автор: **Maksim Popkov** · [Репозиторий на GitHub](https://github.com/ai-babai/disk-atlas).
 
 По вопросам, предложениям и сотрудничеству пиши автору:
 

@@ -22,6 +22,7 @@ def assemble(app, binaries):
         shutil.copy2(binaries / name, macos / name)
     shutil.copy2(ROOT / "Resources/Info.plist", app / "Contents/Info.plist")
     shutil.copy2(ROOT / "LICENSE", resources / "LICENSE.txt")
+    shutil.copy2(ROOT / "Resources/Credits.rtf", resources / "Credits.rtf")
     execute(["ditto", ROOT / "Resources/ThirdParty", resources / "ThirdParty"])
     invoke("icon", [str(resources)])
     execute(["codesign", "--force", "--deep", "--sign", "-", app])
