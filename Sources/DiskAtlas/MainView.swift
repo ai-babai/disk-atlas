@@ -129,7 +129,7 @@ struct MainView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     displayControls
                     TreemapView(store: store).frame(minHeight: 120, maxHeight: .infinity)
-                    mapLegend
+                    mapLegend.padding(.bottom, 8)
                 }.frame(minHeight: 175, idealHeight: 290).background(WorkspaceSplitConfiguration())
                 fileList.frame(minHeight: 190, idealHeight: 320).padding(.top, 10)
             }

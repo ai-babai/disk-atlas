@@ -5,6 +5,11 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.14.5 — 2026-11-08
+
+- Keep the sidebar toggle beside the window controls by using a shared toolbar that does not track the sidebar divider. Preserve native split collapse, resizing and width persistence.
+- Add 8 pt below the file-type legend so its text has breathing room above the map/list divider.
+
 ## 0.14.4 — 2026-11-08
 
 - Match the native main toolbar background to the app palette in light and dark mode; use consistent borderless controls and secondary colors.

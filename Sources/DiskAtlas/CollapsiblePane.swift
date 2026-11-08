@@ -40,9 +40,9 @@ struct CollapsiblePane<Pane: View, Content: View>: NSViewControllerRepresentable
             paneHost = PaneHost(rootView: HostedPane(root: parent.pane, environment: environment))
             contentHost = PaneHost(rootView: HostedPane(root: parent.content, environment: environment))
             let navigation = parent.kind == .navigation
-            item =
-                navigation
-                ? NSSplitViewItem(sidebarWithViewController: paneHost) : NSSplitViewItem(viewController: paneHost)
+            // A shared toolbar must not track the sidebar divider. Its toggle stays
+            // beside the window controls even when this custom pane changes width.
+            item = NSSplitViewItem(viewController: paneHost)
             item.canCollapse = true
             item.preferredThicknessFraction = NSSplitViewItem.unspecifiedDimension
             item.minimumThickness = navigation ? 180 : 210

@@ -263,6 +263,11 @@ title is hidden; the centered breadcrumb names the current location, shows at mo
 three components and supplies full-path hover help. Separators appear only between
 visible components. Native window controls, dragging and overflow remain system-owned;
 sidebar and inspector toggles stay at the leading and trailing edges respectively.
+The custom navigation pane uses a regular collapsible NSSplitViewItem, like the
+inspector. AppKit's sidebar-role item would create a separate titlebar section
+and move the shared toolbar toggle with its divider. Explicit pane minimums,
+collapse behavior, animations and width autosaving remain unchanged. The map
+legend has 8 pt of bottom padding above the native map/list divider.
 
 The shared 30-point status row observes duplicate updates separately from the map.
 Its compact result button contains the duplicate label, state/count and chevron;
