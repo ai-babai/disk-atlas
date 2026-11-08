@@ -29,8 +29,14 @@ struct FileTable: NSViewRepresentable {
     var reveal: (Entry) -> Void
     var copyPath: (String) -> Void
     var preview: (Entry, [Entry]) -> Void
+    @AppStorage("atlas.column.created") private var createdVisible = true
+    @AppStorage("atlas.column.modified") private var modifiedVisible = true
+    @AppStorage("atlas.column.share") private var shareVisible = true
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var createdColumnVisible: Bool { createdVisible }
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeNSView(context: Context) -> NSScrollView {
@@ -44,7 +50,9 @@ struct FileTable: NSViewRepresentable {
         table.autoresizesOutlineColumn = false
         table.indentationPerLevel = 14
         table.style = .plain
-        table.allowsColumnResizing = false
+        table.allowsColumnResizing = true
+        table.autosaveName = "atlas.files"
+        table.autosaveTableColumns = true
         table.allowsColumnReordering = false
         table.intercellSpacing = NSSize(width: 0, height: 1)
         table.allowsMultipleSelection = false
@@ -65,7 +73,7 @@ struct FileTable: NSViewRepresentable {
             let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier(name))
             column.width = width
             column.minWidth = name == "name" ? 180 : width
-            column.resizingMask = name == "name" ? .autoresizingMask : []
+            column.resizingMask = name == "check" || name == "trash" ? [] : .userResizingMask
             let header = AtlasHeaderCell(textCell: name)
             header.press = { [weak coordinator = context.coordinator] in
                 if name == "check" {
@@ -95,7 +103,10 @@ struct FileTable: NSViewRepresentable {
         let coordinator = context.coordinator
         coordinator.parent = self
         guard let table = coordinator.table else { return }
-        scroll.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+        let appearance: NSAppearance.Name = scheme == .dark ? .darkAqua : .aqua
+        let highContrast: NSAppearance.Name =
+            scheme == .dark ? .accessibilityHighContrastDarkAqua : .accessibilityHighContrastAqua
+        scroll.appearance = NSAppearance(named: contrast == .increased ? highContrast : appearance)
         table.backgroundColor = NSColor(Palette.paper)
         table.rowHeight = showPaths ? 43 : 33
         let titles = [
@@ -112,7 +123,9 @@ struct FileTable: NSViewRepresentable {
         }
         table.headerView?.needsDisplay = true
         table.tableColumns.first { $0.identifier.rawValue == "created" }?.isHidden =
-            !(showCreationDate || coordinator.outline.hasCreationDates)
+            !(createdVisible && (showCreationDate || coordinator.outline.hasCreationDates))
+        table.tableColumns.first { $0.identifier.rawValue == "modified" }?.isHidden = !modifiedVisible
+        table.tableColumns.first { $0.identifier.rawValue == "share" }?.isHidden = !shareVisible
         scroll.needsLayout = true
         coordinator.reloadIfNeeded()
         coordinator.updateSelection()
@@ -134,6 +147,7 @@ struct FileTable: NSViewRepresentable {
         var logical = false
         var showPaths = false
         var suppressSelection = false
+        var trashAnchor: Int?
         let dateFormatter = DateFormatter()
         init(_ parent: FileTable) {
             self.parent = parent
@@ -244,7 +258,23 @@ struct FileTable: NSViewRepresentable {
             cell.button.setAccessibilityLabel(label)
             cell.action = { [weak self] in
                 guard let self, parent.trashEnabled else { return }
-                if checkbox { parent.trash.toggle(entry.id) } else { parent.reviewTrash(entry.id) }
+                if checkbox { toggleCheckbox(entry.id) } else { parent.reviewTrash(entry.id) }
+            }
+        }
+        private func toggleCheckbox(_ id: Int) {
+            defer { trashAnchor = id }
+            guard NSApp.currentEvent?.modifierFlags.contains(.shift) == true, let table, let anchor = trashAnchor,
+                let first = (0..<table.numberOfRows).first(where: { entry(at: $0)?.id == anchor }),
+                let last = (0..<table.numberOfRows).first(where: { entry(at: $0)?.id == id })
+            else {
+                parent.trash.toggle(id)
+                return
+            }
+            let range = Set((min(first, last)...max(first, last)).compactMap { entry(at: $0)?.id })
+            if parent.trash.selected.contains(id) {
+                parent.trash.selected.subtract(range)
+            } else {
+                parent.trash.selected.formUnion(range)
             }
         }
         func entry(at row: Int) -> Entry? { (table?.item(atRow: row) as? FileOutlineNode)?.entry }
@@ -370,7 +400,16 @@ private final class AtlasHeaderView: NSTableHeaderView {
     }
     override func mouseDown(with event: NSEvent) {
         guard let tableView else { return }
-        let column = column(at: convert(event.locationInWindow, from: nil))
+        let location = convert(event.locationInWindow, from: nil)
+        if tableView.tableColumns.indices.contains(where: { index in
+            let column = tableView.tableColumns[index]
+            return !column.isHidden && column.resizingMask.contains(.userResizingMask)
+                && abs(headerRect(ofColumn: index).maxX - location.x) < 5
+        }) {
+            super.mouseDown(with: event)
+            return
+        }
+        let column = column(at: location)
         if column >= 0, column < tableView.tableColumns.count {
             (tableView.tableColumns[column].headerCell as? AtlasHeaderCell)?.press?()
         }
@@ -378,6 +417,8 @@ private final class AtlasHeaderView: NSTableHeaderView {
 }
 
 private final class AtlasTableScrollView: NSScrollView {
+    private var viewportWidth: CGFloat = -1
+    private var visibleColumns = ""
     override func setFrameSize(_ newSize: NSSize) {
         let changed = frame.size != newSize
         super.setFrameSize(newSize)
@@ -391,10 +432,14 @@ private final class AtlasTableScrollView: NSScrollView {
         let fixedWidth = table.tableColumns.filter { !$0.isHidden && $0.identifier.rawValue != "name" }.reduce(
             CGFloat(0)
         ) { $0 + $1.width }
-        let width = max(fixedWidth + name.minWidth, contentView.bounds.width - 16)
-        let nameWidth = max(name.minWidth, width - fixedWidth)
-        if abs(name.width - nameWidth) > 0.5 || abs(table.frame.width - width) > 0.5 {
-            name.width = nameWidth
+        let columns = table.tableColumns.filter { !$0.isHidden }.map { $0.identifier.rawValue }.joined()
+        if viewportWidth != contentView.bounds.width || visibleColumns != columns {
+            viewportWidth = contentView.bounds.width
+            visibleColumns = columns
+            name.width = max(name.minWidth, viewportWidth - 16 - fixedWidth)
+        }
+        let width = max(fixedWidth + name.width, contentView.bounds.width - 16)
+        if abs(table.frame.width - width) > 0.5 {
             table.setFrameSize(NSSize(width: width, height: table.frame.height))
             table.tile()
         }

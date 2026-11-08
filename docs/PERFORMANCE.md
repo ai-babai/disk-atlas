@@ -100,3 +100,23 @@ maintenance Python, not vendored upstream C. C compilation uses `-Wall -Wextra
 streaming boundaries, actual duplicate groups, byte-read counts, collision
 partitioning and cancellation. Passing these checks is not a claim of full
 upstream C coverage or a formal proof of the hash algorithm.
+
+## 0.13.0 follow-up
+
+On macOS 15.8.1 / Apple M4 Pro / Swift 6.1.2 (`-O`), the same warm-APFS fixture
+of 20,000 empty files and 100 folders gave a five-run median of 122 ms for the
+0.12.1 scan and 121 ms for 0.13.0. Presentation-index construction changed from
+19 ms to 21 ms, including the new branch aggregates. These results do not establish
+a scanner speedup. A sorted query over 40,000 confirmed groups took about 13 ms.
+
+A rare-name query in the new GUI search initially took 179–180 ms. Preparing
+Unicode-folded paths once (32 ms for that index) reduced the same two queries to
+42–44 ms. The search waits for a 120 ms typing pause, then runs off-main with
+cancellation and generation checks. More groups can be loaded in batches of 500.
+
+An eight-second `sample` during real divider drags in a release QA window with
+3,434 files found the main thread waiting for messages in 688/732 samples, and
+one treemap packing sample. This is a short interaction sample, not an FPS or
+battery-life guarantee. No live cloud data was downloaded for verification.
+The scoped no-materialization policy follows [Apple TN3150](https://developer.apple.com/documentation/technotes/tn3150-getting-ready-for-data-less-files).
+See the [detailed method and limits](PERFORMANCE.ru.md).

@@ -33,7 +33,7 @@ cooperative signal cancellation. See [CLI.md](CLI.md) for JSON and exit contract
 The scanner reads metadata with `lstat`, includes hidden files and application
 packages, skips symlink traversal and stops at device boundaries. Hard links are
 counted once across selected roots. Overlapping paths and APFS aliases are merged.
-File names are untrusted data and are never evaluated as commands or instructions.
+A synchronous thread-local no-materialization I/O policy covers root resolution and traversal; the prior policy is restored on return or failure. New entries retain optional dataless metadata. Branch facts are aggregated off-main; old snapshots keep cloud state unknown. File names are untrusted data and are never evaluated as commands or instructions.
 
 The scanner has no delete, move, cleanup, content execution or privilege escalation
 operations. GUI history and explicitly requested snapshot exports are local writes.
@@ -262,8 +262,7 @@ Its compact result button contains the duplicate label, state/count and chevron;
 phase progress and pause/stop remain adjacent. The duplicate
 overview metric underlines its existing Files with copies label, while inspector
 metrics use an Open label rather than disclosure arrows, distinguishing
-workspace navigation from group expansion ([Apple disclosure guidance](https://developer.apple.com/design/human-interface-guidelines/disclosure-controls)). Scan metadata and snapshot storage
-size share the same row. Optional notices truncate before job controls, preserving
+workspace navigation from group expansion ([Apple disclosure guidance](https://developer.apple.com/design/human-interface-guidelines/disclosure-controls)). The workspace status row shows scan/job state. Storage weights belong to the nonmodal Saved analyses window: compressed snapshots, duplicate reports and total history storage; recent items carry only name/date. Optional notices truncate before job controls, preserving
 the layout at the minimum window width. A decorative spinner is hidden from
 accessibility so the result action keeps its button role.
 
@@ -294,3 +293,25 @@ files, pause/resume, cancellation, view totals, sorting, report permissions and
 history cleanup without source changes. Manual UI review covers EN/RU, both
 themes, minimum window size, native headers, filters and badge-to-group navigation.
 These checks are outside the repository; no durable test artifacts are added.
+
+## Workspace and saved-analysis windows
+
+The native vertical split between map and list remembers its divider position.
+Contents/Largest files still changes only the lower list. File rows allow native
+column resizing; optional created/modified/share columns and appearance persist
+in local preferences. Shift-click selects a checkbox range without changing the
+single inspector/Quick Look focus. Settings uses the standard ⌘, command;
+⌘F and ⌥⌘F focus the active list search, ⌘N prepares a new analysis, ⌘O opens a snapshot.
+
+Confirmed duplicate queries run off-main against an immutable metadata index.
+Unicode-folded paths are prepared once for repeated case/diacritic-insensitive
+searches. Index construction and queries cooperate with cancellation. Search
+input is debounced by 120 ms; generation checks reject stale results. The GUI
+starts with 500 groups and can load further batches, preserving sort and source
+context. Narrowing/clearing search never hashes source contents.
+
+History and optional file-access guidance are independent, nonmodal windows,
+sharing the same store/appearance. Storage management removes only app-owned
+archives/reports under the existing confirmation setting. Source-file Trash still
+requires its separate mandatory review. A source-picker sheet can open help
+without creating a second sheet above itself.

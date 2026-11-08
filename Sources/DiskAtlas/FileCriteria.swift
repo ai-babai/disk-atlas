@@ -163,7 +163,7 @@ struct ViewFilterButton: View {
         Button {
             showing.toggle()
         } label: {
-            Label(L10n.text("Фильтры"), systemImage: "line.3.horizontal.decrease").font(
+            Label(L10n.text("Фильтры"), systemImage: "line.3.horizontal.decrease").fixedSize().font(
                 .system(size: 11, weight: .medium)
             ).foregroundStyle(store.viewFiltersEnabled ? Palette.accent : Palette.ink).padding(.horizontal, 10).frame(
                 height: 28

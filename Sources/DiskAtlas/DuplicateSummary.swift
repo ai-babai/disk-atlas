@@ -38,7 +38,7 @@ struct DuplicateSummary: View {
                 Text(L10n.text(entry.isDirectory ? "Дубликаты внутри" : "Дубликаты"))
                 Spacer()
                 Text(count.formatted()).monospacedDigit()
-                Text(L10n.text("Открыть")).font(.system(size: 9)).underline()
+                Text(L10n.text("Открыть")).font(.system(size: 10)).underline()
             }.font(.system(size: 10))
         case .inline:
             HStack(spacing: 6) {

@@ -10,19 +10,33 @@ public struct DuplicateResultPage: Sendable {
 public final class DuplicateResultIndex: Sendable {
     private struct Item: Sendable {
         let group: DuplicateGroup
-        init(_ group: DuplicateGroup) { self.group = group }
-        func match(_ options: DuplicateOptions, scope: String?) throws -> Int? {
+        let searchPaths: [String]
+        init(_ group: DuplicateGroup) throws {
+            self.group = group
+            searchPaths = try group.files.enumerated().map { offset, file in
+                if offset % 1024 == 0 { try Task.checkCancellation() }
+                return Self.searchKey(file.path)
+            }
+        }
+        static func searchKey(_ text: String) -> String {
+            text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+        }
+        func match(_ options: DuplicateOptions, scope: String?, search: String) throws -> Int? {
             for (index, file) in group.files.enumerated() {
                 if index % 1024 == 0 { try Task.checkCancellation() }
-                if !options.kinds.isEmpty && !options.kinds.contains(FileKind.classify(URL(fileURLWithPath: file.path)))
+                if matches(file, options: options, scope: scope), search.isEmpty || searchPaths[index].contains(search)
                 {
-                    continue
+                    return index
                 }
-                if !options.matchesDate(file.modified) { continue }
-                if let scope, file.path != scope, !file.path.hasPrefix(scope == "/" ? "/" : scope + "/") { continue }
-                return index
             }
             return nil
+        }
+        private func matches(_ file: DuplicateFile, options: DuplicateOptions, scope: String?) -> Bool {
+            guard options.kinds.isEmpty || options.kinds.contains(FileKind.classify(URL(fileURLWithPath: file.path))),
+                options.matchesDate(file.modified)
+            else { return false }
+            if let scope, file.path != scope, !file.path.hasPrefix(scope == "/" ? "/" : scope + "/") { return false }
+            return true
         }
         func projection(_ index: Int) -> DuplicateGroup {
             var value = group
@@ -34,12 +48,16 @@ public final class DuplicateResultIndex: Sendable {
         }
     }
     private let items: [Item]
-    public init(_ groups: [DuplicateGroup]) { items = groups.map(Item.init) }
+    public init(_ groups: [DuplicateGroup]) throws {
+        try Task.checkCancellation()
+        items = try groups.map(Item.init)
+    }
 
     public func query(
         options: DuplicateOptions, scope: String? = nil, sort: DuplicateSort = .repeatedBytes, descending: Bool = true,
-        limit: Int = 500
+        limit: Int = 500, search: String = ""
     ) throws -> DuplicateResultPage {
+        let search = Item.searchKey(search.trimmingCharacters(in: .whitespacesAndNewlines))
         var matches: [DuplicateGroup] = []
         for (offset, item) in items.enumerated() {
             if offset % 1024 == 0 { try Task.checkCancellation() }
@@ -47,7 +65,9 @@ public final class DuplicateResultIndex: Sendable {
             guard item.group.files.count > 1, bytes >= options.minimumBytes,
                 options.maximumBytes.map({ bytes <= $0 }) ?? true
             else { continue }
-            if let index = try item.match(options, scope: scope) { matches.append(item.projection(index)) }
+            if let index = try item.match(options, scope: scope, search: search) {
+                matches.append(item.projection(index))
+            }
         }
         let ordered = try sort.ordered(matches, descending: descending)
         return DuplicateResultPage(

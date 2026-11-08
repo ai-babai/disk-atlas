@@ -34,7 +34,7 @@ final class DuplicateResultTests: XCTestCase {
     func testNarrowAndWidenUseSavedMetadataAndKeepEveryPeer() throws {
         let mixed = try group("mixed", ["/missing/docs/a.txt", "/missing/images/photo.png"])
         let video = try group("video", ["/missing/videos/one.mp4", "/missing/videos/two.mov"], bytes: 300)
-        let index = DuplicateResultIndex([mixed, video])
+        let index = try DuplicateResultIndex([mixed, video])
         var images = DuplicateOptions()
         images.kinds = [.image]
         let filtered = try index.query(options: images)
@@ -52,7 +52,7 @@ final class DuplicateResultTests: XCTestCase {
     func testSizeDatesAndScopeMatchTheSameCopy() throws {
         let first = try group("a", ["/data/Photos/image.jpg", "/data/Documents/copy.txt"])
         let sibling = try group("b", ["/data/Photos-old/a.png", "/data/Photos-old/b.png"], bytes: 200)
-        let index = DuplicateResultIndex([first, sibling])
+        let index = try DuplicateResultIndex([first, sibling])
         var options = DuplicateOptions()
         options.kinds = [.image]
         options.minimumBytes = 100
@@ -75,7 +75,7 @@ final class DuplicateResultTests: XCTestCase {
         let values = try (0..<20).map { n in
             try group("\(n)", ["/missing/\(n)/a.png", "/missing/\(n)/b.png"], bytes: Int64(n))
         }
-        let index = DuplicateResultIndex(values + [DuplicateGroup(id: "empty", files: [])])
+        let index = try DuplicateResultIndex(values + [DuplicateGroup(id: "empty", files: [])])
         let page = try index.query(options: DuplicateOptions(), sort: .fileBytes, descending: false, limit: 2)
         XCTAssertEqual(page.groups.map(\.fileBytes), [0, 1])
         XCTAssertEqual(page.count, 20)
@@ -131,7 +131,7 @@ final class DuplicateResultTests: XCTestCase {
         let groups = try (0..<50).map { n in
             try group("\(n)", ["/scope/\(n).png", "/outside/\(n).txt"], bytes: Int64(n))
         }
-        let index = DuplicateResultIndex(groups)
+        let index = try DuplicateResultIndex(groups)
         for lower in 0..<50 {
             var options = DuplicateOptions()
             options.minimumBytes = Int64(lower)

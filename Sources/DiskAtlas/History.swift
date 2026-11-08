@@ -1,109 +1,110 @@
 import AtlasCore
 import SwiftUI
 
+/// Recent analyses are navigation. Storage sizes and deletion live in the manager window.
 struct HistoryRow: View {
     @ObservedObject var store: AtlasStore
     let record: ScanHistoryRecord
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var highlighted: Bool { store.activeHistoryID == record.id || store.loadingHistoryID == record.id }
-    private var helpText: String {
-        let size = record.storedBytes.map(byteString) ?? "—"
-        return record.roots.joined(separator: "\n") + "\n" + L10n.date(record.created) + "\n" + L10n.text("Снимок")
-            + ": " + size
-    }
     var body: some View {
-        GeometryReader { geometry in
-            HStack(alignment: .top, spacing: 4) {
-                openButton(compact: geometry.size.width < 180)
-                deleteButton
-            }
-        }.frame(height: 31).padding(.horizontal, 8).padding(.vertical, 7).frame(
-            maxWidth: .infinity, alignment: .leading
-        ).background(highlighted ? Palette.mark : .clear, in: RoundedRectangle(cornerRadius: 6)).foregroundStyle(
-            highlighted ? Palette.accent : Palette.ink
-        ).animation(reduceMotion ? nil : .easeInOut(duration: 0.16), value: highlighted).contextMenu {
-            Button(L10n.text("Удалить снимок…"), role: .destructive) { store.requestHistoryDeletion(record) }.disabled(
-                store.historyBusy)
-        }
-    }
-    private func openButton(compact: Bool) -> some View {
         Button {
             store.openHistory(record)
         } label: {
             HStack(alignment: .top, spacing: 8) {
-                if !compact { statusIcon.frame(width: 14, height: 16) }
+                if store.loadingHistoryID == record.id {
+                    ProgressView().controlSize(.mini).frame(width: 14, height: 16)
+                } else {
+                    Image(systemName: record.cancelled ? "clock.badge.exclamationmark" : "clock").frame(
+                        width: 14, height: 16)
+                }
                 VStack(alignment: .leading, spacing: 3) {
-                    HStack(alignment: .firstTextBaseline, spacing: 5) {
-                        Text(store.historyTitle(record)).font(
-                            .system(size: 11, weight: highlighted ? .semibold : .medium)
-                        ).lineLimit(1).truncationMode(.middle)
-                        Spacer(minLength: 0)
-                        if let bytes = record.storedBytes {
-                            Text(byteString(bytes)).font(.system(size: 9)).monospacedDigit().foregroundStyle(
-                                Palette.sub
-                            ).fixedSize()
-                        }
-                    }.frame(height: 16, alignment: .top)
-                    Text(L10n.historyDate(record.created)).font(.system(size: 9)).foregroundStyle(Palette.sub)
+                    Text(store.historyTitle(record)).font(.system(size: 12, weight: highlighted ? .semibold : .medium))
+                        .lineLimit(1).truncationMode(.middle)
+                    Text(L10n.historyDate(record.created)).font(.system(size: 10)).foregroundStyle(Palette.sub)
                         .lineLimit(1)
                 }
+                Spacer(minLength: 0)
             }.frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
-        }.buttonStyle(.plain).disabled(store.scanning || store.preparing || store.deletingHistory).help(helpText)
+        }.buttonStyle(.plain).disabled(store.scanning || store.preparing || store.deletingHistory).padding(8)
+            .background(highlighted ? Palette.mark : .clear, in: RoundedRectangle(cornerRadius: 6)).foregroundStyle(
+                highlighted ? Palette.selectedText : Palette.ink
+            ).animation(reduceMotion ? nil : .easeInOut(duration: Motion.quick), value: highlighted).help(
+                record.roots.joined(separator: "\n") + "\n" + L10n.date(record.created))
     }
-    @ViewBuilder private var statusIcon: some View {
-        if store.loadingHistoryID == record.id {
-            ProgressView().controlSize(.mini)
-        } else {
-            Image(systemName: record.cancelled ? "clock.badge.exclamationmark" : "clock").font(.system(size: 11))
-        }
-    }
-    private var deleteButton: some View {
-        Button(role: .destructive) {
-            store.requestHistoryDeletion(record)
-        } label: {
-            Image(systemName: "trash").font(.system(size: 10)).foregroundStyle(Palette.sub).frame(width: 24, height: 16)
-                .frame(height: 31, alignment: .top).contentShape(Rectangle())
-        }.buttonStyle(.plain).disabled(store.historyBusy).help(L10n.text("Удалить снимок…")).accessibilityLabel(
-            L10n.text("Удалить снимок") + " " + store.historyTitle(record) + " " + L10n.historyDate(record.created))
-    }
-
 }
 
-struct HistorySheet: View {
+struct HistoryWindow: View {
     @ObservedObject var store: AtlasStore
+    @Environment(\.openWindow) private var openWindow
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text(L10n.text("История сканов")).font(.system(size: 23, weight: .semibold))
-            Text(L10n.text("Сохранённые результаты. Открытие не запускает новый анализ.")).font(.system(size: 12))
-                .foregroundStyle(Palette.sub)
-            HStack {
-                Text(L10n.text("Снимков: ") + "\(store.historyRecords.count)")
-                Spacer()
-                Text(L10n.text("На диске") + ": " + byteString(store.historyStorageBytes))
-            }.font(.system(size: 11, weight: .medium)).foregroundStyle(Palette.sub)
-            ScrollView {
-                LazyVStack(spacing: 4) {
-                    ForEach(store.historyRecords) { HistoryRow(store: store, record: $0) }
-                    if store.historyRecords.isEmpty {
-                        Text(L10n.text("История пуста")).font(.system(size: 13)).foregroundStyle(Palette.sub).padding(
-                            .top, 40)
-                    }
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(L10n.text("Сохранённые анализы")).font(.title2.weight(.semibold))
+                Text(
+                    L10n.text(
+                        "Открывай готовые результаты без нового анализа. Здесь показан вес сохранённых данных, а не размер исходных папок."
+                    )
+                ).font(.callout).foregroundStyle(Palette.sub).fixedSize(horizontal: false, vertical: true)
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 24) {
+                storageMetric("Всего в истории", bytes: store.historyStorageBytes)
+                storageMetric("Снимки", bytes: store.historyRecords.reduce(0) { $0 + ($1.archiveBytes ?? 0) })
+                storageMetric(
+                    "Отчёты о дубликатах", bytes: store.historyRecords.reduce(0) { $0 + ($1.duplicateBytes ?? 0) })
+            }
+            Table(store.historyRecords) {
+                TableColumn(L10n.text("Анализ")) { record in
+                    Button {
+                        store.openHistory(record)
+                        openWindow(id: "main")
+                    } label: {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(store.historyTitle(record)).fontWeight(.medium).lineLimit(1).truncationMode(.middle)
+                            Text(L10n.historyDate(record.created)).font(.caption).foregroundStyle(Palette.sub)
+                        }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 5).contentShape(
+                            Rectangle())
+                    }.buttonStyle(.plain).help(record.roots.joined(separator: "\n")).disabled(
+                        store.scanning || store.preparing || store.deletingHistory)
+                }.width(min: 180, ideal: 260)
+                TableColumn(L10n.text("Снимок")) { record in sizeLabel(record.archiveBytes) }.width(90)
+                TableColumn(L10n.text("Отчёт о дубликатах")) { record in sizeLabel(record.duplicateBytes) }.width(140)
+                TableColumn("") { record in
+                    Button(role: .destructive) {
+                        store.requestHistoryDeletion(record)
+                    } label: {
+                        Image(systemName: "trash")
+                    }.buttonStyle(.borderless).disabled(store.historyBusy).help(L10n.text("Удалить снимок…"))
+                        .accessibilityLabel(L10n.text("Удалить снимок") + " " + store.historyTitle(record))
+                }.width(32)
+            }.overlay {
+                if store.historyRecords.isEmpty {
+                    ContentUnavailableView(L10n.text("История пуста"), systemImage: "clock")
                 }
             }
-            Toggle(
-                L10n.text("Подтверждать удаление"),
-                isOn: Binding(
-                    get: { !store.skipHistoryDeleteConfirmation }, set: { store.skipHistoryDeleteConfirmation = !$0 })
-            ).font(.system(size: 11)).disabled(store.deletingHistory)
             HStack {
                 Button(L10n.text("Очистить историю…"), role: .destructive) { store.requestHistoryDeletion() }.disabled(
                     store.historyBusy || (store.historyRecords.isEmpty && store.historyStorageBytes == 0))
                 if store.deletingHistory { ProgressView().controlSize(.small) }
                 Spacer()
-                Button(L10n.text("Готово")) { store.showHistory = false }.keyboardShortcut(.defaultAction).disabled(
-                    store.deletingHistory)
-            }
-        }.padding(26).frame(width: 500, height: 500).background(Palette.paper).foregroundStyle(Palette.ink)
+                Toggle(
+                    L10n.text("Подтверждать удаление"),
+                    isOn: Binding(
+                        get: { !store.skipHistoryDeleteConfirmation },
+                        set: { store.skipHistoryDeleteConfirmation = !$0 })
+                ).toggleStyle(.checkbox).disabled(store.deletingHistory)
+            }.controlSize(.small)
+        }.padding(24).frame(minWidth: 700, minHeight: 430).background(Palette.paper).foregroundStyle(Palette.ink)
+    }
+    private func storageMetric(_ title: String, bytes: Int64) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(byteString(bytes)).font(.system(size: 24, weight: .medium, design: .rounded)).monospacedDigit()
+            Text(L10n.text(title)).font(.caption).foregroundStyle(Palette.sub)
+        }
+    }
+    private func sizeLabel(_ bytes: Int64?) -> some View {
+        Text(bytes.map(byteString) ?? "—").monospacedDigit().foregroundStyle(Palette.sub).help(
+            bytes == nil ? L10n.text("Не сохранён") : "")
     }
 }
 
@@ -111,14 +112,11 @@ struct RecentScans: View {
     @ObservedObject var store: AtlasStore
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
-            HStack {
-                SectionLabel(text: L10n.text("Последние сканы"))
-                Spacer()
-                Text(L10n.text("Снимок")).font(.system(size: 9)).foregroundStyle(Palette.sub).padding(.trailing, 28)
-            }.padding(.horizontal, 8).padding(.bottom, 3)
+            SectionLabel(text: L10n.text("Последние анализы")).padding(.horizontal, 8).padding(.bottom, 3)
             ForEach(store.historyRecords.prefix(4)) { HistoryRow(store: store, record: $0) }
-            Button(L10n.text("Вся история…")) { store.showHistory = true }.font(.system(size: 11)).buttonStyle(.plain)
-                .foregroundStyle(Palette.accent).padding(8)
+            Button(L10n.text("Сохранённые анализы…")) { store.showHistory = true }.font(.system(size: 11)).buttonStyle(
+                .plain
+            ).foregroundStyle(Palette.accent).padding(8)
         }.padding(12).background(Palette.soft, in: RoundedRectangle(cornerRadius: 10))
     }
 }

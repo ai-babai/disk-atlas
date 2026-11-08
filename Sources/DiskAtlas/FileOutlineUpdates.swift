@@ -40,7 +40,7 @@ extension FileTable.Coordinator {
     func updateDisplayedRows() {
         guard let table else { return }
         displayedIDs = Set((0..<table.numberOfRows).compactMap { entry(at: $0)?.id })
-        let creation = parent.showCreationDate || outline.hasCreationDates
+        let creation = parent.createdColumnVisible && (parent.showCreationDate || outline.hasCreationDates)
         table.tableColumns.first { $0.identifier.rawValue == "created" }?.isHidden = !creation
         table.enclosingScrollView?.needsLayout = true
         updateTrashControls()

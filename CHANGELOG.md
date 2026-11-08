@@ -5,6 +5,16 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.13.0 — 2026-11-08
+
+- Separate saved-analysis storage into a resizable, nonmodal window: snapshot bytes, duplicate-report bytes and total history storage. Keep only name/date in recent analyses and remove storage weights from workspace status lines.
+- Let the native divider allocate height between map and file list. Preserve map scope, tree disclosure, filters, Quick Look and stable Trash controls.
+- Search all confirmed duplicate groups by name/path and load further batches of 500 in the app. Reuse the saved index, debounce typing and cache Unicode-folded paths; building and querying remain cancellable and off-main.
+- Add Settings (⌘,), Find (⌘F / ⌥⌘F), New analysis (⌘N) and Open snapshot (⌘O). Persist appearance and optional date/share columns; support native column resizing and Shift-click checkbox ranges.
+- Improve small captions and active-navigation contrast, with stronger secondary text/dividers in Increase Contrast. Open optional file-access guidance in its own window without stacking sheets.
+- Explain nested-folder counts and incomplete branches in the inspector. Record local cloud-only metadata in new snapshots while keeping older snapshots readable. Scope the macOS no-materialization I/O policy to synchronous scanning and restore it on return or failure.
+- Preserve explicit selection of every copy and mandatory Trash review. No CLI/MCP cleanup or automatic permission changes.
+
 ## 0.12.1 — 2026-11-08
 
 - Show checked-item count and total size together in both Trash selection bars, within the existing fixed-height action row. Keep the amount visible when narrow layouts use icon actions.

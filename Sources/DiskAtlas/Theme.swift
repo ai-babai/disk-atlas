@@ -2,10 +2,21 @@ import AtlasCore
 import SwiftUI
 
 enum Palette {
-    static func adaptive(_ light: UInt32, _ dark: UInt32) -> Color {
+    static func adaptive(_ light: UInt32, _ dark: UInt32, contrastLight: UInt32? = nil, contrastDark: UInt32? = nil)
+        -> Color
+    {
         Color(
             nsColor: NSColor(name: nil) { appearance in
-                let rgb = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
+                let match = appearance.bestMatch(from: [
+                    .accessibilityHighContrastDarkAqua, .accessibilityHighContrastAqua, .darkAqua, .aqua,
+                ])
+                let rgb: UInt32
+                switch match {
+                case .accessibilityHighContrastAqua: rgb = contrastLight ?? light
+                case .accessibilityHighContrastDarkAqua: rgb = contrastDark ?? dark
+                case .darkAqua: rgb = dark
+                default: rgb = light
+                }
                 return NSColor(
                     srgbRed: Double((rgb >> 16) & 255) / 255, green: Double((rgb >> 8) & 255) / 255,
                     blue: Double(rgb & 255) / 255, alpha: 1)
@@ -14,9 +25,10 @@ enum Palette {
     static let paper = adaptive(0xffffff, 0x17201b)
     static let soft = adaptive(0xf3f6f3, 0x202d25)
     static let ink = adaptive(0x223329, 0xe8efe9)
-    static let sub = adaptive(0x58695d, 0xadbfaf)
-    static let line = adaptive(0xdce4de, 0x3a4d40)
-    static let accent = adaptive(0x4e7f60, 0x9ec4a8)
+    static let sub = adaptive(0x58695d, 0xadbfaf, contrastLight: 0x314d3b, contrastDark: 0xd0e0d3)
+    static let line = adaptive(0xdce4de, 0x3a4d40, contrastLight: 0x708478, contrastDark: 0x91ac99)
+    static let accent = adaptive(0x426f52, 0x9ec4a8)
+    static let selectedText = adaptive(0x315b40, 0xd6eddb)
     static let mark = adaptive(0xdcebe0, 0x2e4b37)
 }
 
@@ -82,3 +94,6 @@ struct LanguagePicker: View {
         }.fixedSize().help("Language / Язык").accessibilityLabel("Language / Язык")
     }
 }
+
+/// Shared timing for small, interruptible UI changes.
+enum Motion { static let quick = 0.16 }

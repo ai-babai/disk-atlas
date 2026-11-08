@@ -7,6 +7,13 @@ struct AtlasCommands: Commands {
         workspace
         files
         scanning
+        CommandGroup(after: .textEditing) {
+            Button(L10n.text("Найти…")) { store.searchRequest &+= 1 }.keyboardShortcut("f").disabled(
+                store.snapshot == nil)
+            Button(L10n.text("Найти в списке…")) { store.searchRequest &+= 1 }.keyboardShortcut(
+                "f", modifiers: [.command, .option]
+            ).disabled(store.snapshot == nil)
+        }
     }
     private var workspace: some Commands {
         CommandGroup(after: .sidebar) {
@@ -19,17 +26,16 @@ struct AtlasCommands: Commands {
             Button(L10n.text(store.inspectorVisible ? "Скрыть подробности" : "Показать подробности")) {
                 store.inspectorVisible.toggle()
             }.keyboardShortcut("i", modifiers: [.command, .option]).disabled(store.snapshot == nil)
-            Button(L10n.text("История сканов…")) { store.showHistory = true }
+            Button(L10n.text("Сохранённые анализы…")) { store.showHistory = true }
             Button(L10n.text("Дубликаты")) { store.openDuplicates() }.disabled(store.snapshot == nil)
         }
     }
     private var files: some Commands {
         CommandGroup(replacing: .newItem) {
-            Button(L10n.text("Новый анализ…")) { store.beginSelection() }.keyboardShortcut("o").disabled(
+            Button(L10n.text("Новый анализ…")) { store.beginSelection() }.keyboardShortcut("n").disabled(
                 store.scanning || store.preparing)
-            Button(L10n.text("Открыть снимок…")) { store.importSnapshot() }.keyboardShortcut(
-                "o", modifiers: [.command, .shift]
-            ).disabled(store.scanning || store.preparing)
+            Button(L10n.text("Открыть снимок…")) { store.importSnapshot() }.keyboardShortcut("o", modifiers: .command)
+                .disabled(store.scanning || store.preparing)
             Button(L10n.text(store.showDuplicates ? "Экспорт отчёта…" : "Сохранить снимок…")) {
                 if store.showDuplicates { store.duplicates.export() } else { store.exportSnapshot() }
             }.keyboardShortcut("s").disabled(

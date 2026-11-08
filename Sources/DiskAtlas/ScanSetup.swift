@@ -90,7 +90,7 @@ struct ScanSetup: View {
                 ).font(.system(size: 10)).foregroundStyle(Palette.sub).fixedSize(horizontal: false, vertical: true)
                 DuplicateStartOptions(session: store.duplicates).transition(.opacity)
             }
-        }.animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: store.prepareDuplicateSearch)
+        }.animation(reduceMotion ? nil : .easeOut(duration: Motion.quick), value: store.prepareDuplicateSearch)
     }
 
     private func quick(_ title: String, icon: String, path: String) -> some View {

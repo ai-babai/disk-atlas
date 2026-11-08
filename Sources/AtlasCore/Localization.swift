@@ -60,6 +60,23 @@ public enum L10n {
         (". Используй --help.", ". Use --help."), ("\nДвойной щелчок — открыть папку", "\nDouble-click to open folder"),
     ]
     private static let english: [String: String] = [
+        "Сохранённые анализы": "Saved analyses", "Сохранённые анализы…": "Saved analyses…",
+        "Последние анализы": "Recent analyses",
+        "Открывай готовые результаты без нового анализа. Здесь показан вес сохранённых данных, а не размер исходных папок.":
+            "Open saved results without scanning again. Sizes here refer to stored analysis data, not source folders.",
+        "Всего в истории": "Total history storage", "Снимки": "Snapshots", "Отчёты о дубликатах": "Duplicate reports",
+        "Отчёт о дубликатах": "Duplicate report", "Не сохранён": "Not saved", "Найти…": "Find…",
+        "Найти в списке…": "Find in list…", "Найти по имени или пути": "Find by name or path",
+        "Поиск среди всех групп дубликатов": "Search all duplicate groups",
+        "Показать ещё 500 групп": "Show 500 more groups", "Столбцы списка": "List columns",
+        "Ширину столбцов можно менять, перетаскивая границы заголовков.":
+            "Drag the edges of column headers to resize them.", "Вложенных папок": "Nested folders",
+        "Только в облаке": "Cloud only", "Папка просканирована не полностью": "Folder scan is incomplete",
+        "Анализ остановлен или часть содержимого недоступна. Размер может быть неполным.":
+            "The scan was stopped or some content was unavailable. The size may be incomplete.",
+        "Не удалось запретить загрузку облачных файлов. Анализ остановлен.":
+            "Cloud downloads could not be disabled. The scan was stopped.",
+        "Потяни разделитель, чтобы изменить высоту карты и списка.": "Drag the divider to resize the map and list.",
         "По снимку. Папки учтены целиком, вложенные выбранные объекты не считаются повторно.":
             "From the snapshot. Folders include all contents; selected descendants are counted only once.",
         "Размер содержимого всех выбранных копий. APFS может разделять блоки; это не гарантированно освобождаемое место.":

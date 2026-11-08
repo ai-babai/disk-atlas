@@ -388,7 +388,7 @@ public final class DuplicateLookup: Sendable {
             }
         }
         folderCounts = try Self.ancestorCounts(parents)
-        results = DuplicateResultIndex(report.groups)
+        results = try DuplicateResultIndex(report.groups)
         byPath = paths
         self.groups = groups
         checkedAt = report.checkedAt

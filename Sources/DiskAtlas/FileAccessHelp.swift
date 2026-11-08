@@ -4,16 +4,17 @@ import SwiftUI
 
 /// Optional guidance only. macOS owns consent; never probe protected files to infer permission.
 struct FileAccessHelpButton: View {
-    @State private var presented = false
+    @Environment(\.openWindow) private var openWindow
     var body: some View {
-        Button(L10n.text("Доступ к файлам…"), systemImage: "lock.shield") { presented = true }.buttonStyle(.plain).font(
-            .system(size: 10)
-        ).foregroundStyle(Palette.sub).sheet(isPresented: $presented) { FileAccessHelp { presented = false } }
+        Button(L10n.text("Доступ к файлам…"), systemImage: "lock.shield") { openWindow(id: "file-access") }.buttonStyle(
+            .plain
+        ).font(.system(size: 10)).foregroundStyle(Palette.sub)
     }
 }
 
-private struct FileAccessHelp: View {
-    let dismiss: () -> Void
+struct FileAccessHelp: View {
+    @Environment(\.dismissWindow) private var dismissWindow
+    private func dismiss() { dismissWindow(id: "file-access") }
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             Label(L10n.text("Доступ к файлам"), systemImage: "lock.shield").font(.title2.weight(.semibold))
@@ -33,12 +34,12 @@ private struct FileAccessHelp: View {
                     L10n.text(
                         "Это широкое системное разрешение, а не режим «только чтение». Disk Atlas анализирует метаданные; содержимое читает при поиске дубликатов и Quick Look. Перенос в Корзину требует отдельного подтверждения. Доступ можно отозвать в тех же настройках."
                     )
-                ).font(.system(size: 11)).foregroundStyle(Palette.sub)
+                ).font(.system(size: 11)).foregroundStyle(Palette.sub).fixedSize(horizontal: false, vertical: true)
                 Text(
                     L10n.text(
                         "После изменения доступа перезапусти приложение и повтори анализ. macOS может снова запросить разрешение после обновления приложения."
                     )
-                ).font(.system(size: 11)).foregroundStyle(Palette.sub)
+                ).font(.system(size: 11)).foregroundStyle(Palette.sub).fixedSize(horizontal: false, vertical: true)
             }
             HStack {
                 Button(L10n.text("Показать приложение")) {
@@ -47,7 +48,8 @@ private struct FileAccessHelp: View {
                 Spacer()
                 Button(L10n.text("Готово"), action: dismiss).keyboardShortcut(.cancelAction)
             }.controlSize(.small)
-        }.padding(24).frame(width: 600).background(Palette.paper).foregroundStyle(Palette.ink)
+        }.padding(24).frame(width: 600).fixedSize(horizontal: false, vertical: true).background(Palette.paper)
+            .foregroundStyle(Palette.ink).navigationTitle(L10n.text("Доступ к файлам"))
     }
     private var accessCard: some View {
         HStack(alignment: .top, spacing: 12) {

@@ -46,6 +46,7 @@ public struct Entry: Codable, Identifiable, Sendable {
     public var created: Date? = nil
     public var sharedLink: Bool
     public var children: [Int]
+    public var cloudOnly: Bool? = nil
     public var isDirectory: Bool { kind == .folder }
     // Running estimate of the uncompressed snapshot, not RAM or source-file size.
     public var estimatedMetadataBytes: Int64 { Int64(220 + name.utf8.count + path.utf8.count) }

@@ -18,65 +18,59 @@ public final class PresentationIndex: Sendable {
     private let allocatedKinds: [Int: [KindTotal]]
     private let logicalKinds: [Int: [KindTotal]]
 
+    public let facts: BranchFactsIndex
+
     public init(_ snapshot: Snapshot) {
         self.snapshot = snapshot
-        let entries = snapshot.entries
-        func sorted(_ ids: [Int], logical: Bool) -> [Int] {
-            ids.sorted {
+        facts = BranchFactsIndex(snapshot)
+        allocatedChildren = Self.childOrders(snapshot.entries, logical: false)
+        logicalChildren = Self.childOrders(snapshot.entries, logical: true)
+        (traversal, ranges) = Self.traversalIndex(snapshot.entries)
+        allocatedKinds = Self.kindTotals(snapshot.entries, logical: false)
+        logicalKinds = Self.kindTotals(snapshot.entries, logical: true)
+    }
+    private static func childOrders(_ entries: [Entry], logical: Bool) -> [Int: [Int]] {
+        var result: [Int: [Int]] = [:]
+        for entry in entries where entry.isDirectory {
+            result[entry.id] = entry.children.sorted {
                 let a = logical ? entries[$0].logicalBytes : entries[$0].bytes
                 let b = logical ? entries[$1].logicalBytes : entries[$1].bytes
                 return a == b ? entries[$0].path < entries[$1].path : a > b
             }
         }
-        var physical: [Int: [Int]] = [:]
-        var logical: [Int: [Int]] = [:]
-        for entry in entries where entry.isDirectory {
-            physical[entry.id] = sorted(entry.children, logical: false)
-            logical[entry.id] = sorted(entry.children, logical: true)
-        }
-        allocatedChildren = physical
-        logicalChildren = logical
-
+        return result
+    }
+    private static func traversalIndex(_ entries: [Entry]) -> ([Int], [Int: Range<Int>]) {
         var positions = [Int](repeating: 0, count: entries.count)
         var ranges: [Int: Range<Int>] = [:]
         var traversal: [Int] = []
         traversal.reserveCapacity(entries.count)
-        var cursor = 0
         var stack: [(Int, Bool)] = [(0, false)]
         while let (id, exiting) = stack.popLast() {
             if exiting {
-                ranges[id] = (positions[id] + 1)..<cursor
+                ranges[id] = (positions[id] + 1)..<traversal.count
                 continue
             }
-            positions[id] = cursor
+            positions[id] = traversal.count
             traversal.append(id)
-            cursor += 1
             if entries[id].isDirectory {
                 stack.append((id, true))
                 for child in entries[id].children.reversed() { stack.append((child, false)) }
             }
         }
-        self.traversal = traversal
-        self.ranges = ranges
-
-        var a: [Int: [FileKind: Int64]] = [:]
-        var l: [Int: [FileKind: Int64]] = [:]
+        return (traversal, ranges)
+    }
+    private static func kindTotals(_ entries: [Entry], logical: Bool) -> [Int: [KindTotal]] {
+        var totals: [Int: [FileKind: Int64]] = [:]
         for entry in entries.reversed() where entry.fileCount > 0 {
             guard let parent = entry.parent else { continue }
             if entry.isDirectory {
-                for (kind, bytes) in a[entry.id] ?? [:] { a[parent, default: [:]][kind, default: 0] += bytes }
-                for (kind, bytes) in l[entry.id] ?? [:] { l[parent, default: [:]][kind, default: 0] += bytes }
+                for (kind, bytes) in totals[entry.id] ?? [:] { totals[parent, default: [:]][kind, default: 0] += bytes }
             } else {
-                a[parent, default: [:]][entry.kind, default: 0] += entry.bytes
-                l[parent, default: [:]][entry.kind, default: 0] += entry.logicalBytes
+                totals[parent, default: [:]][entry.kind, default: 0] += logical ? entry.logicalBytes : entry.bytes
             }
         }
-        allocatedKinds = a.mapValues {
-            $0.map { KindTotal(kind: $0.key, bytes: $0.value) }.sorted { $0.bytes > $1.bytes }
-        }
-        logicalKinds = l.mapValues {
-            $0.map { KindTotal(kind: $0.key, bytes: $0.value) }.sorted { $0.bytes > $1.bytes }
-        }
+        return totals.mapValues { $0.map { KindTotal(kind: $0.key, bytes: $0.value) }.sorted { $0.bytes > $1.bytes } }
     }
 
     public func children(of id: Int, logical: Bool, limit: Int = .max) -> [Entry] {

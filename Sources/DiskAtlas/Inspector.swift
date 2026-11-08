@@ -64,7 +64,10 @@ struct Inspector: View {
                 detail(L10n.text("Размер файлов"), value: byteString(entry.logicalBytes))
                 DuplicateSummary(entry: entry, store: store, session: store.duplicates, style: .detail).id(
                     store.language)
-                if entry.isDirectory { detail(L10n.text("Файлов"), value: entry.fileCount.formatted()) }
+                if entry.isDirectory {
+                    detail(L10n.text("Файлов"), value: entry.fileCount.formatted())
+                    branchFacts(entry)
+                }
                 if !store.isVirtual(entry) {
                     if let created = entry.created { detail(L10n.text("Создан"), value: L10n.date(created)) }
                     detail(L10n.text("Изменён"), value: L10n.date(entry.modified))
@@ -73,6 +76,20 @@ struct Inspector: View {
             if entry.sharedLink {
                 Text(L10n.text("Жёсткая ссылка. Размер учтён у другого имени этого файла.")).font(.system(size: 10))
                     .foregroundStyle(Palette.sub)
+            }
+        }
+    }
+    @ViewBuilder private func branchFacts(_ entry: Entry) -> some View {
+        if let facts = store.index?.facts.facts(for: entry.id) {
+            detail(L10n.text("Вложенных папок"), value: facts.folders.formatted())
+            if facts.cloudMetadataKnown && facts.cloudFiles > 0 {
+                detail(L10n.text("Только в облаке"), value: facts.cloudFiles.formatted())
+            }
+            if facts.partial {
+                Label(L10n.text("Папка просканирована не полностью"), systemImage: "exclamationmark.triangle").font(
+                    .system(size: 11)
+                ).foregroundStyle(Palette.sub).help(
+                    L10n.text("Анализ остановлен или часть содержимого недоступна. Размер может быть неполным."))
             }
         }
     }
@@ -99,7 +116,7 @@ struct Inspector: View {
                     Button(L10n.text("Все")) { store.selectedKinds = [] }.font(.system(size: 10)).buttonStyle(.plain)
                 }
             }
-            Text(L10n.text("Фильтр списка") + " · " + (store.folder.map(store.name) ?? "")).font(.system(size: 9))
+            Text(L10n.text("Фильтр списка") + " · " + (store.folder.map(store.name) ?? "")).font(.system(size: 10))
                 .foregroundStyle(Palette.sub).lineLimit(1).truncationMode(.middle).help(store.folder?.path ?? "")
             ForEach(values, id: \.kind) { item in
                 Button {

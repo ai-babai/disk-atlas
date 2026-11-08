@@ -52,7 +52,10 @@ import UniformTypeIdentifiers
     @Published var showAgent = false
     @Published var showSourcePicker = false
     @Published var pendingPaths: [String] = []
-    @Published var appearance = "system"
+    @Published var appearance = UserDefaults.standard.string(forKey: "atlas.appearance") ?? "system" {
+        didSet { UserDefaults.standard.set(appearance, forKey: "atlas.appearance") }
+    }
+    @Published var searchRequest = 0
     @Published var sidebarVisible = UserDefaults.standard.object(forKey: "sidebarVisible") as? Bool ?? true {
         didSet { UserDefaults.standard.set(sidebarVisible, forKey: "sidebarVisible") }
     }

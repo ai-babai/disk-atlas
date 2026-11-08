@@ -59,7 +59,7 @@ table in place when you check Trash candidates.
 ## Download & install
 
 1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Download **Disk-Atlas-0.12.1-universal.dmg**. The same app supports Apple Silicon
+2. Download **Disk-Atlas-0.13.0-universal.dmg**. The same app supports Apple Silicon
    and Intel Macs running **macOS 14 Sonoma or later**.
 3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
    then launch the app from Applications. A ZIP is also available.
@@ -88,7 +88,8 @@ shasum -a 256 -c SHA256SUMS.txt
 
 | Shortcut | Action |
 | --- | --- |
-| ⌘O / ⇧⌘O | New scan / open snapshot |
+| ⌘N / ⌘O | New scan / open snapshot |
+| ⌘F / ⌥⌘F / ⌘, | Find in the active list / Settings |
 | ⌘S / ⌘R / ⌘. | Export / rescan / stop |
 | ⌘↑ / Return | Go up / explore folder or reveal file |
 | Space / Esc | Quick Look for the focused file / close preview |
@@ -100,7 +101,7 @@ The folder map stays visible in **Disk usage**. Use **Contents / Largest files**
 directly above the list to switch between immediate contents and files throughout
 the current folder. Search, type filters and selection stay in place. Selecting a
 row outlines its location on the map, or the nearest visible containing folder or
-grouped area, without changing the map scale. Click a column heading to sort
+grouped area, without changing the map scale. Drag the divider below the map to allocate more height to the list. Resize column headers, use Shift-click for checkbox ranges, and choose secondary columns in Settings. Click a column heading to sort
 by name, creation date, modification date, size or share; click again to reverse.
 The **Filters** button above the map affects both the map and list,
 without changing the saved scan. Its two-handle slider supports presets and exact
@@ -257,16 +258,14 @@ operations. Protected directories can be skipped and appear in the issue list.
 - This is a scan over time, not an atomic filesystem snapshot; changing files
   can affect totals. The first 200 read errors are retained.
 
-**Snapshot size** appears in scan progress as an approximate uncompressed metadata
-size, then in the status bar as the exact compressed file size. Recent scans are visible on the start screen. Every history row shows the
-snapshot size, including its saved duplicate report, and a delete button; the history window also shows total
-local storage used.
-
-<img src="docs/images/history-en.png" width="440" alt="Scan history with snapshot sizes, deletion buttons and confirmation preference">
+**Saved analyses…** opens a separate window with compressed snapshot sizes,
+duplicate-report sizes and total history storage. These are saved metadata sizes,
+not the sizes of source folders. Recent analyses on Home and in the sidebar show
+only name/date. Opening one resumes the result without scanning again.
 
 History is stored in `~/Library/Application Support/Disk Atlas/History`, compressed
 with LZFSE; duplicate reports are separate JSON metadata files. The directory uses mode 0700 and files use 0600. Old history is not
-pruned automatically. Delete one scan with its trash button or context menu, or use **Clear history**
+pruned automatically. Delete one analysis with its trash button in **Saved analyses**, or use **Clear history**
 to remove all app-owned snapshots and metadata, including duplicate reports. A confirmation includes **Don’t ask
 again**; turn confirmations back on in the history window. Deleting history never
 deletes source files or separately exported snapshots. GUI history and requested exports are local writes; scanned
@@ -289,7 +288,7 @@ may require permission again, particularly with this ad hoc signed distribution.
 
 ## Build from source
 
-Requires Swift 6 / Xcode Command Line Tools on macOS. No external package dependencies.
+Builds use Xcode 16.4 / Swift 6.1.2. SwiftPM fetches the pinned Swift Argument Parser 1.8.2 dependency; hashing is vendored locally. See [QUALITY.md](docs/QUALITY.md) for contributor tooling.
 
 ```sh
 git clone https://github.com/ai-babai/disk-atlas.git
@@ -328,3 +327,7 @@ For reproducible bugs, [open an issue](https://github.com/ai-babai/disk-atlas/is
 Independent software inspired by the local-first, human-and-agent workflow of
 [Artcraft](https://getartcraft.com/). Not affiliated with Artcraft or WinDirStat.
 Open source under the [MIT License](LICENSE).
+
+Duplicate name/path search covers every confirmed group in the saved index. Use
+**Show 500 more groups** to continue browsing; filtering/searching never rereads
+source contents. The original report and its coverage remain unchanged.

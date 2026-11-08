@@ -40,7 +40,6 @@ private struct ScanStatus: View {
                 Button(L10n.text("Пропущено: \(snapshot.issueCount)")) { store.showIssues = true }.buttonStyle(.plain)
                     .foregroundStyle(.orange)
             }
-            SnapshotStorageStatus(store: store)
         }
     }
     private var title: String {
@@ -51,23 +50,6 @@ private struct ScanStatus: View {
         return snapshot.cancelled
             ? L10n.text("Остановлено · неполный снимок")
             : L10n.text("Анализ · \(String(format: "%.2f", snapshot.elapsed)) с")
-    }
-}
-
-private struct SnapshotStorageStatus: View {
-    @ObservedObject var store: AtlasStore
-    var body: some View {
-        if !store.scanning, store.snapshot != nil {
-            if let bytes = store.snapshotArchiveBytes {
-                Label(L10n.text("Снимок") + " " + byteString(bytes), systemImage: "archivebox").lineLimit(1).help(
-                    L10n.text("Размер сжатого файла снимка на диске. Исходные файлы в этот размер не входят."))
-            } else if store.savingHistory > 0, let estimate = store.snapshotMetadataEstimate {
-                Text(L10n.text("Снимок") + " ≈ " + byteString(estimate)).lineLimit(1).help(
-                    L10n.text("Оценка несжатых метаданных. После сохранения появится точный размер сжатого снимка."))
-            } else if store.savingHistory == 0 {
-                Text(L10n.text("Снимок не сохранён")).lineLimit(1)
-            }
-        }
     }
 }
 
@@ -122,7 +104,7 @@ private struct DuplicateActivityControls: View {
         if session.running {
             if session.progress.phaseTotal > 0 {
                 ProgressView(value: session.fraction).controlSize(.mini).frame(width: 48).animation(
-                    reduceMotion ? nil : .linear(duration: 0.16), value: session.fraction)
+                    reduceMotion ? nil : .linear(duration: Motion.quick), value: session.fraction)
             }
             Button {
                 session.togglePause()

@@ -77,6 +77,14 @@ public struct DiskScanner: Sendable {
         paths: [String], cancellation: ScanCancellation = ScanCancellation(),
         progress: @escaping @Sendable (ScanProgress) -> Void = { _ in }
     ) throws -> Snapshot {
+        try MetadataIO.withoutCloudDownloads {
+            try scanMetadata(paths: paths, cancellation: cancellation, progress: progress)
+        }
+    }
+
+    private func scanMetadata(
+        paths: [String], cancellation: ScanCancellation, progress: @escaping @Sendable (ScanProgress) -> Void
+    ) throws -> Snapshot {
         let roots = try Self.normalizedRoots(paths)
         guard !roots.isEmpty else { throw AtlasError.message("Выбери хотя бы одну папку.") }
         var seenLinks = Set<String>()
@@ -86,7 +94,7 @@ public struct DiskScanner: Sendable {
         let start = Date()
         let virtual = Entry(
             id: 0, parent: nil, name: "Выбранные папки", path: "/", kind: .folder, bytes: 0, logicalBytes: 0,
-            fileCount: 0, modified: start, sharedLink: false, children: [])
+            fileCount: 0, modified: start, sharedLink: false, children: [], cloudOnly: false)
         var combined = Snapshot(
             root: "/", roots: roots, created: start, elapsed: 0, volumeTotal: 0, volumeFree: 0, entries: [virtual],
             issues: [], issueCount: 0, cancelled: false)
@@ -252,6 +260,6 @@ public struct DiskScanner: Sendable {
             modified: Date(timeIntervalSince1970: Double(info.st_mtimespec.tv_sec)),
             created: info.st_birthtimespec.tv_sec > 0
                 ? Date(timeIntervalSince1970: Double(info.st_birthtimespec.tv_sec)) : nil, sharedLink: false,
-            children: [])
+            children: [], cloudOnly: info.st_flags & UInt32(SF_DATALESS) != 0)
     }
 }

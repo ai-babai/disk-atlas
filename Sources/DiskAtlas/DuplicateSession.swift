@@ -31,6 +31,19 @@ import SwiftUI
     @Published private(set) var groups: [DuplicateGroup] = [] { didSet { refreshOrder() } }
     @Published private(set) var orderedGroups: [DuplicateGroup] = []
     @Published private(set) var sorting = false
+    @Published var search = "" {
+        didSet {
+            focusedGroupID = nil
+            refreshOrder(debounce: true)
+        }
+    }
+    private var resultLimit = 500
+    var hasMoreResults: Bool { orderedGroups.count < orderedCount }
+    func loadMoreResults() {
+        guard !sorting, hasMoreResults else { return }
+        resultLimit += 500
+        refreshOrder(resetLimit: false)
+    }
     @Published private(set) var orderedCount = 0
     @Published private(set) var orderedRepeatedBytes: Int64 = 0
     @Published var sort: DuplicateSort = .repeatedBytes { didSet { refreshOrder() } }
@@ -377,7 +390,8 @@ import SwiftUI
             sort = key
         }
     }
-    private func refreshOrder() {
+    private func refreshOrder(resetLimit: Bool = true, debounce: Bool = false) {
+        if resetLimit { resultLimit = 500 }
         orderTask?.cancel()
         orderWorker?.cancel()
         orderGeneration &+= 1
@@ -392,15 +406,19 @@ import SwiftUI
         let values = groups
         let key = sort
         let filters = resultFilter
+        let search = search
+        let limit = resultLimit
         let scope = scopePath
         let lookup = lookup
         let descending = sortDescending
         sorting = true
         orderTask = Task {
             do {
+                if debounce { try await Task.sleep(for: .milliseconds(120)) }
                 let worker = Task.detached(priority: .userInitiated) {
-                    let index = lookup?.results ?? DuplicateResultIndex(values)
-                    return try index.query(options: filters, scope: scope, sort: key, descending: descending)
+                    let index = try lookup?.results ?? DuplicateResultIndex(values)
+                    return try index.query(
+                        options: filters, scope: scope, sort: key, descending: descending, limit: limit, search: search)
                 }
                 orderWorker = worker
                 let ordered = try await worker.value
@@ -422,6 +440,7 @@ import SwiftUI
     }
     private func clearTrashSelection() {
         trashSelection = DuplicateTrashSelection()
+        search = ""
         resultFilter = DuplicateOptions()
         trashReview = nil
         trashMovedCount = nil

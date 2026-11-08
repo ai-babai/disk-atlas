@@ -21,6 +21,11 @@ import SwiftUI
         }.defaultSize(width: 1380, height: 900).windowStyle(.titleBar).windowToolbarStyle(.unifiedCompact).commands {
             AtlasCommands(store: store)
         }
+        Window(L10n.text("Сохранённые анализы"), id: "history") { HistoryWindow(store: store).atlasAppearance(store) }
+            .defaultSize(width: 780, height: 540)
+        Window(L10n.text("Доступ к файлам"), id: "file-access") { FileAccessHelp().atlasAppearance(store) }
+            .windowResizability(.contentSize)
+        Settings { AtlasSettings(store: store).atlasAppearance(store) }
     }
 }
 

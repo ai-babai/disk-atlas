@@ -4,6 +4,7 @@ import SwiftUI
 struct DuplicatesView: View {
     @ObservedObject var store: AtlasStore
     @ObservedObject var session: DuplicateSession
+    @FocusState private var searchFocused: Bool
     @State private var parameters = false
     @State private var expanded = Set<String>()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -37,12 +38,15 @@ struct DuplicatesView: View {
                     scopeSwitch
                     status
                     coverageNotice
+                    resultSearch
                     trashSelectionBar
                     results
                     reportFooter
                 }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
             }.onAppear { focus(reader) }.onChange(of: session.focusedGroupID) { _, _ in focus(reader) }
-        }.background(Palette.paper).sheet(item: $session.trashReview) { plan in
+        }.onChange(of: store.searchRequest) { _, _ in searchFocused = true }.background(Palette.paper).sheet(
+            item: $session.trashReview
+        ) { plan in
             DuplicateTrashReview(plan: plan, cancel: { session.trashReview = nil }, confirm: { session.trash(plan) })
         }.sheet(isPresented: $store.showDuplicateSearch) {
             NewDuplicateCheckSheet(
@@ -74,16 +78,36 @@ struct DuplicatesView: View {
     @ViewBuilder private var results: some View {
         if !visibleGroups.isEmpty {
             groupTable.id(store.language)
-            if session.orderedCount > 500 {
-                Text(L10n.text("Показаны первые 500 групп. Полный результат доступен в экспорте.")).font(
-                    .system(size: 10)
-                ).foregroundStyle(Palette.sub)
+            if session.hasMoreResults {
+                HStack {
+                    Text("\(session.orderedGroups.count.formatted()) / \(session.orderedCount.formatted())").font(
+                        .system(size: 11)
+                    ).monospacedDigit().foregroundStyle(Palette.sub)
+                    Button(L10n.text("Показать ещё 500 групп")) { session.loadMoreResults() }.disabled(session.sorting)
+                }
             }
         } else if session.sorting {
             ProgressView(L10n.text("Фильтруем результаты…")).font(.system(size: 11)).padding(.vertical, 24)
         } else if session.report != nil {
             emptyResults
         }
+    }
+    private var resultSearch: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass").foregroundStyle(Palette.sub)
+            TextField(L10n.text("Найти по имени или пути"), text: $session.search).textFieldStyle(.plain).focused(
+                $searchFocused
+            ).accessibilityLabel(L10n.text("Поиск среди всех групп дубликатов"))
+            if !session.search.isEmpty {
+                Button {
+                    session.search = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                }.buttonStyle(.plain)
+            }
+        }.font(.system(size: 12)).padding(8).frame(maxWidth: 360).background(
+            Palette.soft, in: RoundedRectangle(cornerRadius: 6)
+        ).disabled(!session.canFilterResults)
     }
     private var emptyResults: some View {
         VStack(spacing: 12) {
@@ -96,7 +120,7 @@ struct DuplicatesView: View {
         }
     }
     private var emptyResultTitle: String {
-        if session.resultFilterActive { return L10n.text("Нет групп по этим фильтрам") }
+        if session.resultFilterActive || !session.search.isEmpty { return L10n.text("Нет групп по этим фильтрам") }
         if session.report?.cancelled == true || session.report?.inputPartial == true {
             return L10n.text("Совпадения ещё не подтверждены")
         }
@@ -152,9 +176,7 @@ struct DuplicatesView: View {
         if let report = session.report {
             HStack(spacing: 12) {
                 Text(L10n.text("Проверено: ") + L10n.date(report.checkedAt))
-                Text(
-                    session.metadataBytes > 0
-                        ? L10n.text("Отчёт") + " " + byteString(session.metadataBytes) : L10n.text("Отчёт не сохранён"))
+                if session.metadataBytes == 0 { Text(L10n.text("Отчёт не сохранён")) }
                 Spacer()
                 if report.skipped > 0 {
                     Menu(L10n.text("Пропущено: ") + "\(report.skipped)") {
@@ -163,7 +185,7 @@ struct DuplicatesView: View {
                         }
                     }.menuStyle(.borderlessButton).fixedSize()
                 }
-            }.font(.system(size: 9)).foregroundStyle(Palette.sub)
+            }.font(.system(size: 10)).foregroundStyle(Palette.sub)
         }
     }
     private func focus(_ reader: ScrollViewProxy) {
@@ -297,7 +319,7 @@ struct DuplicatesView: View {
             }
             if session.progress.phaseTotal > 0 {
                 ProgressView(value: session.fraction).animation(
-                    reduceMotion ? nil : .linear(duration: 0.16), value: session.fraction)
+                    reduceMotion ? nil : .linear(duration: Motion.quick), value: session.fraction)
             } else {
                 ProgressView().progressViewStyle(.linear)
             }
@@ -308,7 +330,7 @@ struct DuplicatesView: View {
                     Text(L10n.text("Отчёт") + " ≈ " + byteString(session.progress.metadataBytes))
                 }
                 Text(L10n.text("Групп: ") + "\(session.groups.count)")
-            }.font(.system(size: 9)).foregroundStyle(Palette.sub).monospacedDigit()
+            }.font(.system(size: 10)).foregroundStyle(Palette.sub).monospacedDigit()
         }.font(.system(size: 12)).padding(.vertical, 6)
     }
     private func finishedStatus(_ report: DuplicateReport) -> some View {

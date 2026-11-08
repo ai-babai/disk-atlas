@@ -137,7 +137,7 @@ struct DuplicateGroupRow: View {
                         Text(groupSelectionStatus).foregroundStyle(
                             selectedCount == group.files.count ? .orange : Palette.accent
                         ).frame(width: 125, height: 12, alignment: .trailing)
-                    }.font(.system(size: 9)).foregroundStyle(Palette.sub)
+                    }.font(.system(size: 10)).foregroundStyle(Palette.sub)
 
                 }
                 Spacer(minLength: 8)
@@ -184,17 +184,19 @@ private struct DuplicateFileRow: View {
                 HStack {
                     Text(URL(fileURLWithPath: file.path).lastPathComponent).font(.system(size: 11, weight: .medium))
                         .lineLimit(1)
-                    Text(L10n.text("Останется")).font(.system(size: 9)).foregroundStyle(Palette.accent).frame(width: 70)
-                        .opacity(keeper ? 1 : 0).accessibilityHidden(!keeper)
+                    Text(L10n.text("Останется")).font(.system(size: 10)).foregroundStyle(Palette.accent).frame(
+                        width: 70
+                    ).opacity(keeper ? 1 : 0).accessibilityHidden(!keeper)
                 }
-                Text(file.path).font(.system(size: 9)).foregroundStyle(Palette.sub).lineLimit(1).truncationMode(.middle)
+                Text(file.path).font(.system(size: 10)).foregroundStyle(Palette.sub).lineLimit(1).truncationMode(
+                    .middle)
             }.frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle()).simultaneousGesture(
                 TapGesture().onEnded { focusedFile = file.path }
             ).background(
                 PreviewKeyboard(active: focused, preview: openPreview, blurred: { if focused { focusedFile = nil } }))
             VStack(alignment: .trailing, spacing: 4) {
                 Text(byteString(file.bytes)).font(.system(size: 10)).monospacedDigit()
-                Text(L10n.date(file.modified, time: false)).font(.system(size: 9)).foregroundStyle(Palette.sub)
+                Text(L10n.date(file.modified, time: false)).font(.system(size: 10)).foregroundStyle(Palette.sub)
             }
             Button(action: openPreview) { Image(systemName: "eye").frame(width: 24, height: 28) }.buttonStyle(.plain)
                 .help(L10n.text("Быстрый просмотр · Пробел")).accessibilityLabel(

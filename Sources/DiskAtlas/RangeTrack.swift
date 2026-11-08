@@ -61,7 +61,7 @@ final class RangeTrackView: NSView {
             }
         }
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 8), .foregroundColor: NSColor(Palette.sub),
+            .font: NSFont.systemFont(ofSize: 10), .foregroundColor: NSColor(Palette.sub),
         ]
         for (position, text) in [(0.2, "KB"), (0.4, "MB"), (0.6, "GB"), (0.8, "TB")] {
             let size = (text as NSString).size(withAttributes: attributes)

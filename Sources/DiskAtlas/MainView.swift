@@ -4,6 +4,8 @@ import SwiftUI
 
 struct MainView: View {
     @ObservedObject var store: AtlasStore
+    @Environment(\.openWindow) private var openWindow
+    @FocusState private var searchFocused: Bool
     @State private var previewURL: URL?
     @State private var previewEntries: [Entry] = []
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -34,7 +36,12 @@ struct MainView: View {
             Text(store.error ?? "")
         }.sheet(isPresented: $store.showIssues) { issuesSheet }.sheet(isPresented: $store.showAgent) {
             AgentSheet(store: store)
-        }.sheet(isPresented: $store.showHistory) { HistorySheet(store: store) }.sheet(
+        }.onChange(of: store.showHistory) { _, show in
+            if show {
+                openWindow(id: "history")
+                store.showHistory = false
+            }
+        }.onChange(of: store.searchRequest) { _, _ in if !store.showDuplicates { searchFocused = true } }.sheet(
             isPresented: $store.showSourcePicker
         ) {
             VStack(alignment: .leading, spacing: 23) {
@@ -102,43 +109,44 @@ struct MainView: View {
     }
 
     private var workspace: some View {
-        GeometryReader { geometry in
-            VStack(alignment: .leading, spacing: 18) {
-                heading
-                if store.viewFiltersEnabled {
-                    HStack {
-                        Label(
-                            L10n.text(store.viewFiltering ? "Применяем фильтр…" : "Фильтр вида"),
-                            systemImage: "line.3.horizontal.decrease.circle")
-                        Text(
-                            "\(store.folder?.fileCount ?? 0) / \(store.snapshot?.entries[store.folderID].fileCount ?? 0) "
-                                + L10n.text("файлов"))
-                        if store.viewFiltering { ProgressView().controlSize(.mini) }
-                        Spacer()
-                        Button(L10n.text("Сбросить")) { store.viewFiltersEnabled = false }
-                    }.font(.system(size: 10)).foregroundStyle(Palette.sub)
-                }
-                if store.scanning { progressBanner }
+        VStack(alignment: .leading, spacing: 16) {
+            heading
+            if store.viewFiltersEnabled {
+                HStack {
+                    Label(
+                        L10n.text(store.viewFiltering ? "Применяем фильтр…" : "Фильтр вида"),
+                        systemImage: "line.3.horizontal.decrease.circle")
+                    Text(
+                        "\(store.folder?.fileCount ?? 0) / \(store.snapshot?.entries[store.folderID].fileCount ?? 0) "
+                            + L10n.text("файлов"))
+                    if store.viewFiltering { ProgressView().controlSize(.mini) }
+                    Spacer()
+                    Button(L10n.text("Сбросить")) { store.viewFiltersEnabled = false }
+                }.font(.system(size: 10)).foregroundStyle(Palette.sub)
+            }
+            if store.scanning { progressBanner }
+            VSplitView {
                 VStack(alignment: .leading, spacing: 10) {
                     displayControls
-                    TreemapView(store: store).frame(minHeight: 150, idealHeight: 300, maxHeight: .infinity)
-                    HStack(spacing: 13) {
-                        ForEach([FileKind.video, .image, .audio, .document, .archive, .code, .other], id: \.self) {
-                            kind in
-                            HStack(spacing: 4) {
-                                Circle().fill(kind.tint).frame(width: 5, height: 5)
-                                Text(kind.title).font(.system(size: 9))
-                            }.foregroundStyle(Palette.sub)
-                        }
-                    }.lineLimit(1).id(store.language)
-                }
-                // Mode changes must not reflow the map through different native row heights.
-                fileList(height: min(340, max(180, geometry.size.height - 540)))
-            }.padding(24).background {
-                Color.clear.contentShape(Rectangle()).onTapGesture { store.clearMapSelection() }
-            }.opacity(store.viewFiltering ? 0.65 : 1).animation(
+                    TreemapView(store: store).frame(minHeight: 120, maxHeight: .infinity)
+                    mapLegend
+                }.frame(minHeight: 175, idealHeight: 290).background(WorkspaceSplitConfiguration())
+                fileList.frame(minHeight: 190, idealHeight: 320).padding(.top, 10)
+            }
+        }.padding(24).background { Color.clear.contentShape(Rectangle()).onTapGesture { store.clearMapSelection() } }
+            .opacity(store.viewFiltering ? 0.65 : 1).animation(
                 reduceMotion ? nil : .easeOut(duration: 0.12), value: store.viewFiltering)
-        }
+    }
+
+    private var mapLegend: some View {
+        HStack(spacing: 12) {
+            ForEach([FileKind.video, .image, .audio, .document, .archive, .code, .other], id: \.self) { kind in
+                HStack(spacing: 4) {
+                    Circle().fill(kind.tint).frame(width: 5, height: 5)
+                    Text(kind.title).font(.system(size: 10))
+                }.foregroundStyle(Palette.sub)
+            }
+        }.lineLimit(1).id(store.language)
     }
 
     private var heading: some View {
@@ -199,10 +207,10 @@ struct MainView: View {
         }
     }
 
-    private func fileList(height: CGFloat) -> some View {
+    private var fileList: some View {
         VStack(spacing: 0) {
             fileListHeader
-            fileTable.frame(height: height)
+            fileTable.frame(maxHeight: .infinity)
             Text(listStatus).font(.system(size: 10)).foregroundStyle(Palette.sub).frame(height: 18).opacity(
                 listStatus.isEmpty ? 0 : 1
             ).accessibilityHidden(listStatus.isEmpty)
@@ -285,8 +293,9 @@ struct MainView: View {
             } else {
                 Image(systemName: "magnifyingglass").foregroundStyle(Palette.sub)
             }
-            TextField(L10n.text("Найти файл или папку"), text: $store.query).textFieldStyle(.plain).accessibilityLabel(
-                L10n.text("Поиск по имени в текущей папке и вложенных папках"))
+            TextField(L10n.text("Найти файл или папку"), text: $store.query).focused($searchFocused).textFieldStyle(
+                .plain
+            ).accessibilityLabel(L10n.text("Поиск по имени в текущей папке и вложенных папках"))
             if !store.query.isEmpty {
                 Button {
                     store.query = ""
@@ -346,11 +355,7 @@ struct MainView: View {
                     .font(.system(size: 10, design: .monospaced))
             }
             ProgressView().progressViewStyle(.linear)
-            Text(L10n.text("Снимок") + " ≈ " + byteString(store.progressMetadataBytes) + " · " + L10n.text("до сжатия"))
-                .font(.system(size: 10)).monospacedDigit().foregroundStyle(Palette.sub).help(
-                    L10n.text("Оценка несжатых метаданных. После сохранения появится точный размер сжатого снимка."))
-            Text(store.progressPath).font(.system(size: 9, design: .monospaced)).lineLimit(1).truncationMode(.middle)
-                .foregroundStyle(Palette.sub)
+
         }.padding(12).background(Palette.soft, in: RoundedRectangle(cornerRadius: 8))
     }
 
@@ -376,7 +381,7 @@ struct MainView: View {
                 }.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().frame(width: 28, height: 28).help(
                     L10n.text("Оформление"))
             }.padding(.bottom, 3)
-            if let volume = store.startupVolume { VolumeOverview(volume: volume) }
+            if let volume = store.startupVolume { VolumeOverview(volume: volume).id(store.language) }
             Text(store.scanning ? L10n.text("Собираем карту файлов.") : L10n.text("Что будем анализировать?")).font(
                 .system(size: 31, weight: .medium, design: .rounded)
             ).tracking(-0.5)
