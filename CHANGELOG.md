@@ -5,6 +5,10 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.14.3 — 2026-11-08
+
+- Center the author name and GitHub link in the native About panel.
+
 ## 0.14.2 — 2026-11-08
 
 - Credit Maksim Popkov as the author in About, copyright, MIT license and both READMEs. Include a clickable GitHub repository link in About.
