@@ -82,7 +82,19 @@ struct Sidebar: View {
     }
     private var scanHistory: some View {
         VStack(alignment: .leading, spacing: 8) {
-            DisclosureGroup(isExpanded: $historyExpanded) {
+            Button {
+                historyExpanded.toggle()
+            } label: {
+                HStack(spacing: 8) {
+                    SectionLabel(text: L10n.text("Сохранённые снимки"))
+                    Spacer(minLength: 0)
+                    if store.savingHistory > 0 { ProgressView().controlSize(.mini) }
+                    Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold)).rotationEffect(
+                        .degrees(historyExpanded ? 90 : 0))
+                }.frame(maxWidth: .infinity, minHeight: 24).contentShape(Rectangle())
+            }.buttonStyle(.plain).foregroundStyle(Palette.sub).accessibilityLabel(L10n.text("Сохранённые снимки"))
+                .accessibilityValue(L10n.text(historyExpanded ? "Развёрнуто" : "Свёрнуто"))
+            if historyExpanded {
                 VStack(spacing: 2) {
                     ForEach(store.historyRecords.prefix(5)) { record in
                         HistoryRow(store: store, record: record, showsStorageControls: true)
@@ -92,23 +104,16 @@ struct Sidebar: View {
                             Palette.sub
                         ).padding(.vertical, 8)
                     }
-                }.padding(.top, 8)
-            } label: {
-                HStack(spacing: 4) {
-                    Text(L10n.text("Сохранённые снимки")).font(.system(size: 11, weight: .semibold)).lineLimit(1)
-                    Spacer(minLength: 0)
-                    if store.savingHistory > 0 { ProgressView().controlSize(.mini) }
-                }.foregroundStyle(Palette.sub)
-            }.tint(Palette.sub).animation(
-                reduceMotion ? nil : .easeInOut(duration: Motion.quick), value: historyExpanded)
+                }
+            }
             Button {
                 store.showHistory = true
             } label: {
-                Label(L10n.text("Все снимки…"), systemImage: "archivebox").font(.system(size: 11, weight: .medium))
-                    .frame(maxWidth: .infinity, alignment: .leading).padding(8).background(
-                        Palette.paper, in: RoundedRectangle(cornerRadius: 6))
+                Label(L10n.text("Все снимки…"), systemImage: "archivebox").font(.system(size: 12)).frame(
+                    maxWidth: .infinity, alignment: .leading
+                ).padding(8).background(Palette.paper, in: RoundedRectangle(cornerRadius: 6))
             }.buttonStyle(.plain).foregroundStyle(Palette.accent)
-        }.padding(.top, 24)
+        }.padding(.top, 24).animation(reduceMotion ? nil : .easeInOut(duration: Motion.quick), value: historyExpanded)
     }
     private var quickPlaces: some View {
         VStack(alignment: .leading, spacing: 0) {

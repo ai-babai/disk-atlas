@@ -60,7 +60,8 @@ public enum L10n {
         (". Используй --help.", ". Use --help."), ("\nДвойной щелчок — открыть папку", "\nDouble-click to open folder"),
     ]
     private static let english: [String: String] = [
-        "Все снимки…": "All snapshots…", "Вес снимка": "Snapshot size", "Открыть снимок": "Open snapshot",
+        "Все снимки…": "All snapshots…", "Развёрнуто": "Expanded", "Свёрнуто": "Collapsed",
+        "Вес снимка": "Snapshot size", "Открыть снимок": "Open snapshot",
         "Здесь появятся сохранённые снимки": "Saved snapshots will appear here",
         "Вес сжатого снимка. Отчёт о дубликатах хранится отдельно.":
             "Compressed snapshot size. The duplicate report is stored separately.",

@@ -62,6 +62,7 @@ struct HistoryRow: View {
 struct HistoryWindow: View {
     @ObservedObject var store: AtlasStore
     @Environment(\.openWindow) private var openWindow
+    @State private var selectedSnapshotID: UUID?
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 6) {
@@ -89,7 +90,11 @@ struct HistoryWindow: View {
             LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
                 Section {
                     ForEach(store.historyRecords) { record in
-                        SavedSnapshotRow(store: store, record: record) {
+                        SavedSnapshotRow(
+                            store: store, record: record, selected: selectedSnapshotID == record.id,
+                            select: { selectedSnapshotID = record.id }
+                        ) {
+                            selectedSnapshotID = record.id
                             store.openHistory(record)
                             openWindow(id: "main")
                         }

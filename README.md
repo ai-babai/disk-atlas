@@ -59,7 +59,7 @@ table in place when you check Trash candidates.
 ## Download & install
 
 1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Download **Disk-Atlas-0.14.0-universal.dmg**. The same app supports Apple Silicon
+2. Download **Disk-Atlas-0.14.1-universal.dmg**. The same app supports Apple Silicon
    and Intel Macs running **macOS 14 Sonoma or later**.
 3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
    then launch the app from Applications. A ZIP is also available.
@@ -263,7 +263,8 @@ duplicate-report sizes and total history storage. These are saved metadata sizes
 not the sizes of source folders. Recent snapshots on Home show only name/date.
 In the sidebar, Add to scan comes first; Saved snapshots starts collapsed, with an
 explicit All snapshots button. Expanding it shows snapshot weights and delete
-buttons. Opening a snapshot resumes the result without scanning again.
+buttons. The whole section heading toggles the list. In the snapshots window,
+a row click only selects it; use Open to restore it without scanning again.
 
 History is stored in `~/Library/Application Support/Disk Atlas/History`, compressed
 with LZFSE; duplicate reports are separate JSON metadata files. The directory uses mode 0700 and files use 0600. Old history is not

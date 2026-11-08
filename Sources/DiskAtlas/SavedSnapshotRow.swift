@@ -12,30 +12,35 @@ enum SnapshotColumns {
 struct SavedSnapshotRow: View {
     @ObservedObject var store: AtlasStore
     let record: ScanHistoryRecord
+    let selected: Bool
+    let select: () -> Void
     let open: () -> Void
     @State private var hovered = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    private var active: Bool { store.activeHistoryID == record.id || store.loadingHistoryID == record.id }
+    private var openDisabled: Bool {
+        store.scanning || store.preparing || store.deletingHistory || store.fileTrash.busy
+    }
     var body: some View {
         HStack(spacing: SnapshotColumns.gap) {
-            Button(action: open) {
+            Button(action: select) {
                 HStack(spacing: SnapshotColumns.gap) {
                     identity
                     size(record.archiveBytes).frame(width: SnapshotColumns.snapshot, alignment: .trailing)
                     size(record.duplicateBytes).frame(width: SnapshotColumns.report, alignment: .trailing)
-                    Text(L10n.text("Открыть")).foregroundStyle(Palette.accent).font(.system(size: 11, weight: .medium))
-                        .frame(width: SnapshotColumns.open, height: 26).background(
-                            Palette.soft, in: RoundedRectangle(cornerRadius: 6))
                 }.contentShape(Rectangle())
-            }.buttonStyle(.plain).disabled(
-                store.scanning || store.preparing || store.deletingHistory || store.fileTrash.busy
-            ).help(record.roots.joined(separator: "\n")).accessibilityLabel(
-                L10n.text("Открыть снимок") + " " + store.historyTitle(record)
-            ).accessibilityValue(accessibleDetails)
+            }.buttonStyle(.plain).help(record.roots.joined(separator: "\n")).accessibilityLabel(
+                store.historyTitle(record)
+            ).accessibilityValue(accessibleDetails).accessibilityAddTraits(selected ? [.isSelected] : [])
+            Button(action: open) {
+                Text(L10n.text("Открыть")).font(.system(size: 11, weight: .medium)).frame(
+                    width: SnapshotColumns.open, height: 26
+                ).background(Palette.soft, in: RoundedRectangle(cornerRadius: 6))
+            }.buttonStyle(.plain).foregroundStyle(Palette.accent).disabled(openDisabled).accessibilityLabel(
+                L10n.text("Открыть снимок") + " " + store.historyTitle(record))
             SnapshotDeleteButton(store: store, record: record).frame(width: SnapshotColumns.trash)
         }.padding(.horizontal, 12).padding(.vertical, 8).frame(minHeight: 56).foregroundStyle(
-            active ? Palette.selectedText : Palette.ink
-        ).background(active ? Palette.mark : hovered ? Palette.soft : .clear, in: RoundedRectangle(cornerRadius: 6))
+            selected ? Palette.selectedText : Palette.ink
+        ).background(selected ? Palette.mark : hovered ? Palette.soft : .clear, in: RoundedRectangle(cornerRadius: 6))
             .onHover { hovered = $0 }.animation(reduceMotion ? nil : .easeOut(duration: Motion.quick), value: hovered)
     }
     private var accessibleDetails: String {

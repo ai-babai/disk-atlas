@@ -5,6 +5,11 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.14.1 — 2026-11-08
+
+- Use the shared sidebar section typography for Saved snapshots. Clicking anywhere on its heading expands or collapses the initially closed history.
+- Separate selection from opening in the snapshots window: clicking a row only highlights it; the explicit Open button restores it to the workspace.
+
 ## 0.14.0 — 2026-11-08
 
 - Match Saved snapshots to the app palette, with storage summary cards, lightweight separators, visible Open actions and snapshot-size headings instead of a system striped table.
