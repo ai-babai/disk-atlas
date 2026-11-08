@@ -60,8 +60,8 @@ public enum L10n {
         (". Используй --help.", ". Use --help."), ("\nДвойной щелчок — открыть папку", "\nDouble-click to open folder"),
     ]
     private static let english: [String: String] = [
-        "Сохранённые анализы": "Saved analyses", "Сохранённые анализы…": "Saved analyses…",
-        "Последние анализы": "Recent analyses",
+        "Название": "Name", "Сохранённые снимки": "Saved snapshots", "Сохранённые снимки…": "Saved snapshots…",
+        "Последние снимки": "Recent snapshots",
         "Открывай готовые результаты без нового анализа. Здесь показан вес сохранённых данных, а не размер исходных папок.":
             "Open saved results without scanning again. Sizes here refer to stored analysis data, not source folders.",
         "Всего в истории": "Total history storage", "Снимки": "Snapshots", "Отчёты о дубликатах": "Duplicate reports",

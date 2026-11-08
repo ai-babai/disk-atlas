@@ -26,7 +26,7 @@ struct AtlasCommands: Commands {
             Button(L10n.text(store.inspectorVisible ? "Скрыть подробности" : "Показать подробности")) {
                 store.inspectorVisible.toggle()
             }.keyboardShortcut("i", modifiers: [.command, .option]).disabled(store.snapshot == nil)
-            Button(L10n.text("Сохранённые анализы…")) { store.showHistory = true }
+            Button(L10n.text("Сохранённые снимки…")) { store.showHistory = true }
             Button(L10n.text("Дубликаты")) { store.openDuplicates() }.disabled(store.snapshot == nil)
         }
     }

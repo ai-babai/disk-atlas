@@ -262,7 +262,7 @@ Its compact result button contains the duplicate label, state/count and chevron;
 phase progress and pause/stop remain adjacent. The duplicate
 overview metric underlines its existing Files with copies label, while inspector
 metrics use an Open label rather than disclosure arrows, distinguishing
-workspace navigation from group expansion ([Apple disclosure guidance](https://developer.apple.com/design/human-interface-guidelines/disclosure-controls)). The workspace status row shows scan/job state. Storage weights belong to the nonmodal Saved analyses window: compressed snapshots, duplicate reports and total history storage; recent items carry only name/date. Optional notices truncate before job controls, preserving
+workspace navigation from group expansion ([Apple disclosure guidance](https://developer.apple.com/design/human-interface-guidelines/disclosure-controls)). The workspace status row shows scan/job state. Storage weights belong to the nonmodal Saved snapshots window: compressed snapshots, duplicate reports and total history storage; recent items carry only name/date. Optional notices truncate before job controls, preserving
 the layout at the minimum window width. A decorative spinner is hidden from
 accessibility so the result action keeps its button role.
 

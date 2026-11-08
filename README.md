@@ -59,7 +59,7 @@ table in place when you check Trash candidates.
 ## Download & install
 
 1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Download **Disk-Atlas-0.13.0-universal.dmg**. The same app supports Apple Silicon
+2. Download **Disk-Atlas-0.13.1-universal.dmg**. The same app supports Apple Silicon
    and Intel Macs running **macOS 14 Sonoma or later**.
 3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
    then launch the app from Applications. A ZIP is also available.
@@ -258,14 +258,14 @@ operations. Protected directories can be skipped and appear in the issue list.
 - This is a scan over time, not an atomic filesystem snapshot; changing files
   can affect totals. The first 200 read errors are retained.
 
-**Saved analyses…** opens a separate window with compressed snapshot sizes,
+**Saved snapshots…** opens a separate window with compressed snapshot sizes,
 duplicate-report sizes and total history storage. These are saved metadata sizes,
-not the sizes of source folders. Recent analyses on Home and in the sidebar show
+not the sizes of source folders. Recent snapshots on Home and in the sidebar show
 only name/date. Opening one resumes the result without scanning again.
 
 History is stored in `~/Library/Application Support/Disk Atlas/History`, compressed
 with LZFSE; duplicate reports are separate JSON metadata files. The directory uses mode 0700 and files use 0600. Old history is not
-pruned automatically. Delete one analysis with its trash button in **Saved analyses**, or use **Clear history**
+pruned automatically. Delete one snapshot with its trash button in **Saved snapshots**, or use **Clear history**
 to remove all app-owned snapshots and metadata, including duplicate reports. A confirmation includes **Don’t ask
 again**; turn confirmations back on in the history window. Deleting history never
 deletes source files or separately exported snapshots. GUI history and requested exports are local writes; scanned

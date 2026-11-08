@@ -81,11 +81,11 @@ struct Sidebar: View {
     private var scanHistory: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 6) {
-                SectionLabel(text: L10n.text("Сохранённые анализы"))
+                SectionLabel(text: L10n.text("Сохранённые снимки"))
                 Spacer(minLength: 4)
                 if store.savingHistory > 0 { ProgressView().controlSize(.mini) }
                 Menu {
-                    Button(L10n.text("Сохранённые анализы…")) { store.showHistory = true }
+                    Button(L10n.text("Сохранённые снимки…")) { store.showHistory = true }
                     Divider()
                     Button(L10n.text("Очистить историю…"), role: .destructive) { store.requestHistoryDeletion() }
                         .disabled(store.historyBusy || (store.historyRecords.isEmpty && store.historyStorageBytes == 0))
@@ -96,7 +96,7 @@ struct Sidebar: View {
             }.padding(.top, 24).padding(.bottom, 8)
             ForEach(store.historyRecords.prefix(5)) { record in HistoryRow(store: store, record: record) }
             if store.historyRecords.count > 5 {
-                Button(L10n.text("Сохранённые анализы…")) { store.showHistory = true }.font(.system(size: 11))
+                Button(L10n.text("Сохранённые снимки…")) { store.showHistory = true }.font(.system(size: 11))
                     .buttonStyle(.plain).foregroundStyle(Palette.accent).padding(.top, 8)
             }
             if store.historyRecords.isEmpty && store.savingHistory == 0 {

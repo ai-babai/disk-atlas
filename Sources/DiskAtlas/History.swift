@@ -1,7 +1,7 @@
 import AtlasCore
 import SwiftUI
 
-/// Recent analyses are navigation. Storage sizes and deletion live in the manager window.
+/// Recent snapshots are navigation. Storage sizes and deletion live in the manager window.
 struct HistoryRow: View {
     @ObservedObject var store: AtlasStore
     let record: ScanHistoryRecord
@@ -40,7 +40,7 @@ struct HistoryWindow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 6) {
-                Text(L10n.text("Сохранённые анализы")).font(.title2.weight(.semibold))
+                Text(L10n.text("Сохранённые снимки")).font(.title2.weight(.semibold))
                 Text(
                     L10n.text(
                         "Открывай готовые результаты без нового анализа. Здесь показан вес сохранённых данных, а не размер исходных папок."
@@ -54,7 +54,7 @@ struct HistoryWindow: View {
                     "Отчёты о дубликатах", bytes: store.historyRecords.reduce(0) { $0 + ($1.duplicateBytes ?? 0) })
             }
             Table(store.historyRecords) {
-                TableColumn(L10n.text("Анализ")) { record in
+                TableColumn(L10n.text("Название")) { record in
                     Button {
                         store.openHistory(record)
                         openWindow(id: "main")
@@ -112,9 +112,9 @@ struct RecentScans: View {
     @ObservedObject var store: AtlasStore
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
-            SectionLabel(text: L10n.text("Последние анализы")).padding(.horizontal, 8).padding(.bottom, 3)
+            SectionLabel(text: L10n.text("Последние снимки")).padding(.horizontal, 8).padding(.bottom, 3)
             ForEach(store.historyRecords.prefix(4)) { HistoryRow(store: store, record: $0) }
-            Button(L10n.text("Сохранённые анализы…")) { store.showHistory = true }.font(.system(size: 11)).buttonStyle(
+            Button(L10n.text("Сохранённые снимки…")) { store.showHistory = true }.font(.system(size: 11)).buttonStyle(
                 .plain
             ).foregroundStyle(Palette.accent).padding(8)
         }.padding(12).background(Palette.soft, in: RoundedRectangle(cornerRadius: 10))

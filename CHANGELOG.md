@@ -5,6 +5,10 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.13.1 — 2026-11-08
+
+- Rename history to Saved snapshots throughout the window, sidebar, menus and links; use Recent snapshots on Home and Name in the storage table.
+
 ## 0.13.0 — 2026-11-08
 
 - Separate saved-analysis storage into a resizable, nonmodal window: snapshot bytes, duplicate-report bytes and total history storage. Keep only name/date in recent analyses and remove storage weights from workspace status lines.
