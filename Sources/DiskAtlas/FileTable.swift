@@ -86,7 +86,10 @@ struct FileTable: NSViewRepresentable {
             if EntrySort(rawValue: name) != nil {
                 column.sortDescriptorPrototype = NSSortDescriptor(key: name, ascending: name == "name")
             }
-            if name == "check" { header.setAccessibilityLabel(L10n.text("Выбрать показанные объекты")) }
+            if name == "check" {
+                header.checkboxState = .off
+                header.setAccessibilityLabel(L10n.text("Выбрать показанные объекты"))
+            }
             column.headerCell = header
             table.addTableColumn(column)
         }
@@ -233,12 +236,12 @@ struct FileTable: NSViewRepresentable {
                     }
                 }
             }
-            if let header = table.tableColumns.first?.headerCell {
+            if let header = table.tableColumns.first?.headerCell as? AtlasHeaderCell {
                 header.setAccessibilityLabel(L10n.text("Выбрать показанные объекты"))
-                let all = !displayedIDs.isEmpty && displayedIDs.isSubset(of: parent.trash.selected)
-                header.image = NSImage(
-                    systemSymbolName: all ? "checkmark.square.fill" : "square",
-                    accessibilityDescription: L10n.text("Выбрать показанные объекты"))
+                let count = displayedIDs.intersection(parent.trash.selected).count
+                header.checkboxState = count == 0 ? .off : count == displayedIDs.count ? .on : .mixed
+                header.isEnabled = parent.trashEnabled && !displayedIDs.isEmpty
+                table.headerView?.needsDisplay = true
             }
         }
         private func trashCell(_ table: NSTableView, key: NSUserInterfaceItemIdentifier, row: Int) -> TrashTableCell {
@@ -356,10 +359,21 @@ struct FileTable: NSViewRepresentable {
 private final class AtlasHeaderCell: NSTableHeaderCell {
     var press: (() -> Void)?
     var color = NSColor.secondaryLabelColor
+    var checkboxState: NSControl.StateValue?
+    private lazy var checkbox: NSButtonCell = {
+        let cell = NSButtonCell(textCell: "")
+        cell.setButtonType(.switch)
+        cell.allowsMixedState = true
+        cell.imagePosition = .imageOnly
+        return cell
+    }()
     override func drawInterior(withFrame cellFrame: NSRect, in controlView: NSView) {
-        if let image {
-            image.withSymbolConfiguration(NSImage.SymbolConfiguration(paletteColors: [color]))?.draw(
-                in: NSRect(x: cellFrame.midX - 7, y: cellFrame.midY - 7, width: 14, height: 14))
+        if let checkboxState {
+            checkbox.state = checkboxState
+            checkbox.isEnabled = isEnabled
+            checkbox.draw(
+                withFrame: NSRect(x: cellFrame.midX - 12, y: cellFrame.midY - 12, width: 24, height: 24),
+                in: controlView)
             return
         }
         let paragraph = NSMutableParagraphStyle()
@@ -372,7 +386,15 @@ private final class AtlasHeaderCell: NSTableHeaderCell {
             in: NSRect(x: cellFrame.minX, y: cellFrame.midY - 6, width: cellFrame.width, height: 15),
             withAttributes: attributes)
     }
+    override func accessibilityRole() -> NSAccessibility.Role? {
+        checkboxState == nil ? super.accessibilityRole() : .checkBox
+    }
+    override func accessibilityValue() -> Any? {
+        guard let checkboxState else { return super.accessibilityValue() }
+        return checkboxState == .mixed ? 2 : checkboxState.rawValue
+    }
     override func accessibilityPerformPress() -> Bool {
+        guard isEnabled else { return false }
         press?()
         return true
     }

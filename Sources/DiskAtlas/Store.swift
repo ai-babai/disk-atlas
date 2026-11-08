@@ -90,6 +90,7 @@ import UniformTypeIdentifiers
     @Published var loadingStage = "Читаем снимок…"
     @Published var loadingHistoryID: UUID?
     @Published var rowsLoading = false
+    @Published private(set) var homeReady = false
     @Published var historyRecords: [ScanHistoryRecord] = []
     @Published var activeHistoryID: UUID?
     @Published var savingHistory = 0
@@ -142,6 +143,7 @@ import UniformTypeIdentifiers
             if !busy { Task { @MainActor [weak self] in try? await self?.refreshHistory() } }
         }
         Task {
+            defer { homeReady = true }
             do { try await refreshHistory() } catch {
                 self.error = L10n.text("Не удалось открыть историю: ") + error.localizedDescription
             }

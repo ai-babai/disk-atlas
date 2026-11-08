@@ -347,3 +347,16 @@ per-directory extension cache. An extension narrows that category, combines with
 search, sort and size metric, and leaves map zoom intact. The filter chip and All clear it.
 `inspect` and `history inspect` expose the same projection through `--extension png`
 (or `--extension ''` for extensionless files). No new settings or map colors are added.
+
+## Stable startup and list selection
+
+Home waits for the initial lightweight history read before presenting its form, so
+it uses the final one/two-column width from its first layout. A small progress
+indicator covers this asynchronous bootstrap; errors still finish bootstrap. The
+volume summary has a fixed 28 pt slot while capacity metadata arrives. No timer,
+source scan or synchronous main-thread storage read is added.
+
+The file-list header draws the same native AppKit switch cell as row checkboxes.
+Its states are empty / mixed / checked, based only on displayed objects, and its
+accessibility role/value expose that state. The default disclosure instruction is
+removed; the reserved selection/action row keeps its height when selection changes.

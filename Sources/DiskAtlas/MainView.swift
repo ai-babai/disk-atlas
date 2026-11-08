@@ -13,11 +13,13 @@ struct MainView: View {
         Group {
             if store.snapshot != nil {
                 resultPanes
-            } else {
+            } else if store.homeReady {
                 VStack(spacing: 0) {
                     welcome
                     footer
                 }
+            } else {
+                ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }.disabled(store.loadingTitle != nil).background(Palette.paper).foregroundStyle(Palette.ink).tint(
             Palette.accent
@@ -253,14 +255,14 @@ struct MainView: View {
             } label: {
                 Label(L10n.text("Снять выделение"), systemImage: "xmark.circle.fill")
             }.buttonStyle(.plain).font(.system(size: 10)).fixedSize()
-        } else {
+        } else if let listHint {
             Text(L10n.text(listHint)).font(.system(size: 10)).foregroundStyle(Palette.sub).lineLimit(1)
         }
     }
-    private var listHint: String {
+    private var listHint: String? {
         if store.largestFiles { return "Файлы во вложенных папках" }
         if !store.query.isEmpty || !store.selectedKinds.isEmpty { return "Результаты фильтра" }
-        return "Папки раскрываются стрелкой"
+        return nil
     }
     private var listSummary: some View {
         HStack(spacing: 10) {
@@ -382,7 +384,13 @@ struct MainView: View {
                 }.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().frame(width: 28, height: 28).help(
                     L10n.text("Оформление"))
             }.padding(.bottom, 3)
-            if let volume = store.startupVolume { VolumeOverview(volume: volume).id(store.language) }
+            Group {
+                if let volume = store.startupVolume {
+                    VolumeOverview(volume: volume).id(store.language)
+                } else {
+                    Color.clear.accessibilityHidden(true)
+                }
+            }.frame(maxWidth: 620, alignment: .leading).frame(height: 28)
             Text(store.scanning ? L10n.text("Собираем карту файлов.") : L10n.text("Что будем анализировать?")).font(
                 .system(size: 31, weight: .medium, design: .rounded)
             ).tracking(-0.5)
