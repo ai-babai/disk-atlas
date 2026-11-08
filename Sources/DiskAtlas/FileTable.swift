@@ -8,6 +8,9 @@ struct FileTable: NSViewRepresentable {
     let reviewTrash: (Int) -> Void
     let trashEnabled: Bool
     var rows: [Entry]
+    var index: PresentationIndex?
+    var folderID: Int
+    var hierarchical: Bool
     var logical: Bool
     var folderBytes: Int64
     var revision: Int
@@ -25,7 +28,7 @@ struct FileTable: NSViewRepresentable {
     var open: (Int) -> Void
     var reveal: (Entry) -> Void
     var copyPath: (String) -> Void
-    var preview: (Entry) -> Void
+    var preview: (Entry, [Entry]) -> Void
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -38,6 +41,9 @@ struct FileTable: NSViewRepresentable {
         scroll.drawsBackground = false
         let table = AtlasTableView()
         table.headerView = AtlasHeaderView(frame: NSRect(x: 0, y: 0, width: 500, height: 28))
+        table.autoresizesOutlineColumn = false
+        table.indentationPerLevel = 14
+        table.style = .plain
         table.allowsColumnResizing = false
         table.allowsColumnReordering = false
         table.intercellSpacing = NSSize(width: 0, height: 1)
@@ -53,12 +59,12 @@ struct FileTable: NSViewRepresentable {
         table.returnAction = { [weak coordinator = context.coordinator] in coordinator?.openRow() }
         table.previewAction = { [weak coordinator = context.coordinator] in coordinator?.previewRow() }
         for (name, width) in [
-            ("check", 30.0), ("name", 260.0), ("created", 92.0), ("modified", 92.0), ("size", 100.0), ("share", 65.0),
+            ("check", 44.0), ("name", 260.0), ("created", 92.0), ("modified", 92.0), ("size", 100.0), ("share", 65.0),
             ("trash", 30.0),
         ] {
             let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier(name))
             column.width = width
-            column.minWidth = name == "name" ? 80 : width
+            column.minWidth = name == "name" ? 180 : width
             column.resizingMask = name == "name" ? .autoresizingMask : []
             let header = AtlasHeaderCell(textCell: name)
             header.press = { [weak coordinator = context.coordinator] in
@@ -76,6 +82,7 @@ struct FileTable: NSViewRepresentable {
             column.headerCell = header
             table.addTableColumn(column)
         }
+        table.outlineTableColumn = table.tableColumns.first { $0.identifier.rawValue == "name" }
         let menu = NSMenu()
         menu.delegate = context.coordinator
         table.menu = menu
@@ -104,7 +111,8 @@ struct FileTable: NSViewRepresentable {
             if let header = column.headerCell as? AtlasHeaderCell { header.color = NSColor(Palette.sub) }
         }
         table.headerView?.needsDisplay = true
-        table.tableColumns.first { $0.identifier.rawValue == "created" }?.isHidden = !showCreationDate
+        table.tableColumns.first { $0.identifier.rawValue == "created" }?.isHidden =
+            !(showCreationDate || coordinator.outline.hasCreationDates)
         scroll.needsLayout = true
         coordinator.reloadIfNeeded()
         coordinator.updateSelection()
@@ -113,9 +121,12 @@ struct FileTable: NSViewRepresentable {
         table.needsDisplay = true
     }
 
-    @MainActor final class Coordinator: NSObject, NSTableViewDataSource, NSTableViewDelegate, NSMenuDelegate {
+    @MainActor final class Coordinator: NSObject, NSMenuDelegate {
         var parent: FileTable
-        weak var table: NSTableView?
+        weak var table: NSOutlineView?
+        let outline = FileOutlineModel()
+        var displayedIDs = Set<Int>()
+        var requestedExpansions = Set<Int>()
         var duplicateID: UUID?
         var revision = -1
         var scrollRequest = 0
@@ -124,13 +135,19 @@ struct FileTable: NSViewRepresentable {
         var showPaths = false
         var suppressSelection = false
         let dateFormatter = DateFormatter()
-        init(_ parent: FileTable) { self.parent = parent }
+        init(_ parent: FileTable) {
+            self.parent = parent
+            super.init()
+            outline.changed = { [weak self] item in self?.childrenLoaded(item) }
+        }
+        private var needsReload: Bool {
+            revision != parent.revision || language != parent.language || logical != parent.logical
+                || showPaths != parent.showPaths || duplicateID != parent.duplicates?.id
+                || outline.index !== parent.index || outline.enabled != parent.hierarchical
+        }
         func reloadIfNeeded() {
             guard let table else { return }
-            guard
-                revision != parent.revision || language != parent.language || logical != parent.logical
-                    || showPaths != parent.showPaths || duplicateID != parent.duplicates?.id
-            else { return }
+            guard needsReload else { return }
             duplicateID = parent.duplicates?.id
             revision = parent.revision
             language = parent.language
@@ -139,12 +156,22 @@ struct FileTable: NSViewRepresentable {
             logical = parent.logical
             showPaths = parent.showPaths
             suppressSelection = true
+            if outline.index !== parent.index || outline.folder != parent.folderID {
+                table.collapseItem(nil, collapseChildren: true)
+                requestedExpansions = []
+            }
+            outline.configure(
+                index: parent.index, folder: parent.folderID, enabled: parent.hierarchical, rows: parent.rows,
+                contextID: parent.contextID,
+                query: FileOutlineQuery(logical: parent.logical, sort: parent.sort, descending: parent.descending))
             table.reloadData()
+            restoreExpansions()
             suppressSelection = false
+            updateDisplayedRows()
         }
         func updateSelection() {
             guard let table else { return }
-            let desired = parent.selection.flatMap { id in parent.rows.firstIndex { $0.id == id } } ?? -1
+            let desired = parent.selection.flatMap { outline.item($0) }.map { table.row(forItem: $0) } ?? -1
             if desired != table.selectedRow {
                 suppressSelection = true
                 table.selectRowIndexes(desired < 0 ? [] : IndexSet(integer: desired), byExtendingSelection: false)
@@ -154,12 +181,15 @@ struct FileTable: NSViewRepresentable {
         func scrollSelection(animated: Bool) {
             let request = parent.scrollRequest
             guard request > 0, scrollRequest != request else { return }
+            revealContext()
             DispatchQueue.main.async { [weak self] in self?.performScroll(request, animated: animated) }
         }
         private func performScroll(_ request: Int, animated: Bool) {
             guard parent.scrollRequest == request, let table, let selection = parent.selection,
-                let row = parent.rows.firstIndex(where: { $0.id == selection }), let scroll = table.enclosingScrollView
+                let item = outline.item(selection), let scroll = table.enclosingScrollView
             else { return }
+            let row = table.row(forItem: item)
+            guard row >= 0 else { return }
             scroll.layoutSubtreeIfNeeded()
             scrollRequest = request
             let clip = scroll.contentView
@@ -177,7 +207,7 @@ struct FileTable: NSViewRepresentable {
         }
         func toggleVisible() {
             guard parent.trashEnabled else { return }
-            parent.trash.toggle(Set(parent.rows.map(\.id)))
+            parent.trash.toggle(displayedIDs)
         }
         func updateTrashControls() {
             guard let table else { return }
@@ -191,7 +221,7 @@ struct FileTable: NSViewRepresentable {
             }
             if let header = table.tableColumns.first?.headerCell {
                 header.setAccessibilityLabel(L10n.text("Выбрать показанные объекты"))
-                let all = !parent.rows.isEmpty && parent.rows.allSatisfy { parent.trash.selected.contains($0.id) }
+                let all = !displayedIDs.isEmpty && displayedIDs.isSubset(of: parent.trash.selected)
                 header.image = NSImage(
                     systemSymbolName: all ? "checkmark.square.fill" : "square",
                     accessibilityDescription: L10n.text("Выбрать показанные объекты"))
@@ -206,7 +236,7 @@ struct FileTable: NSViewRepresentable {
             return cell
         }
         private func configure(_ cell: TrashTableCell, row: Int, checkbox: Bool) {
-            let entry = parent.rows[row]
+            guard let entry = entry(at: row) else { return }
             cell.button.state = parent.trash.selected.contains(entry.id) ? .on : .off
             cell.button.isEnabled = parent.trashEnabled && !parent.trash.busy
             let label = L10n.text(checkbox ? "Выбрать для корзины" : "В корзину…") + ": " + entry.name
@@ -217,41 +247,16 @@ struct FileTable: NSViewRepresentable {
                 if checkbox { parent.trash.toggle(entry.id) } else { parent.reviewTrash(entry.id) }
             }
         }
-        func numberOfRows(in tableView: NSTableView) -> Int { parent.rows.count }
-        func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
-            parent.showPaths || parent.rows[row].id == parent.contextID ? 43 : 33
-        }
-        func tableView(_ tableView: NSTableView, sortDescriptorsDidChange oldDescriptors: [NSSortDescriptor]) {
-            if let key = tableView.sortDescriptors.first?.key, let field = EntrySort(rawValue: key) {
-                parent.sortBy(field)
-            }
-        }
-        func tableView(_ tableView: NSTableView, rowViewForRow row: Int) -> NSTableRowView? { AtlasRowView() }
-        func tableViewSelectionDidChange(_ notification: Notification) {
-            guard !suppressSelection, let table else { return }
-            let row = table.selectedRow
-            parent.selection = row >= 0 && row < parent.rows.count ? parent.rows[row].id : nil
-        }
-        func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
-            guard row < parent.rows.count, let key = tableColumn?.identifier else { return nil }
+        func entry(at row: Int) -> Entry? { (table?.item(atRow: row) as? FileOutlineNode)?.entry }
+        func makeRowView() -> NSTableRowView { AtlasRowView() }
+        func cell(_ tableView: NSOutlineView, column tableColumn: NSTableColumn?, row: Int) -> NSView? {
+            guard let entry = entry(at: row), let key = tableColumn?.identifier else { return nil }
             if key.rawValue == "check" || key.rawValue == "trash" { return trashCell(tableView, key: key, row: row) }
-            let entry = parent.rows[row]
             let cell =
                 (tableView.makeView(withIdentifier: key, owner: self) as? AtlasCell) ?? AtlasCell(identifier: key)
             let bytes = parent.logical ? entry.logicalBytes : entry.bytes
             switch key.rawValue {
-            case "name":
-                cell.title.stringValue = entry.name
-                cell.subtitle.stringValue = parent.showPaths || entry.id == parent.contextID ? entry.path : ""
-                cell.icon.image = NSImage(systemSymbolName: entry.kind.symbol, accessibilityDescription: nil)
-                cell.icon.contentTintColor = NSColor(entry.kind.tint)
-                cell.toolTip = entry.path
-                let groupID = parent.duplicates?.byPath[entry.path]
-                cell.duplicateButton.isHidden = groupID == nil
-                cell.duplicateAction = { [weak self] in self?.parent.showDuplicates(entry.path) }
-                cell.duplicateButton.toolTip =
-                    L10n.text("Показать все копии") + " · " + (parent.duplicates.map { L10n.date($0.checkedAt) } ?? "")
-                cell.duplicateButton.setAccessibilityLabel(L10n.text("Дубликаты") + ": " + entry.name)
+            case "name": configureName(cell, entry: entry)
             case "size": cell.title.stringValue = byteString(bytes)
             case "created", "modified":
                 let date = key.rawValue == "created" ? entry.created : entry.modified
@@ -267,17 +272,30 @@ struct FileTable: NSViewRepresentable {
             cell.needsLayout = true
             return cell
         }
+        private func configureName(_ cell: AtlasCell, entry: Entry) {
+            cell.title.stringValue = entry.name
+            cell.subtitle.stringValue = parent.showPaths ? entry.path : ""
+            cell.icon.image = NSImage(systemSymbolName: entry.kind.symbol, accessibilityDescription: nil)
+            cell.icon.contentTintColor = NSColor(entry.kind.tint)
+            cell.toolTip = entry.path
+            let groupID = parent.duplicates?.byPath[entry.path]
+            cell.duplicateButton.isHidden = groupID == nil
+            cell.duplicateAction = { [weak self] in self?.parent.showDuplicates(entry.path) }
+            cell.duplicateButton.toolTip =
+                L10n.text("Показать все копии") + " · " + (parent.duplicates.map { L10n.date($0.checkedAt) } ?? "")
+            cell.duplicateButton.setAccessibilityLabel(L10n.text("Дубликаты") + ": " + entry.name)
+            cell.setLoading(outline.loading.contains(entry.id))
+        }
         @objc func openRow() {
-            guard let table, table.selectedRow >= 0, table.selectedRow < parent.rows.count else { return }
-            parent.open(parent.rows[table.selectedRow].id)
+            guard let table, let entry = entry(at: table.selectedRow) else { return }
+            parent.open(entry.id)
         }
         func menuNeedsUpdate(_ menu: NSMenu) {
             menu.removeAllItems()
             guard let table else { return }
             let row = table.clickedRow >= 0 ? table.clickedRow : table.selectedRow
-            guard row >= 0, row < parent.rows.count else { return }
+            guard let entry = entry(at: row) else { return }
             table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
-            let entry = parent.rows[row]
             add(menu, L10n.text("Быстрый просмотр"), #selector(previewRow))
             if entry.isDirectory { add(menu, L10n.text("Открыть папку"), #selector(openRow)) }
             add(menu, L10n.text("Показать в Finder"), #selector(revealRow))
@@ -289,16 +307,18 @@ struct FileTable: NSViewRepresentable {
             menu.addItem(item)
         }
         @objc private func revealRow() {
-            guard let table, table.selectedRow >= 0 else { return }
-            parent.reveal(parent.rows[table.selectedRow])
+            guard let table, let entry = entry(at: table.selectedRow) else { return }
+            parent.reveal(entry)
         }
         @objc func previewRow() {
-            guard let table, table.selectedRow >= 0, table.selectedRow < parent.rows.count else { return }
-            parent.preview(parent.rows[table.selectedRow])
+            guard let table, let entry = entry(at: table.selectedRow) else { return }
+            var items = (0..<min(table.numberOfRows, 1000)).compactMap { self.entry(at: $0) }
+            if !items.contains(where: { $0.id == entry.id }) { items.insert(entry, at: 0) }
+            parent.preview(entry, items)
         }
         @objc private func copyRow() {
-            guard let table, table.selectedRow >= 0 else { return }
-            parent.copyPath(parent.rows[table.selectedRow].path)
+            guard let table, let entry = entry(at: table.selectedRow) else { return }
+            parent.copyPath(entry.path)
         }
     }
 }
@@ -336,6 +356,10 @@ private final class AtlasHeaderView: NSTableHeaderView {
         for (index, column) in tableView.tableColumns.enumerated() where !column.isHidden {
             let rect = headerRect(ofColumn: index)
             let name = column.identifier.rawValue
+            if name == "check" {
+                column.headerCell.drawInterior(withFrame: rect, in: self)
+                continue
+            }
             column.headerCell.drawInterior(
                 withFrame: NSRect(
                     x: rect.minX + (name == "name" ? 12 : 4), y: rect.minY,
@@ -377,7 +401,7 @@ private final class AtlasTableScrollView: NSScrollView {
     }
 }
 
-private final class AtlasTableView: NSTableView {
+private final class AtlasTableView: NSOutlineView {
     var returnAction: (() -> Void)?
     var previewAction: (() -> Void)?
     override func keyDown(with event: NSEvent) {
@@ -407,6 +431,7 @@ private final class AtlasCell: NSTableCellView {
     let subtitle = NSTextField(labelWithString: "")
     let icon = NSImageView()
     let duplicateButton = NSButton()
+    let progress = NSProgressIndicator()
     var duplicateAction: (() -> Void)?
     private let isName: Bool
     private let isDate: Bool
@@ -428,6 +453,10 @@ private final class AtlasCell: NSTableCellView {
         addSubview(title)
         if isName {
             addSubview(icon)
+            progress.style = .spinning
+            progress.controlSize = .small
+            progress.isDisplayedWhenStopped = false
+            addSubview(progress)
             addSubview(subtitle)
             duplicateButton.image = NSImage(systemSymbolName: "doc.on.doc", accessibilityDescription: nil)
             duplicateButton.isBordered = false
@@ -441,6 +470,10 @@ private final class AtlasCell: NSTableCellView {
         textField = title
         setAccessibilityElement(true)
     }
+    func setLoading(_ loading: Bool) {
+        icon.isHidden = loading
+        if loading { progress.startAnimation(nil) } else { progress.stopAnimation(nil) }
+    }
     @objc private func showCopies() { duplicateAction?() }
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
     override func setFrameSize(_ newSize: NSSize) {
@@ -451,6 +484,7 @@ private final class AtlasCell: NSTableCellView {
         super.layout()
         if isName {
             icon.frame = NSRect(x: 9, y: (bounds.height - 16) / 2, width: 16, height: 16)
+            progress.frame = icon.frame
             let hasSubtitle = !subtitle.stringValue.isEmpty
             let available = max(0, bounds.width - 42 - (duplicateButton.isHidden ? 0 : 28))
             let titleWidth =

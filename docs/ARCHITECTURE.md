@@ -18,7 +18,7 @@ flowchart LR
 ```
 
 `AtlasCore` owns the scanner, snapshot format and presentation indexes. The GUI
-uses SwiftUI for layout and a virtualized AppKit table for rows. CLI and MCP share
+uses SwiftUI for layout and a virtualized AppKit outline for file rows. CLI and MCP share
 the scanner and JSON snapshot model; neither needs the GUI or a network listener.
 
 CLI command declarations generate parsing and help through Swift Argument Parser.
@@ -41,7 +41,10 @@ CLI/MCP exports use exclusive creation and mode 0600. Imported snapshots validat
 version, structure, cycles, connectedness, totals and integer overflow, up to 2 GiB.
 
 Snapshots are observations over time, not atomic filesystem snapshots. macOS
-permissions can exclude protected directories. APFS clones and shared blocks mean
+permissions can exclude protected directories. File access guidance is optional:
+scan setup and skipped-path details link to System Settings, with explicit consent
+left to macOS and the user. There is no TCC database access, protected-file probe,
+automatic grant or mandatory Full Disk Access step. APFS clones and shared blocks mean
 allocated size is not a promise of reclaimable space.
 
 ## Explicit duplicate checking
@@ -120,8 +123,16 @@ and files. Direct-child selections are included in the bounded list. Selecting
 any already-listed match, including a nested search/type result, preserves its
 filters and requests scrolling after native table layout. Scroll requests are
 generation-checked and animate for 160 ms, or immediately under Reduce Motion.
-Missing nested hits are represented by one extra context row, with its full path,
-after the nearest listed ancestor or at the top. This projection leaves the
+In Contents without search/type filters, a stable NSOutlineView item pool projects
+lazy child pages from the immutable index. Native disclosure/Left/Right expands
+branches without navigation; child queries run off-main, with 1,000-item pages and
+a continuation row. Source/sort changes cancel pending queries and reject stale
+results. Expanded children support focus, Quick Look and independent Trash checks;
+header checks target the currently revealed rows. Map hits expand their ancestor
+chain and scroll to the actual item, including outside a branch's first page.
+Accessibility capability queries have no expansion side effects. Search and Largest
+files retain flat results. In these flat modes, missing nested hits are represented
+by one extra context row, with its full path, after the nearest listed ancestor or at the top. This projection leaves the
 folder’s bounded matches, ordering, filters and count intact. The next map hit
 replaces the context row; navigation or filter changes clear it. AppKit computes
 the scroll destination, including header insets, before the short animation. Aggregate

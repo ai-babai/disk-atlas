@@ -5,6 +5,15 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.12.0 — 2026-11-08
+
+- Expand folders inline with native disclosure arrows in Contents. Browse multiple levels without changing the map or current folder; retain flat search and Largest files.
+- Load child pages from the existing snapshot off the main thread, 1,000 at a time with Show more. Preserve sorting, independent Trash checks and Quick Look for revealed children.
+- Compact list controls and selection actions into two short rows, freeing room for file rows without moving the table when items are checked.
+- Improve checked-row leading padding and keep tree entries on one line; leave full paths in the inspector and flat results.
+- Add optional File access guidance at scan setup and skipped-path details. Explain ordinary macOS prompts and voluntary Full Disk Access, with a System Settings shortcut; never require or change permission automatically.
+- Clarify the GitHub introduction and repository discovery topics around a WinDirStat alternative for Mac, disk space analysis and duplicate finding.
+
 ## 0.11.2 — 2026-11-08
 
 - Fix the SwiftUI/AppKit sizing contract that could resist divider drags, leave stale content widths or snap the divider back after release.

@@ -12,6 +12,16 @@ created: "2026-11-07"
   <p>macOS 14+ · Apple Silicon & Intel · English / Русский · Early access</p>
 </div>
 
+**Looking for WinDirStat for Mac?** Disk Atlas is a free, open-source **disk space
+analyzer for macOS**: a native WinDirStat alternative for Mac with an interactive
+storage treemap, expandable folder tree, large-file search and duplicate finder.
+It supports Apple Silicon and Intel, with a GUI for people and a JSON CLI for agents.
+
+If you use WinDirStat on Windows or are exploring alternatives to [DaisyDisk](https://daisydiskapp.com/) and
+[GrandPerspective](https://grandperspectiv.sourceforge.net/) on macOS, Disk Atlas covers the visual disk-usage workflow with
+local scan history and explicit, reviewed Move to Trash actions. It is an
+independent project, not an official WinDirStat port.
+
 ![Disk Atlas in dark mode, showing a storage map, compact scan history and file dates](docs/images/workspace-dark.png)
 
 *Native interface preview with illustrative data. Your files stay on your Mac.*
@@ -40,10 +50,16 @@ without scanning files. Returning Home keeps the current snapshot in memory;
 the Back arrow or its history entry restores it immediately. Inspector width is
 remembered after resizing, hiding and returning from Home.
 
+Contents is a native outline: open several folder levels with disclosure arrows,
+or use Left/Right on a selected row. Children come from the existing snapshot,
+not another disk scan. Large branches show 1,000 items at a time with **Show more**.
+Search and Largest files remain flat lists. Compact selection controls keep the
+table in place when you check Trash candidates.
+
 ## Download & install
 
 1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Download **Disk-Atlas-0.11.2-universal.dmg**. The same app supports Apple Silicon
+2. Download **Disk-Atlas-0.12.0-universal.dmg**. The same app supports Apple Silicon
    and Intel Macs running **macOS 14 Sonoma or later**.
 3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
    then launch the app from Applications. A ZIP is also available.
@@ -67,7 +83,7 @@ shasum -a 256 -c SHA256SUMS.txt
 
 1. **Choose folders.** Drop folders, use the multiple-selection picker or quick locations.
 2. **Analyze.** See progress and stop when needed. Cancelling a new scan keeps the previous result.
-3. **Explore.** Single-click to select; double-click a folder to go inside or a file to reveal it in Finder.
+3. **Explore.** Single-click to select; expand folder arrows in Contents to browse inline without changing the map. Double-click a folder to go inside or a file to reveal it in Finder.
 4. **Return later.** Use scan history, or export a portable `.atlas` snapshot.
 
 | Shortcut | Action |
@@ -254,6 +270,18 @@ source files remain untouched by scans/history cleanup; only the separately conf
 review them before sharing. Imports validate structure and totals, up to 2 GiB.
 
 Performance measurements and their limits: [PERFORMANCE.md](docs/PERFORMANCE.md).
+
+### Optional macOS file access
+
+Disk Atlas works with ordinary macOS folder permission prompts. Allow or deny them
+as needed; skipped folders are listed instead of counted as empty. **File access…**
+in scan setup and skipped-path details explains optional **System Settings → Privacy
+& Security → Full Disk Access**. You can add Disk Atlas there to reduce separate
+prompts, or leave it off. The app never grants or requires this permission.
+Full Disk Access is a broad system permission, not a read-only entitlement; revoke
+it in the same settings. Restart and rescan after changing access. An app update
+may require permission again, particularly with this ad hoc signed distribution.
+[Apple explains the permission boundary](https://developer.apple.com/documentation/security/accessing-files-from-the-macos-app-sandbox).
 
 ## Build from source
 

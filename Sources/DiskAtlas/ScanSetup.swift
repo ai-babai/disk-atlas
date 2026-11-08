@@ -65,6 +65,7 @@ struct ScanSetup: View {
                 }
                 return true
             }
+            FileAccessHelpButton().id(store.language)
             duplicateChoice
             HStack(spacing: 16) {
                 Button(L10n.text("Анализировать"), systemImage: "chart.pie") { store.analyzeSelection() }.buttonStyle(

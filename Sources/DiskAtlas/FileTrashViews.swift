@@ -9,33 +9,60 @@ struct TrashSelectionBar: View {
     let clear: () -> Void
     let review: () -> Void
     let stop: () -> Void
+    var compact = false
     var body: some View {
-        HStack(spacing: 10) {
-            Text(count > 0 ? L10n.text("Выбрано: ") + count.formatted() : "").monospacedDigit().lineLimit(1).frame(
-                width: 110, alignment: .leading)
-            Button(L10n.text("Снять выбор"), action: clear).buttonStyle(.plain).opacity(count > 0 ? 1 : 0).disabled(
-                count == 0 || busy
-            ).accessibilityHidden(count == 0)
-            Text(notice ?? "").foregroundStyle(Palette.sub).lineLimit(1).truncationMode(.middle)
-            Spacer(minLength: 8)
-            if busy {
-                ProgressView().controlSize(.mini)
-                Button(L10n.text("Остановить"), action: stop)
+        Group {
+            if compact {
+                ViewThatFits(in: .horizontal) {
+                    actions(labels: true)
+                    actions(labels: false)
+                }
             } else {
-                Button(L10n.text("В корзину…"), systemImage: "trash", action: review).disabled(count == 0)
+                actions(labels: true)
             }
-        }.font(.system(size: 11)).padding(.horizontal, 10).frame(height: 40).background(
+        }.font(.system(size: 11)).padding(.horizontal, compact ? 6 : 10).frame(height: compact ? 28 : 40).background(
             Palette.soft.opacity(count > 0 || busy ? 1 : 0), in: RoundedRectangle(cornerRadius: 6))
     }
+    private func actions(labels: Bool) -> some View {
+        HStack(spacing: compact ? 6 : 10) {
+            Text(count > 0 ? (labels ? L10n.text("Выбрано: ") : "") + count.formatted() : "").monospacedDigit()
+                .lineLimit(1).frame(width: labels ? (compact ? 80 : 110) : 28, alignment: .leading)
+            Button(action: clear) {
+                if labels { Text(L10n.text("Снять выбор")) } else { Image(systemName: "xmark.circle") }
+            }.buttonStyle(.plain).opacity(count > 0 ? 1 : 0).disabled(count == 0 || busy).accessibilityHidden(
+                count == 0
+            ).accessibilityLabel(L10n.text("Снять выбор"))
+            if compact {
+                Image(systemName: "info.circle").frame(width: 14).opacity(notice == nil ? 0 : 1).help(notice ?? "")
+                    .accessibilityHidden(notice == nil)
+            } else {
+                Text(notice ?? "").foregroundStyle(Palette.sub).lineLimit(1).truncationMode(.middle)
+                Spacer(minLength: 8)
+            }
+            trashAction(labels: labels)
+        }.fixedSize(horizontal: compact, vertical: false)
+    }
+    @ViewBuilder private func trashAction(labels: Bool) -> some View {
+        if busy {
+            ProgressView().controlSize(.mini)
+            Button(L10n.text("Остановить"), action: stop)
+        } else {
+            Button(action: review) {
+                if labels { Label(L10n.text("В корзину…"), systemImage: "trash") } else { Image(systemName: "trash") }
+            }.disabled(count == 0).accessibilityLabel(L10n.text("В корзину…")).help(L10n.text("В корзину…"))
+        }
+    }
+
 }
 
 struct FileTrashControls: View {
     @ObservedObject var session: FileTrashSession
     let store: AtlasStore
+    var compact = false
     var body: some View {
         TrashSelectionBar(
             count: session.selected.count, busy: session.busy, notice: session.message,
-            clear: { session.selected = [] }, review: { store.reviewFileTrash() }, stop: session.stop
+            clear: { session.selected = [] }, review: { store.reviewFileTrash() }, stop: session.stop, compact: compact
         ).sheet(item: $session.review) { plan in
             FileTrashReview(plan: plan, cancel: { session.review = nil }) {
                 session.move(plan, applied: store.applyFileTrash)

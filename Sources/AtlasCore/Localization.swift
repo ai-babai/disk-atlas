@@ -60,6 +60,18 @@ public enum L10n {
         (". Используй --help.", ". Use --help."), ("\nДвойной щелчок — открыть папку", "\nDouble-click to open folder"),
     ]
     private static let english: [String: String] = [
+        "Доступ к файлам…": "File access…", "Доступ к файлам": "File access",
+        "Обычно достаточно запросов macOS при обращении к защищённым папкам. Ты можешь разрешить или отклонить каждый запрос. Недоступные папки будут пропущены и показаны в отчёте.":
+            "Normally, macOS asks when you access protected folders. You can allow or deny each request. Unavailable folders are skipped and listed in the report.",
+        "Полный доступ к диску — по желанию": "Full Disk Access is optional",
+        "Если хочешь меньше отдельных запросов, открой Системные настройки → Конфиденциальность и безопасность → Полный доступ к диску. Добавь Disk Atlas кнопкой «+» и включи переключатель.":
+            "For fewer separate prompts, open System Settings → Privacy & Security → Full Disk Access. Add Disk Atlas with the + button and turn it on.",
+        "Это широкое системное разрешение, а не режим «только чтение». Disk Atlas анализирует метаданные; содержимое читает при поиске дубликатов и Quick Look. Перенос в Корзину требует отдельного подтверждения. Доступ можно отозвать в тех же настройках.":
+            "This is a broad system permission, not a read-only mode. Disk Atlas analyzes metadata; duplicate checking and Quick Look read contents. Moving items to Trash requires separate confirmation. You can revoke access in the same settings.",
+        "После изменения доступа перезапусти приложение и повтори анализ. macOS может снова запросить разрешение после обновления приложения.":
+            "After changing access, restart the app and scan again. macOS may request permission again after an app update.",
+        "Открыть системные настройки": "Open System Settings", "Показать приложение": "Show app",
+
         "Выбрать показанные объекты": "Select displayed items", "Показать весь список": "Show full list",
         "Объектов: ": "Items: ",
         "Проверь список. Объекты можно восстановить через Finder.":
@@ -109,9 +121,12 @@ public enum L10n {
         "В корзину повторы": "Trash repeats", "Выбрать для корзины": "Select for Trash",
         "Хотя бы одна копия должна остаться": "At least one copy must stay", "В корзину…": "Move to Trash…",
         "В корзину": "Move to Trash", "Выбрано: ": "Selected: ", "Снять выбор": "Clear selection",
-        "Снять выделение": "Clear highlight", "Готовим список…": "Preparing review…",
-        "Проверяем копии…": "Rechecking copies…", "Перемещаем в Корзину…": "Moving to Trash…",
-        "В корзине: ": "Moved to Trash: ", "Обнови анализ для актуальных размеров.": "Rescan to update storage sizes.",
+        "Снять выделение": "Clear highlight", "Показать ещё": "Show more",
+        "Следующие 1 000 объектов": "Next 1,000 items", "Папки раскрываются стрелкой": "Use arrows to expand folders",
+        "Файлы во вложенных папках": "Files in subfolders", "Результаты фильтра": "Filtered results",
+        "Готовим список…": "Preparing review…", "Проверяем копии…": "Rechecking copies…",
+        "Перемещаем в Корзину…": "Moving to Trash…", "В корзине: ": "Moved to Trash: ",
+        "Обнови анализ для актуальных размеров.": "Rescan to update storage sizes.",
         "Остановлено. Уже перемещённые файлы находятся в Корзине.": "Stopped. Files already moved are in Trash.",
         "Файлов с копиями: ": "Files with copies: ", "файлов с копиями": "files with copies",
         "Дубликаты внутри": "Duplicates inside",

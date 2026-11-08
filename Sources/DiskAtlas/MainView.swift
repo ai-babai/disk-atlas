@@ -5,6 +5,7 @@ import SwiftUI
 struct MainView: View {
     @ObservedObject var store: AtlasStore
     @State private var previewURL: URL?
+    @State private var previewEntries: [Entry] = []
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
         Group {
@@ -132,7 +133,7 @@ struct MainView: View {
                     }.lineLimit(1).id(store.language)
                 }
                 // Mode changes must not reflow the map through different native row heights.
-                fileList(height: min(245, max(130, geometry.size.height - 600)))
+                fileList(height: min(340, max(180, geometry.size.height - 540)))
             }.padding(24).background {
                 Color.clear.contentShape(Rectangle()).onTapGesture { store.clearMapSelection() }
             }.opacity(store.viewFiltering ? 0.65 : 1).animation(
@@ -201,7 +202,6 @@ struct MainView: View {
     private func fileList(height: CGFloat) -> some View {
         VStack(spacing: 0) {
             fileListHeader
-            FileTrashControls(session: store.fileTrash, store: store).id(store.language).padding(.bottom, 8)
             fileTable.frame(height: height)
             Text(listStatus).font(.system(size: 10)).foregroundStyle(Palette.sub).frame(height: 18).opacity(
                 listStatus.isEmpty ? 0 : 1
@@ -228,18 +228,31 @@ struct MainView: View {
                     listSearch
                 }
             }
-            HStack {
-                Button {
-                    store.clearMapSelection()
-                } label: {
-                    Label(L10n.text("Снять выделение"), systemImage: "xmark.circle.fill")
-                }.buttonStyle(.plain).font(.system(size: 10)).opacity(store.hasMapSelection ? 1 : 0).disabled(
-                    !store.hasMapSelection
-                ).accessibilityHidden(!store.hasMapSelection)
+            HStack(spacing: 8) {
+                listSelectionInfo.layoutPriority(1)
                 if let group = store.mapGroup { Text(group.title).font(.system(size: 10)).foregroundStyle(Palette.sub) }
                 typeSelection
-            }.frame(height: 20, alignment: .leading)
-        }.padding(.bottom, 11)
+                Spacer(minLength: 4)
+                FileTrashControls(session: store.fileTrash, store: store, compact: true).id(store.language).frame(
+                    maxWidth: 310, alignment: .trailing)
+            }.frame(height: 28, alignment: .leading)
+        }.padding(.bottom, 6)
+    }
+    @ViewBuilder private var listSelectionInfo: some View {
+        if store.hasMapSelection {
+            Button {
+                store.clearMapSelection()
+            } label: {
+                Label(L10n.text("Снять выделение"), systemImage: "xmark.circle.fill")
+            }.buttonStyle(.plain).font(.system(size: 10)).fixedSize()
+        } else {
+            Text(L10n.text(listHint)).font(.system(size: 10)).foregroundStyle(Palette.sub).lineLimit(1)
+        }
+    }
+    private var listHint: String {
+        if store.largestFiles { return "Файлы во вложенных папках" }
+        if !store.query.isEmpty || !store.selectedKinds.isEmpty { return "Результаты фильтра" }
+        return "Папки раскрываются стрелкой"
     }
     private var listSummary: some View {
         HStack(spacing: 10) {
@@ -288,8 +301,10 @@ struct MainView: View {
         let rows = store.rows
         return FileTable(
             trash: store.fileTrash, reviewTrash: { store.reviewFileTrash([$0]) }, trashEnabled: !store.historyBusy,
-            rows: rows, logical: store.logical, folderBytes: store.folder.map(store.size) ?? 0,
-            revision: store.rowRevision, language: store.language,
+            rows: rows, index: store.index, folderID: store.folderID,
+            hierarchical: !store.largestFiles && store.query.isEmpty && store.selectedKinds.isEmpty,
+            logical: store.logical, folderBytes: store.folder.map(store.size) ?? 0, revision: store.rowRevision,
+            language: store.language,
             showPaths: store.largestFiles || !store.query.isEmpty || !store.selectedKinds.isEmpty,
             contextID: store.mapContextID, showCreationDate: rows.contains { $0.created != nil }, sort: store.sort,
             descending: store.sortDescending, sortBy: store.sortBy,
@@ -299,26 +314,27 @@ struct MainView: View {
             preview: preview
         ).opacity(store.rowsLoading ? 0.5 : 1).disabled(store.rowsLoading).animation(
             reduceMotion ? nil : .easeOut(duration: 0.12), value: store.rowsLoading
-        ).quickLookPreview($previewURL, in: rows.map { URL(fileURLWithPath: $0.path) }).onChange(of: previewURL) {
-            _, url in selectPreview(url)
-        }.onChange(of: store.selection) { _, _ in updatePreview() }.onChange(of: store.rowRevision) { _, _ in
-            updatePreview()
-        }.onDisappear { previewURL = nil }
+        ).quickLookPreview($previewURL, in: previewEntries.map { URL(fileURLWithPath: $0.path) }).onChange(
+            of: previewURL
+        ) { _, url in selectPreview(url) }.onChange(of: store.selection) { _, _ in updatePreview() }.onChange(
+            of: store.rowRevision
+        ) { _, _ in updatePreview() }.onDisappear { previewURL = nil }
     }
 
-    private func preview(_ entry: Entry) {
+    private func preview(_ entry: Entry, entries: [Entry]) {
+        previewEntries = entries
         let url = URL(fileURLWithPath: entry.path)
         previewURL = previewURL == url ? nil : url
     }
 
     private func selectPreview(_ url: URL?) {
-        guard let url, let entry = store.rows.first(where: { $0.path == url.path }) else { return }
+        guard let url, let entry = previewEntries.first(where: { $0.path == url.path }) else { return }
         store.selection = entry.id
     }
 
     private func updatePreview() {
         guard previewURL != nil else { return }
-        previewURL = store.rows.first(where: { $0.id == store.selection }).map { URL(fileURLWithPath: $0.path) }
+        previewURL = previewEntries.first(where: { $0.id == store.selection }).map { URL(fileURLWithPath: $0.path) }
     }
 
     private var progressBanner: some View {
@@ -399,6 +415,7 @@ struct MainView: View {
                     "Недоступные папки не входят в итог. Для защищённых папок macOS может потребоваться полный доступ к диску в Системных настройках."
                 )
             ).font(.callout).foregroundStyle(Palette.sub)
+            FileAccessHelpButton().id(store.language)
             ScrollView {
                 VStack(alignment: .leading, spacing: 15) {
                     ForEach(Array((store.snapshot?.issues ?? []).enumerated()), id: \.offset) { _, issue in

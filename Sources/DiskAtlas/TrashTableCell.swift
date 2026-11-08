@@ -10,8 +10,8 @@ final class TrashTableCell: NSTableCellView {
         if !checkbox {
             button.image = NSImage(systemSymbolName: "trash", accessibilityDescription: nil)
             button.isBordered = false
-            button.imagePosition = .imageOnly
         }
+        button.imagePosition = .imageOnly
         button.target = self
         button.action = #selector(pressed)
         button.translatesAutoresizingMaskIntoConstraints = false
