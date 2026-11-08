@@ -12,24 +12,6 @@
       "start": 156
     },
     {
-      "bodyHash": "a7bc2ef766d0e1ece26ef57a99b5c8a31bcd89d8de75a7be7bd91f67b6107aa1",
-      "cognitive": 16,
-      "cyclomatic": 16,
-      "end": 177,
-      "file": "Sources/AtlasCore/Model.swift",
-      "identity": "Snapshot.decode(_:Data)",
-      "start": 129
-    },
-    {
-      "bodyHash": "325db3a19805c9eb891bcf97f9ceedcab5060cb9f92e24d77edcf1fb20c860e3",
-      "cognitive": 20,
-      "cyclomatic": 11,
-      "end": 80,
-      "file": "Sources/AtlasCore/PresentationIndex.swift",
-      "identity": "PresentationIndex.init(_:Snapshot)",
-      "start": 21
-    },
-    {
       "bodyHash": "d84e9a4a1f3b1d1eba56fa72df692468706cc4f242285bde357f17b1b8a1cd12",
       "cognitive": 16,
       "cyclomatic": 11,

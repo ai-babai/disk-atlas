@@ -9,6 +9,7 @@ struct RowQuery {
     let limit: Int
     let sort: EntrySort
     let descending: Bool
+    var extensionFilter: String? = nil
 
     func before(_ a: Entry, _ b: Entry) -> Bool {
         let order = compare(a, b)
@@ -34,6 +35,9 @@ struct RowQuery {
     private func matches(_ entry: Entry) -> Bool {
         if filesOnly && entry.isDirectory { return false }
         if !kinds.isEmpty && !kinds.contains(entry.kind) { return false }
+        if let extensionFilter {
+            if entry.isDirectory || FileFormat.extensionKey(entry.path) != extensionFilter { return false }
+        }
         return query.isEmpty || entry.name.localizedCaseInsensitiveContains(query)
     }
     func select<S: Sequence>(_ candidates: S, entries: [Entry]) -> (entries: [Entry], count: Int)

@@ -18,19 +18,7 @@ public enum FileKind: String, Codable, CaseIterable, Sendable {
         }
     }
 
-    public static func classify(_ url: URL) -> FileKind {
-        switch url.pathExtension.lowercased() {
-        case "mp4", "mov", "mkv", "avi", "webm", "m4v": return .video
-        case "mp3", "wav", "flac", "aac", "m4a", "aiff", "ogg": return .audio
-        case "jpg", "jpeg", "png", "heic", "gif", "webp", "tiff", "psd", "raw", "svg": return .image
-        case "pdf", "doc", "docx", "txt", "md", "pages", "pptx", "xlsx", "epub", "rtf": return .document
-        case "zip", "gz", "tar", "7z", "rar", "dmg", "iso", "pkg", "xz": return .archive
-        case "swift", "rs", "js", "ts", "tsx", "py", "json", "csv", "db", "sqlite", "bin", "gguf", "safetensors", "c",
-            "h", "cpp", "o", "a", "dylib", "html", "css", "yaml", "toml":
-            return .code
-        default: return .other
-        }
-    }
+    public static func classify(_ url: URL) -> FileKind { FileFormat.kind(url) }
 }
 
 public struct Entry: Codable, Identifiable, Sendable {
@@ -133,47 +121,12 @@ public struct Snapshot: Codable, Sendable {
         }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        let snapshot = try decoder.decode(Snapshot.self, from: data)
+        var snapshot = try decoder.decode(Snapshot.self, from: data)
         guard snapshot.version == 1, !snapshot.entries.isEmpty, snapshot.entries[0].parent == nil,
             snapshot.entries[0].isDirectory, snapshot.entries[0].path == snapshot.root
         else { throw AtlasError.message("Неподдерживаемый или повреждённый снимок.") }
-        // The parent-before-child invariant makes cycles impossible and keeps UI navigation safe.
-        var linked = Set<Int>()
-        for (index, entry) in snapshot.entries.enumerated() {
-            guard entry.id == index, entry.bytes >= 0, entry.logicalBytes >= 0, entry.fileCount >= 0,
-                entry.path.hasPrefix("/"),
-                index == 0 || (entry.parent != nil && entry.parent! >= 0 && entry.parent! < index),
-                entry.isDirectory || entry.children.isEmpty
-            else { throw AtlasError.message("Нарушена структура снимка.") }
-            for child in entry.children {
-                guard child > index, child < snapshot.entries.count, snapshot.entries[child].parent == index,
-                    linked.insert(child).inserted
-                else { throw AtlasError.message("Нарушены связи снимка.") }
-            }
-        }
-        guard linked.count == snapshot.entries.count - 1, !snapshot.scanRoots.isEmpty,
-            snapshot.scanRoots.allSatisfy({ $0.hasPrefix("/") })
-        else { throw AtlasError.message("В снимке есть несвязанные объекты.") }
-        for entry in snapshot.entries where entry.isDirectory {
-            var bytes: Int64 = 0
-            var logical: Int64 = 0
-            var files = 0
-            for child in entry.children {
-                let next = snapshot.entries[child]
-                let b = bytes.addingReportingOverflow(next.bytes)
-                let l = logical.addingReportingOverflow(next.logicalBytes)
-                let f = files.addingReportingOverflow(next.fileCount)
-                guard !b.overflow, !l.overflow, !f.overflow else {
-                    throw AtlasError.message("Повреждены размеры снимка.")
-                }
-                bytes = b.partialValue
-                logical = l.partialValue
-                files = f.partialValue
-            }
-            guard bytes == entry.bytes, logical == entry.logicalBytes, files == entry.fileCount else {
-                throw AtlasError.message("Итоги снимка не совпадают с содержимым.")
-            }
-        }
+        try snapshot.validateEntries()
+        snapshot.refreshFileKinds()
         return snapshot
     }
 }

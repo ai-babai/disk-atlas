@@ -327,3 +327,23 @@ sharing the same store/appearance. Storage management removes only app-owned
 archives/reports under the existing confirmation setting. Source-file Trash still
 requires its separate mandatory review. A source-picker sheet can open help
 without creating a second sheet above itself.
+
+## File types and extensions
+
+Seven content categories keep the map legend compact. `FileFormat` classifies names only;
+unknown/ambiguous `.raw` and `.ts` stay Other (`Docker.raw` is a known disk-image name).
+Common camera, office, media, code, model and data formats are recognized. Functional
+hints in the inspector identify application/library/VM packages without changing their
+physical directory identity or counting their contents twice. These hints are not content verification.
+
+Loading a version-1 snapshot validates structure/totals before refreshing regular-file
+categories in memory. Links and directories keep their identity; archives on disk are not
+rewritten. Duplicate filters use the same classifier. No type detection opens source files.
+
+The inspector's existing category rows still filter the list. Their disclosure buttons
+show extensions, bytes and file counts, including No extension. The extension summary
+is computed off-main only for the expanded category, with cancellation and without a
+per-directory extension cache. An extension narrows that category, combines with name
+search, sort and size metric, and leaves map zoom intact. The filter chip and All clear it.
+`inspect` and `history inspect` expose the same projection through `--extension png`
+(or `--extension ''` for extensionless files). No new settings or map colors are added.

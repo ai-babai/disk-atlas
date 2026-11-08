@@ -20,7 +20,7 @@ disk-atlas help
 
 Укажи фактический путь приложения, если оно находится, например, в `~/Applications`.
 Кнопка **«Для агента»** в GUI копирует команды с правильным путём. Альтернатива —
-скачать `disk-atlas-cli-0.5.2-universal.zip` из [релизов](https://github.com/ai-babai/disk-atlas/releases/latest),
+скачать `disk-atlas-cli-0.15.0-universal.zip` из [релизов](https://github.com/ai-babai/disk-atlas/releases/latest),
 распаковать в постоянную папку и выполнить `./disk-atlas install`.
 
 `install` создаёт ссылку в `~/.local/bin`. Повторный запуск для того же бинарника
@@ -57,8 +57,11 @@ disk-atlas history export latest exported.atlas
 disk-atlas show exported.atlas
 ```
 
+Фильтр по расширению: `disk-atlas history inspect latest --extension png --json`.
+`--extension ''` выбирает файлы без расширения. Читается только сохранённый снимок.
+
 `--path` — точный путь папки **из снимка**, без обращения к живой файловой системе.
-Без фильтров показываются непосредственные дети. `--files`, `--query` или `--types`
+Без фильтров показываются непосредственные дети. `--files`, `--query`, `--types` или `--extension`
 ищут среди потомков. `--query` — подстрока имени без учёта регистра; `--types` —
 типы через запятую. По умолчанию `--metric allocated`: выделенные блоки, как
 «На диске» в GUI. `logical` — длина содержимого файлов. Сортировки `--sort`:

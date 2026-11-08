@@ -91,9 +91,10 @@ public final class PresentationIndex: Sendable {
 
     public func rows(
         folder: Int, logical: Bool, query: String, kinds: Set<FileKind>, filesOnly: Bool, limit: Int = 1000,
-        sort: EntrySort = .size, descending: Bool = true, including: Int? = nil, groupRoots: [Int]? = nil
+        sort: EntrySort = .size, descending: Bool = true, including: Int? = nil, groupRoots: [Int]? = nil,
+        extensionFilter: String? = nil
     ) -> (entries: [Entry], count: Int) {
-        let direct = query.isEmpty && kinds.isEmpty && !filesOnly
+        let direct = query.isEmpty && kinds.isEmpty && !filesOnly && extensionFilter == nil
         if let result = defaultRows(
             folder: folder, logical: logical, direct: direct, groupRoots: groupRoots, including: including, sort: sort,
             descending: descending, limit: limit)
@@ -103,7 +104,7 @@ public final class PresentationIndex: Sendable {
         let candidates = rowCandidates(folder: folder, direct: direct, groupRoots: groupRoots)
         let request = RowQuery(
             logical: logical, query: query, kinds: kinds, filesOnly: filesOnly, limit: limit, sort: sort,
-            descending: descending)
+            descending: descending, extensionFilter: extensionFilter?.lowercased())
         var result = request.select(candidates, entries: snapshot.entries)
         if direct, let including, snapshot.entries.indices.contains(including), candidates.contains(including),
             !result.entries.contains(where: { $0.id == including }), limit > 0

@@ -2,7 +2,7 @@ import ArgumentParser
 import Darwin
 import Foundation
 
-let cliVersion = "0.14.5"
+let cliVersion = "0.15.0"
 
 @main struct CLIEntrypoint {
     static func main() async {

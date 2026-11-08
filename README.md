@@ -109,7 +109,9 @@ bounds. Size criteria always use logical file bytes. Reset restores the full sca
 
 The list renders up to 1,000 matches and shows the total count. Search and type
 filters affect the list; the map keeps showing the whole current folder. Click any
-part of a file-type row to toggle it. Several types can be selected together;
+category name to toggle it. The disclosure arrow shows extensions with their size
+and file count; choose one to narrow the list, including files with no extension.
+Several categories can be selected together;
 **All** or the compact filter badge clears the selection. Search narrows the selected types. Missing
 creation dates are omitted from the inspector, and the column hides when no
 visible row has that date. Dates describe the time of the scan, not live changes.

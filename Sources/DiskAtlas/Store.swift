@@ -28,8 +28,15 @@ import UniformTypeIdentifiers
             refreshRows()
         }
     }
+    @Published var selectedExtension: String? {
+        didSet {
+            mapSelectionID = nil
+            refreshRows()
+        }
+    }
     @Published var selectedKinds: Set<FileKind> = [] {
         didSet {
+            selectedExtension = nil
             mapSelectionID = nil
             refreshRows()
         }
@@ -302,6 +309,7 @@ import UniformTypeIdentifiers
         let logical = logical
         let query = query
         let kinds = selectedKinds
+        let suffix = selectedExtension
         let files = largestFiles
         let sort = sort
         let descending = sortDescending
@@ -321,7 +329,7 @@ import UniformTypeIdentifiers
             let worker = Task.detached(priority: .userInitiated) {
                 let result = index.rows(
                     folder: folder, logical: logical, query: query, kinds: kinds, filesOnly: files, sort: sort,
-                    descending: descending, including: included, groupRoots: group?.roots)
+                    descending: descending, including: included, groupRoots: group?.roots, extensionFilter: suffix)
                 return (
                     entries: index.revealingMapSelection(included, folder: folder, in: result.entries),
                     count: result.count
@@ -430,6 +438,12 @@ import UniformTypeIdentifiers
 
     func toggleKind(_ kind: FileKind) {
         if selectedKinds.contains(kind) { selectedKinds.remove(kind) } else { selectedKinds.insert(kind) }
+    }
+
+    func selectExtension(_ suffix: String, kind: FileKind) {
+        let next = selectedExtension == suffix && selectedKinds == [kind] ? nil : suffix
+        selectedKinds = [kind]
+        selectedExtension = next
     }
 
     var breadcrumbs: [Entry] {

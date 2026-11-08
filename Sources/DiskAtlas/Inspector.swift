@@ -3,8 +3,6 @@ import SwiftUI
 
 struct Inspector: View {
     @ObservedObject var store: AtlasStore
-    @State private var hoveredKind: FileKind?
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
         if let group = store.mapGroup, store.selection == nil {
             MapGroupInspector(group: group, parent: store.index?.snapshot.entries[group.parent].path ?? "").id(
@@ -24,7 +22,7 @@ struct Inspector: View {
                         selectionActions(entry)
                     }
                     Divider().overlay(Palette.line)
-                    composition
+                    FileTypeComposition(store: store)
                     Divider().overlay(Palette.line)
                     Button {
                         store.copyContext()
@@ -60,6 +58,9 @@ struct Inspector: View {
     private func selectionFacts(_ entry: Entry) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(spacing: 13) {
+                if entry.kind != .link, let format = FileFormat.detail(entry.path, directory: entry.isDirectory) {
+                    detail(L10n.text("Тип по имени"), value: format)
+                }
                 detail(L10n.text("На диске"), value: byteString(entry.bytes))
                 detail(L10n.text("Размер файлов"), value: byteString(entry.logicalBytes))
                 DuplicateSummary(entry: entry, store: store, session: store.duplicates, style: .detail).id(
@@ -102,58 +103,6 @@ struct Inspector: View {
                 action(L10n.text("Показать в Finder"), icon: "arrow.up.forward.square") { store.reveal(entry) }
                 action(L10n.text("Скопировать путь"), icon: "doc.on.doc") { store.copy(entry.path) }
             }
-        }
-    }
-
-    private var composition: some View {
-        let values = store.index?.totals(of: store.folderID, logical: store.logical) ?? []
-        let total = max(1, values.reduce(Int64(0)) { $0 + $1.bytes })
-        return VStack(alignment: .leading, spacing: 15) {
-            HStack {
-                SectionLabel(text: L10n.text("Типы в папке"))
-                Spacer()
-                if !store.selectedKinds.isEmpty {
-                    Button(L10n.text("Все")) { store.selectedKinds = [] }.font(.system(size: 10)).buttonStyle(.plain)
-                }
-            }
-            Text(L10n.text("Фильтр списка") + " · " + (store.folder.map(store.name) ?? "")).font(.system(size: 10))
-                .foregroundStyle(Palette.sub).lineLimit(1).truncationMode(.middle).help(store.folder?.path ?? "")
-            ForEach(values, id: \.kind) { item in
-                Button {
-                    store.toggleKind(item.kind)
-                } label: {
-                    VStack(spacing: 7) {
-                        HStack(spacing: 6) {
-                            Image(
-                                systemName: store.selectedKinds.contains(item.kind)
-                                    ? "checkmark.circle.fill" : "circle.fill"
-                            ).font(.system(size: store.selectedKinds.contains(item.kind) ? 11 : 6)).foregroundStyle(
-                                item.kind.tint
-                            ).frame(width: 12, height: 12)
-                            Text(item.kind.title).font(.system(size: 11)).lineLimit(1).minimumScaleFactor(0.8)
-                            Spacer(minLength: 8)
-                            Text(byteString(item.bytes)).font(.system(size: 10, design: .monospaced)).foregroundStyle(
-                                Palette.sub
-                            ).fixedSize()
-                        }
-                        GeometryReader { geo in
-                            ZStack(alignment: .leading) {
-                                Capsule().fill(Palette.soft)
-                                Capsule().fill(item.kind.tint).frame(
-                                    width: max(2, geo.size.width * Double(item.bytes) / Double(total)))
-                            }
-                        }.frame(height: 3)
-                    }.padding(6).frame(maxWidth: .infinity, minHeight: 36).background(
-                        store.selectedKinds.contains(item.kind)
-                            ? Palette.mark : hoveredKind == item.kind ? Palette.soft : .clear,
-                        in: RoundedRectangle(cornerRadius: 6)
-                    ).contentShape(Rectangle())
-                }.buttonStyle(.plain).onHover { inside in hoveredKind = inside ? item.kind : nil }.animation(
-                    reduceMotion ? nil : .easeOut(duration: 0.12), value: hoveredKind
-                ).accessibilityAddTraits(store.selectedKinds.contains(item.kind) ? .isSelected : []).help(
-                    L10n.text("Фильтр: \(item.kind.title)"))
-            }
-            if values.isEmpty { Text(L10n.text("В папке пока нет файлов")).font(.caption).foregroundStyle(Palette.sub) }
         }
     }
 

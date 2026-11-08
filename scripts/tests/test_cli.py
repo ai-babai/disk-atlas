@@ -99,6 +99,21 @@ class CLIBehaviorTests(unittest.TestCase):
         missing = self.call("inspect", self.snapshot, "--path", "/not-in-snapshot", code=3)
         self.assertEqual(json.loads(missing.stderr)["error"]["code"], "not_found")
 
+    def test_extension_filter_uses_snapshot_names_without_source_access(self):
+        (self.input / "photo.PNG").write_bytes(b"image name only")
+        (self.input / "README").write_bytes(b"no suffix")
+        self.scan()
+        for file in self.input.iterdir():
+            file.unlink()
+        photos = self.data("inspect", self.snapshot, "--extension", "PNG")
+        self.assertEqual([entry["name"] for entry in photos["entries"]], ["photo.PNG"])
+        self.assertEqual(photos["entries"][0]["kind"], "image")
+        self.assertEqual(
+            self.data("inspect", self.snapshot, "--extension", "png", "--query", "absent")["totalResults"], 0
+        )
+        bare = self.data("inspect", self.snapshot, "--extension", "")
+        self.assertEqual([entry["name"] for entry in bare["entries"]], ["README"])
+
     def test_no_overwrite_including_dangling_symlink(self):
         self.snapshot.write_bytes(b"preserve me")
         value = self.call("scan", self.input, "--output", self.snapshot, code=1)

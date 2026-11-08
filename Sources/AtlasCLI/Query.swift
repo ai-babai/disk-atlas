@@ -8,6 +8,11 @@ struct QueryOptions: ParsableArguments {
     @Flag(help: "Search all descendant files instead of immediate children.") var files = false
     @Option(help: "Case-insensitive name substring. Searches descendants.") var query = ""
     @Option(help: "Comma-separated kinds. Searches descendants.") var types: String?
+    @Option(
+        name: .customLong("extension"),
+        help:
+            "File extension, case-insensitive, without a dot. Use an empty string for extensionless files. Searches descendants."
+    ) var fileExtension: String?
     @Option(help: "Size metric: allocated or logical.") var metric = "allocated"
     @Option(help: "Order by size, name, created, modified or share.") var sort = "size"
     @Option(help: "Sort direction: asc or desc.") var order = "desc"
@@ -45,7 +50,8 @@ struct QueryOptions: ParsableArguments {
         context.update("querying")
         let rows = index.rows(
             folder: selected.id, logical: metric == "logical", query: query, kinds: try kinds(), filesOnly: files,
-            limit: page.offset + page.limit, sort: EntrySort(rawValue: sort)!, descending: order == "desc")
+            limit: page.offset + page.limit, sort: EntrySort(rawValue: sort)!, descending: order == "desc",
+            extensionFilter: fileExtension)
         try context.check()
         let entries = page.slice(rows.entries).map(entryObject)
         return page.metadata(total: rows.count, returned: entries.count).merging([

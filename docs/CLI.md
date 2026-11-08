@@ -22,7 +22,7 @@ disk-atlas help
 
 Use the app's actual path if installed elsewhere (including `~/Applications`).
 **For agents** in the app copies commands with that path. Alternatively download
-`disk-atlas-cli-0.5.2-universal.zip` from [Releases](https://github.com/ai-babai/disk-atlas/releases/latest),
+`disk-atlas-cli-0.15.0-universal.zip` from [Releases](https://github.com/ai-babai/disk-atlas/releases/latest),
 unzip into a permanent folder, then run `./disk-atlas install`.
 
 `install` creates a symlink in `~/.local/bin`, is idempotent for that same binary,
@@ -59,8 +59,11 @@ disk-atlas history export latest exported.atlas
 disk-atlas show exported.atlas
 ```
 
+Extension filter: `disk-atlas history inspect latest --extension png --json`.
+Use `--extension ''` for files without an extension. This reads only the saved snapshot.
+
 `--path` is an exact directory path **from the snapshot**, not a fresh filesystem
-lookup. Querying by name/type or `--files` searches descendants; without them,
+lookup. Querying by name/type/extension or `--files` searches descendants; without them,
 `inspect` lists immediate children. `--metric allocated` is the default, matching
 the GUI's On disk view. `logical` measures file lengths. `--sort` accepts `size`,
 `name`, `created`, `modified`, `share`; `--order` is `asc` or `desc` (default).

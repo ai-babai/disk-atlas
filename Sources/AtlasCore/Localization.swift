@@ -60,9 +60,15 @@ public enum L10n {
         (". Используй --help.", ". Use --help."), ("\nДвойной щелчок — открыть папку", "\nDouble-click to open folder"),
     ]
     private static let english: [String: String] = [
-        "Все снимки…": "All snapshots…", "Развёрнуто": "Expanded", "Свёрнуто": "Collapsed",
-        "Вес снимка": "Snapshot size", "Открыть снимок": "Open snapshot",
-        "Здесь появятся сохранённые снимки": "Saved snapshots will appear here",
+        "Без расширения": "No extension", "Расширения": "Extensions",
+        "Показать расширения файлов": "Show file extensions", "Тип по имени": "Type by name",
+        "Приложение": "Application", "Пакет": "Package", "Медиатека": "Media library",
+        "Виртуальная машина": "Virtual machine", "Образ диска": "Disk image",
+        "Диск виртуальной машины": "Virtual machine disk", "Модель ИИ": "AI model", "База данных": "Database",
+        "Набор данных": "Dataset", "RAW: фото или образ диска": "RAW: photo or disk image",
+        "TS: TypeScript или видео": "TS: TypeScript or video", "Все снимки…": "All snapshots…",
+        "Развёрнуто": "Expanded", "Свёрнуто": "Collapsed", "Вес снимка": "Snapshot size",
+        "Открыть снимок": "Open snapshot", "Здесь появятся сохранённые снимки": "Saved snapshots will appear here",
         "Вес сжатого снимка. Отчёт о дубликатах хранится отдельно.":
             "Compressed snapshot size. The duplicate report is stored separately.",
         "Удалить сохранённый снимок и его отчёт. Исходные файлы останутся на месте.":

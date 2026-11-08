@@ -276,9 +276,10 @@ struct MainView: View {
             } label: {
                 HStack(spacing: 4) {
                     Text(
-                        store.selectedKinds.count == 1
-                            ? (store.selectedKinds.first?.title ?? "")
-                            : L10n.text("Типы: ") + String(store.selectedKinds.count))
+                        store.selectedExtension.map(FileFormat.extensionTitle)
+                            ?? (store.selectedKinds.count == 1
+                                ? (store.selectedKinds.first?.title ?? "")
+                                : L10n.text("Типы: ") + String(store.selectedKinds.count)))
                     Image(systemName: "xmark").font(.system(size: 8))
                 }
             }.font(.system(size: 10)).buttonStyle(.bordered).help(
