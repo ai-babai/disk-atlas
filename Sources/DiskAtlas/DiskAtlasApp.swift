@@ -9,7 +9,8 @@ import SwiftUI
             MainView(store: store).environment(\.locale, Locale(identifier: store.language)).frame(
                 minWidth: 1080, minHeight: 730
             ).preferredColorScheme(store.appearance == "light" ? .light : store.appearance == "dark" ? .dark : nil)
-                .toolbar { AtlasToolbar(store: store) }.onOpenURL { store.openSnapshot($0) }.onAppear {
+                .toolbar { AtlasToolbar(store: store) }.toolbarBackground(Palette.paper, for: .windowToolbar)
+                .toolbarBackground(.visible, for: .windowToolbar).onOpenURL { store.openSnapshot($0) }.onAppear {
                     appDelegate.store = store
                     NSApplication.shared.setActivationPolicy(.regular)
                     NSApplication.shared.activate(ignoringOtherApps: true)
@@ -18,9 +19,9 @@ import SwiftUI
                         store.scan(args[index + 1])
                     }
                 }
-        }.defaultSize(width: 1380, height: 900).windowStyle(.titleBar).windowToolbarStyle(.unifiedCompact).commands {
-            AtlasCommands(store: store)
-        }
+        }.defaultSize(width: 1380, height: 900).windowStyle(.titleBar).windowToolbarStyle(
+            .unifiedCompact(showsTitle: false)
+        ).commands { AtlasCommands(store: store) }
         Window(L10n.text("Сохранённые снимки"), id: "history") { HistoryWindow(store: store).atlasAppearance(store) }
             .defaultSize(width: 780, height: 540)
         Window(L10n.text("Доступ к файлам"), id: "file-access") { FileAccessHelp().atlasAppearance(store) }

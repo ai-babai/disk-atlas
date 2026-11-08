@@ -257,6 +257,13 @@ removed together with the owning history record. Report encoding and index const
 while saving, with a Stopping state. Quitting may discard an unsaved partial result
 rather than holding application exit indefinitely.
 
+The native compact main toolbar uses the adaptive paper background across its width,
+with borderless commands and shared secondary foreground colors. Its repeated app
+title is hidden; the centered breadcrumb names the current location, shows at most
+three components and supplies full-path hover help. Separators appear only between
+visible components. Native window controls, dragging and overflow remain system-owned;
+sidebar and inspector toggles stay at the leading and trailing edges respectively.
+
 The shared 30-point status row observes duplicate updates separately from the map.
 Its compact result button contains the duplicate label, state/count and chevron;
 phase progress and pause/stop remain adjacent. The duplicate

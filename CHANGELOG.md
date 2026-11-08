@@ -5,6 +5,12 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.14.4 — 2026-11-08
+
+- Match the native main toolbar background to the app palette in light and dark mode; use consistent borderless controls and secondary colors.
+- Remove the repeated app title from the toolbar, give breadcrumbs clearer spacing/current-folder emphasis and full-path help, and omit the leading separator when showing the last three path components.
+- Give icon actions meaningful accessible names and expose the New scan shortcut in hover help. Keep native window controls, resizing, toolbar overflow and pane toggles.
+
 ## 0.14.3 — 2026-11-08
 
 - Center the author name and GitHub link in the native About panel.

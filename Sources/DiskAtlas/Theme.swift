@@ -90,7 +90,7 @@ struct LanguagePicker: View {
                 Text("English").tag("en")
             }.pickerStyle(.inline)
         } label: {
-            Text(store.language.uppercased()).font(.system(size: 11, weight: .medium))
+            Text(store.language.uppercased()).font(.system(size: 12)).foregroundStyle(Palette.sub)
         }.fixedSize().help("Language / Язык").accessibilityLabel("Language / Язык")
     }
 }
