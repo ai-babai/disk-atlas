@@ -17,8 +17,11 @@ digests. Ordinary scans read metadata only; duplicate checking reads contents
 locally only after explicit opt-in (at startup or from an existing scan). No file content is included in reports.
 
 Only download release artifacts from this repository. Check `SHA256SUMS.txt`.
-These releases are ad hoc signed and are not notarized by Apple; it does not carry
-a verified Developer ID identity. See [Apple's opening guidance](https://support.apple.com/102445).
+Official releases starting at 0.15.2 are Developer ID signed by Maksim Popkov
+(59Z5886M52), notarized by Apple, and include stapled app/DMG tickets. Older releases
+and default local builds use ad hoc signing. Signing identifies the publisher and
+notarization checks the submitted software; neither replaces careful handling of
+private data. See [the release workflow](docs/RELEASING.md).
 
 See [the architecture guide](docs/ARCHITECTURE.md) for the metadata/content-reading boundary,
 local storage permissions and APFS accounting limitations.

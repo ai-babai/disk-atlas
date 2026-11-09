@@ -6,12 +6,9 @@ macOS 14 Sonoma or later. Universal app: Apple Silicon + Intel.
 2. Eject this disk image and open Disk Atlas from Applications.
 3. Select folders, then click Analyze. Selection alone never starts a scan.
 
-This early access build is ad hoc signed, without Apple notarization.
-If macOS blocks it, follow Apple's instructions for apps from an unidentified
-developer, after verifying you trust the download:
-https://support.apple.com/102445
-System Settings > Privacy & Security may offer Open Anyway after a launch attempt.
-Do not disable Gatekeeper globally.
+Official releases from 0.15.2 are Developer ID signed by Maksim Popkov
+(59Z5886M52), notarized by Apple, with tickets stapled to the app and DMG.
+Install normally. Older releases and default local builds use ad hoc signatures.
 
 Ordinary scans read metadata. Duplicate checks read content only when explicitly
 started. Source cleanup is GUI-only: explicit selection, mandatory review, recoverable Trash.
@@ -27,11 +24,9 @@ macOS 14 Sonoma или новее. Одна сборка для Apple Silicon и
 2. Извлеки образ диска и открой Disk Atlas из «Программ».
 3. Выбери папки и нажми «Анализировать». Выбор папок сам не запускает сканирование.
 
-Это ранняя сборка с подписью ad hoc, без нотарификации Apple.
-Если macOS блокирует запуск, проверь источник загрузки и следуй инструкции Apple:
-https://support.apple.com/102445
-После попытки запуска в «Системные настройки > Конфиденциальность и безопасность»
-может появиться «Всё равно открыть». Не отключай Gatekeeper целиком.
+Официальные релизы с 0.15.2 подписаны Developer ID Maksim Popkov (59Z5886M52),
+нотарифицированы Apple; билеты прикреплены к приложению и DMG.
+Устанавливай обычным способом. Старые релизы и локальные сборки по умолчанию — ad hoc.
 
 Обычный анализ читает метаданные. Проверка дубликатов читает содержимое только
 после отдельного запуска. Перенос в Корзину доступен только в GUI после выбора

@@ -2,6 +2,7 @@
 
 import argparse
 import hashlib
+import os
 import plistlib
 import shutil
 import subprocess
@@ -11,6 +12,14 @@ from pathlib import Path
 
 from .quality.common import ROOT, execute
 from .quality.swift_tools import invoke
+
+
+def sign(target):
+    identity = os.environ.get("ATLAS_SIGN_IDENTITY", "-")
+    options = [] if identity == "-" else ["--timestamp"]
+    if identity != "-" and target.suffix != ".dmg":
+        options += ["--options", "runtime", "--preserve-metadata=entitlements"]
+    execute(["codesign", "--force", "--sign", identity, *options, target])
 
 
 def assemble(app, binaries):
@@ -25,7 +34,8 @@ def assemble(app, binaries):
     shutil.copy2(ROOT / "Resources/Credits.rtf", resources / "Credits.rtf")
     execute(["ditto", ROOT / "Resources/ThirdParty", resources / "ThirdParty"])
     invoke("icon", [str(resources)])
-    execute(["codesign", "--force", "--deep", "--sign", "-", app])
+    sign(macos / "disk-atlas")
+    sign(app)
     execute(["codesign", "--verify", "--deep", "--strict", app])
 
 
@@ -112,19 +122,22 @@ def package(app, directory, version):
         execute(
             ["hdiutil", "create", "-volname", "Disk Atlas", "-srcfolder", stage, "-format", "UDZO", "-ov", assets[0]]
         )
+    sign(assets[0])
+    execute(["codesign", "--verify", "--strict", assets[0]])
     execute(["ditto", "-c", "-k", "--sequesterRsrc", "--keepParent", app, assets[1]])
     cli_archive(app, assets[2])
     (directory / "SHA256SUMS.txt").write_text("".join(checksum(path) + "  " + path.name + "\n" for path in assets))
 
 
-def release():
-    directory = ROOT / "dist/release"
+def release(output=None):
+    directory = Path(output).resolve() if output else ROOT / "dist/release"
     directory.mkdir(parents=True, exist_ok=True)
     version = plistlib.loads((ROOT / "Resources/Info.plist").read_bytes())["CFBundleShortVersionString"]
+    app = directory / "Disk Atlas.app"
+    check_install_target(app)
     with tempfile.TemporaryDirectory(prefix="disk-atlas-binaries-") as temporary:
         binaries = Path(temporary)
         universal_binaries(binaries)
-        app = directory / "Disk Atlas.app"
         assemble(app, binaries)
     package(app, directory, version)
     print("Universal release:", directory)
@@ -135,11 +148,12 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     local = commands.add_parser("build")
     local.add_argument("--install", action="store_true")
-    commands.add_parser("release")
+    release_command = commands.add_parser("release")
+    release_command.add_argument("--output", type=Path, help="Separate directory for this release.")
     args = parser.parse_args()
     try:
         if args.command == "release":
-            release()
+            release(args.output)
         else:
             build(args.install)
     except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as error:

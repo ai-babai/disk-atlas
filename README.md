@@ -59,17 +59,15 @@ table in place when you check Trash candidates.
 ## Download & install
 
 1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Download **Disk-Atlas-0.14.5-universal.dmg**. The same app supports Apple Silicon
+2. Download **Disk-Atlas-0.15.2-universal.dmg**. The same app supports Apple Silicon
    and Intel Macs running **macOS 14 Sonoma or later**.
 3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
    then launch the app from Applications. A ZIP is also available.
 
-This ordinary build is **ad hoc signed and not notarized by Apple**. On another
-Mac, Gatekeeper may block the first launch. After verifying the download source,
-follow [Apple’s instructions](https://support.apple.com/102445): attempt to open
-it, then check **System Settings → Privacy & Security → Open Anyway**. Do not
-turn off Gatekeeper globally. A paid Apple Developer membership is not required
-to build this version; a notarized distribution would need a Developer ID setup.
+Official releases from **0.15.2** are signed with **Developer ID Application:
+Maksim Popkov (59Z5886M52)**, notarized by Apple and include stapled tickets in the
+app and DMG. Install normally; no Gatekeeper override is needed. Older releases
+and default local builds use ad hoc signatures. [Release workflow](docs/RELEASING.md).
 
 Optional integrity check, with both downloaded artifacts beside the checksum file:
 
@@ -288,7 +286,7 @@ in scan setup and skipped-path details explains optional **System Settings → P
 prompts, or leave it off. The app never grants or requires this permission.
 Full Disk Access is a broad system permission, not a read-only entitlement; revoke
 it in the same settings. Restart and rescan after changing access. An app update
-may require permission again, particularly with this ad hoc signed distribution.
+may require permission again, particularly when changing from an older ad hoc build to Developer ID signing.
 [Apple explains the permission boundary](https://developer.apple.com/documentation/security/accessing-files-from-the-macos-app-sandbox).
 
 ## Build from source
@@ -309,7 +307,9 @@ scripts/release.sh
 ```
 
 Builds arm64 and x86_64 executables, combines them into a universal app, verifies
-the ad hoc signature, and creates DMG, ZIP and SHA-256 files in `dist/release/`.
+the signatures, and creates DMG, ZIP and SHA-256 files in `dist/release/`. Local
+builds are ad hoc; [official signing and notarization](docs/RELEASING.md) use the
+existing Keychain identity/profile and a separate output directory.
 See [architecture and validation](docs/ARCHITECTURE.md), [changelog](CHANGELOG.md)
 and [security policy](SECURITY.md). Contributors share [one quality gate](docs/QUALITY.md): strict formatting/build,
 behavior and generated-property tests, coverage/CRAP, complexity and selected

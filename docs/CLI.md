@@ -22,7 +22,7 @@ disk-atlas help
 
 Use the app's actual path if installed elsewhere (including `~/Applications`).
 **For agents** in the app copies commands with that path. Alternatively download
-`disk-atlas-cli-0.15.0-universal.zip` from [Releases](https://github.com/ai-babai/disk-atlas/releases/latest),
+`disk-atlas-cli-0.15.2-universal.zip` from [Releases](https://github.com/ai-babai/disk-atlas/releases/latest),
 unzip into a permanent folder, then run `./disk-atlas install`.
 
 `install` creates a symlink in `~/.local/bin`, is idempotent for that same binary,
@@ -30,7 +30,9 @@ and refuses to replace another file or link. `--bin-dir DIRECTORY` chooses a
 different location. Keep the binary/app at that location. No sudo or shell setup
 is performed. If `doctor` reports `defaultBinOnPath: false`, add `~/.local/bin` to
 PATH in your shell configuration. The standalone CLI needs macOS 14+, supports
-Apple Silicon and Intel, and is ad hoc signed without Apple notarization.
+Apple Silicon and Intel. Official 0.15.2+ CLI binaries are Developer ID signed and
+notarized as nested code in the app. Raw CLI binaries cannot carry stapled tickets;
+use the app/DMG for a stapled container. [Release workflow](RELEASING.md).
 
 ## Agent journey: reuse, inspect, drill down
 

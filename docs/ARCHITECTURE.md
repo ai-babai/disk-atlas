@@ -284,7 +284,10 @@ Swift 6 / Xcode Command Line Tools, macOS 14+ deployment target. The CLI statica
 1.8.2 (pinned with its lockfile and license). AtlasCore statically links vendored
 xxHash 0.8.3 through CXXHash; its unmodified upstream header, source hash, BSD
 license and audit boundary are documented in [PERFORMANCE.md](PERFORMANCE.md#duplicate-checking-in-080). `scripts/build.sh` builds locally; `scripts/release.sh` compiles arm64
-and x86_64, combines executables, signs ad hoc and packages DMG/ZIP with checksums.
+and x86_64, combines executables and packages DMG/ZIP with checksums. Local signing
+defaults to ad hoc; `ATLAS_SIGN_IDENTITY` selects Developer ID, with explicit inner
+CLI → app → DMG signing. Official releases follow [RELEASING.md](RELEASING.md) to
+notarize/staple the app before packaging and then the final DMG.
 
 The project uses [the shared quality gate](QUALITY.md), behavior/property tests,
 selected mutation checks and manual native UI validation. Complexity legacy debt

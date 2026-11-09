@@ -20,7 +20,7 @@ Component map and validation: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - The owner approved the shared quality gate, CI and behavior/property/mutation tests on 2026-11-07. Unrelated durable test/fixture expansion still needs agreement.
 - Before push/PR run `scripts/check.sh --base <base-commit>` and fix failures until it passes. Never bypass the hook, inflate thresholds or regenerate legacy exceptions to pass. Read docs/QUALITY.md for scope and DRY/KISS/YAGNI/SRP review; do not claim automated proof of architecture.
 - Local build: `scripts/build.sh`; install: `scripts/build.sh --install`. Close the running app before replacing its bundle.
-- Universal packaging: `scripts/release.sh`. Distribution is ad hoc signed, without Apple notarization.
+- Universal packaging: `scripts/release.sh`. Local builds default to ad hoc signing; official 0.15.2+ releases use Developer ID and Apple notarization/stapling. Follow [docs/RELEASING.md](docs/RELEASING.md); use the existing Keychain profile without reading/exporting credentials or the signing key.
 - The owner authorized public visibility and MIT licensing on 2026-11-07. Never commit real snapshots, private scan history, credentials or personal file paths.
 - Documentation images must use illustrative data, never real user paths or scan history.
 

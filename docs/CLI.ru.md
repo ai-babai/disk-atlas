@@ -20,7 +20,7 @@ disk-atlas help
 
 Укажи фактический путь приложения, если оно находится, например, в `~/Applications`.
 Кнопка **«Для агента»** в GUI копирует команды с правильным путём. Альтернатива —
-скачать `disk-atlas-cli-0.15.0-universal.zip` из [релизов](https://github.com/ai-babai/disk-atlas/releases/latest),
+скачать `disk-atlas-cli-0.15.2-universal.zip` из [релизов](https://github.com/ai-babai/disk-atlas/releases/latest),
 распаковать в постоянную папку и выполнить `./disk-atlas install`.
 
 `install` создаёт ссылку в `~/.local/bin`. Повторный запуск для того же бинарника
@@ -28,7 +28,10 @@ disk-atlas help
 `--bin-dir ПАПКА`. Исходный бинарник или приложение должны оставаться на месте.
 Команда не требует sudo и не меняет настройки оболочки. Если `doctor` показывает
 `defaultBinOnPath: false`, добавь `~/.local/bin` в PATH своей оболочки.
-macOS 14+, Apple Silicon и Intel; подпись ad hoc, без нотарификации Apple.
+macOS 14+, Apple Silicon и Intel. Официальные CLI с 0.15.2 подписаны Developer ID
+и нотарифицированы в составе приложения. Прикрепить билет к отдельному CLI-бинарнику
+Apple не позволяет; для stapled-контейнера используй приложение/DMG.
+[Процесс выпуска](RELEASING.md).
 
 ## Сначала использовать готовые данные
 

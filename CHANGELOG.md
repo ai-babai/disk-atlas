@@ -5,6 +5,11 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.15.2 — 2026-11-09
+
+- Developer ID signed, Apple notarized distribution for direct installation outside the App Store. Stapled tickets are included in the app and DMG.
+- Preserve Apple Silicon and Intel support; no application features changed. Document the repeatable Keychain-based release workflow.
+
 ## 0.14.5 — 2026-11-08
 
 - Keep the sidebar toggle beside the window controls by using a shared toolbar that does not track the sidebar divider. Preserve native split collapse, resizing and width persistence.

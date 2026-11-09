@@ -58,17 +58,15 @@ created: "2026-11-07"
 ## Скачать и установить
 
 1. Открой [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Скачай **Disk-Atlas-0.14.5-universal.dmg**. Одна сборка подходит для Apple Silicon
+2. Скачай **Disk-Atlas-0.15.2-universal.dmg**. Одна сборка подходит для Apple Silicon
    и Intel с **macOS 14 Sonoma или новее**.
 3. Открой DMG, перетащи **Disk Atlas.app** в **Applications («Программы»)**,
    извлеки образ и запусти приложение из «Программ». Также доступен ZIP.
 
-Это обычная сборка с **подписью ad hoc, без нотарификации Apple**. На другом Mac
-Gatekeeper может заблокировать первый запуск. Проверь источник и следуй
-[инструкции Apple](https://support.apple.com/102445): попробуй открыть приложение,
-затем проверь **Системные настройки → Конфиденциальность и безопасность → Всё равно открыть**.
-Не отключай Gatekeeper целиком. Для этой сборки платное членство Apple Developer
-не требуется; для нотарифицированного дистрибутива понадобится Developer ID.
+Официальные релизы с **0.15.2** подписаны **Developer ID Application:
+Maksim Popkov (59Z5886M52)**, нотарифицированы Apple; билеты прикреплены к приложению
+и DMG. Устанавливай обычным способом, обход Gatekeeper не нужен. Старые релизы и
+локальные сборки по умолчанию имеют подпись ad hoc. [Процесс выпуска](docs/RELEASING.md).
 
 Проверка целостности, если оба архива лежат рядом с файлом контрольных сумм:
 
@@ -297,8 +295,8 @@ disk-atlas history inspect latest --files --limit 20 --json
 отдельных запросов, или оставить доступ выключенным. Приложение его не требует
 и само не выдаёт. Это широкое системное разрешение, а не право «только чтение»;
 отозвать его можно там же. После изменения перезапусти приложение и повтори анализ.
-После обновления macOS может запросить доступ снова, особенно у этой сборки с
-подписью ad hoc. [Описание Apple](https://developer.apple.com/documentation/security/accessing-files-from-the-macos-app-sandbox).
+После обновления macOS может запросить доступ снова, особенно при переходе
+с прежней ad hoc сборки на подпись Developer ID. [Описание Apple](https://developer.apple.com/documentation/security/accessing-files-from-the-macos-app-sandbox).
 
 ## Сборка из исходников
 
@@ -317,8 +315,10 @@ scripts/build.sh --install
 scripts/release.sh
 ```
 
-Скрипт собирает arm64 и x86_64, объединяет в universal app, проверяет подпись ad hoc
-и создаёт DMG, ZIP и SHA-256 в `dist/release/`. См. [архитектуру и проверку](docs/ARCHITECTURE.md),
+Скрипт собирает arm64 и x86_64, объединяет в universal app, проверяет подписи
+и создаёт DMG, ZIP и SHA-256 в `dist/release/`. Локальная подпись по умолчанию — ad hoc.
+[Официальный выпуск](docs/RELEASING.md) использует готовые identity/profile в Keychain
+и отдельную выходную папку. См. [архитектуру и проверку](docs/ARCHITECTURE.md),
 [историю изменений](CHANGELOG.md) и [политику безопасности](SECURITY.md).
 Для контрибьюторов есть [единая проверка качества](docs/QUALITY.ru.md):
 `scripts/setup-dev.sh`, затем `scripts/check.sh`. Скрипты обслуживания и их тесты

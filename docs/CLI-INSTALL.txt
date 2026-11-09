@@ -1,7 +1,14 @@
 DISK ATLAS CLI / КОМАНДНАЯ СТРОКА
 
-macOS 14+, Apple Silicon + Intel. Ad hoc signed; not notarized by Apple.
-macOS 14+, Apple Silicon и Intel. Подпись ad hoc, без нотарификации Apple.
+macOS 14+, Apple Silicon + Intel. Official 0.15.2+ binaries are Developer ID signed
+by Maksim Popkov (59Z5886M52) and notarized as nested code in the app.
+Apple cannot staple tickets to raw CLI binaries; use the app/DMG for a stapled container.
+Local builds default to ad hoc signing.
+
+macOS 14+, Apple Silicon и Intel. Официальные бинарники с 0.15.2 подписаны Developer ID
+Maksim Popkov (59Z5886M52) и нотарифицированы в составе приложения.
+Apple не поддерживает stapling отдельных CLI-бинарников; прикреплённый билет есть
+в приложении/DMG. Локальная подпись по умолчанию — ad hoc.
 
 Unzip into a permanent folder, then run / Распакуй в постоянную папку и запусти:
 
