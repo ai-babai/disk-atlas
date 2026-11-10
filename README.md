@@ -22,7 +22,7 @@ If you use WinDirStat on Windows or are exploring alternatives to [DaisyDisk](ht
 local scan history and explicit, reviewed Move to Trash actions. It is an
 independent project, not an official WinDirStat port.
 
-![Disk Atlas in dark mode, showing a storage map, compact scan history and file dates](docs/images/workspace-dark.png)
+![Disk Atlas in dark mode: folder map, expandable file tree and selected-folder details](docs/images/workspace-dark.png)
 
 *Native interface preview with illustrative data. Your files stay on your Mac.*
 
@@ -75,7 +75,7 @@ Optional integrity check, with both downloaded artifacts beside the checksum fil
 shasum -a 256 -c SHA256SUMS.txt
 ```
 
-![Folder selection with visible recent scans and snapshot sizes](docs/images/start-en.png)
+![Start screen with disk capacity, folder selection and recent saved snapshots](docs/images/start-en.png)
 
 ## A quiet, deliberate workflow
 
@@ -181,7 +181,7 @@ review an estimate, then explicitly start content comparison. Cancelling its
 options leaves the saved report intact. Reports reopen with history; filters do
 not replace them. The overview’s underlined **Files with copies** metric opens duplicates.
 
-![Compact duplicate groups with locations, copy counts and expandable files](docs/images/duplicates-en.png)
+![Duplicate groups with expanded copies, explicit selection and its total size](docs/images/duplicates-en.png)
 
 Different sizes are never compared. The checker samples the first and last 64 KiB.
 For exactly two surviving large files it goes straight to byte comparison,
@@ -265,6 +265,8 @@ In the sidebar, Add to scan comes first; Saved snapshots starts collapsed, with 
 explicit All snapshots button. Expanding it shows snapshot weights and delete
 buttons. The whole section heading toggles the list. In the snapshots window,
 a row click only selects it; use Open to restore it without scanning again.
+
+<img src="docs/images/history-en.png" width="760" alt="Saved snapshots with separate snapshot and duplicate-report sizes">
 
 History is stored in `~/Library/Application Support/Disk Atlas/History`, compressed
 with LZFSE; duplicate reports are separate JSON metadata files. The directory uses mode 0700 and files use 0600. Old history is not
