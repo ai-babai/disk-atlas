@@ -6,11 +6,13 @@ import SwiftUI
     @Published var message = ""
     @Published var email = ""
     @Published var kind = "bug"
-    @Published var includeDiagnostics = false
+    @Published private(set) var attachment: FeedbackAttachment?
+    @Published private(set) var loadingAttachment = false
     @Published private(set) var sending = false
     @Published private(set) var sent = false
     @Published private(set) var error: String?
     private var task: Task<Void, Never>?
+    private var attachmentTask: Task<Void, Never>?
     var length: Int { message.unicodeScalars.count }
     var validation: String? {
         if message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -22,15 +24,30 @@ import SwiftUI
         }
         return nil
     }
-    var diagnostics: String {
-        let info = Bundle.main.infoDictionary ?? [:]
-        let version = info["CFBundleShortVersionString"] as? String ?? "—"
-        let build = info["CFBundleVersion"] as? String ?? "—"
-        let os = ProcessInfo.processInfo.operatingSystemVersion
-        return "Disk Atlas \(version) (\(build)) · macOS \(os.majorVersion).\(os.minorVersion).\(os.patchVersion)"
+    func attach(_ url: URL) {
+        guard !sending, !loadingAttachment else { return }
+        loadingAttachment = true
+        error = nil
+        attachmentTask = Task {
+            let worker = Task.detached(priority: .userInitiated) { try FeedbackAttachment.load(url) }
+            do {
+                let image = try await withTaskCancellationHandler {
+                    try await worker.value
+                } onCancel: {
+                    worker.cancel()
+                }
+                guard !Task.isCancelled else { return }
+                attachment = image
+            } catch { if !Task.isCancelled { self.error = AttachmentError.invalid.localizedDescription } }
+            guard !Task.isCancelled else { return }
+            loadingAttachment = false
+            attachmentTask = nil
+        }
     }
-    func send() {
-        guard !sending else { return }
+    func attachmentFailed() { error = AttachmentError.invalid.localizedDescription }
+    func removeAttachment() { attachment = nil }
+    func send(diagnostics: ReportDiagnostics) {
+        guard !sending, !loadingAttachment else { return }
         if let validation {
             error = validation
             return
@@ -40,15 +57,18 @@ import SwiftUI
         let message = message
         let email = email
         let kind = kind
-        let details = includeDiagnostics ? diagnostics : nil
+        let attachment = attachment
         task = Task {
             do {
-                try await FeedbackSender.send(message: message, email: email, kind: kind, diagnostics: details)
+                let body = try FeedbackSender.envelope(
+                    message: message, email: email, kind: kind, diagnostics: diagnostics, attachment: attachment)
+                try Task.checkCancellation()
+                try await FeedbackSender.upload(body)
                 guard !Task.isCancelled else { return }
                 sent = true
                 self.message = ""
                 self.email = ""
-                includeDiagnostics = false
+                self.attachment = nil
             } catch {
                 if !Task.isCancelled {
                     self.error =
@@ -62,6 +82,12 @@ import SwiftUI
         }
     }
     func cancel() {
+        if loadingAttachment {
+            attachmentTask?.cancel()
+            attachmentTask = nil
+            loadingAttachment = false
+            return
+        }
         task?.cancel()
         task = nil
         sending = false

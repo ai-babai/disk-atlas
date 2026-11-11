@@ -60,6 +60,24 @@ public enum L10n {
         (". Используй --help.", ". Use --help."), ("\nДвойной щелчок — открыть папку", "\nDouble-click to open folder"),
     ]
     private static let english: [String: String] = [
+        "Экран": "Screen", "Главная": "Home", "Все дубликаты": "All duplicates", "Объектов": "Objects",
+        "Код ошибки": "Error code", "Завершено": "Completed", "Проверка дубликатов": "Duplicate check",
+        "Прикрепить": "Attach", "Выбрать скриншот PNG или JPEG": "Choose a PNG or JPEG screenshot",
+        "Предпросмотр скриншота": "Screenshot preview", "Скриншот": "Screenshot",
+        "Удалить вложение": "Remove attachment",
+        "Проверь, что на изображении нет личных данных.": "Check that the image contains no private information.",
+        "Технические сведения": "Technical details",
+        "В Sentry (США) отправятся сообщение, указанная почта, технические сведения и выбранное изображение. Пути и файлы анализа не прикладываются.":
+            "Your message, any email you enter, technical details and the selected image go to Sentry (US). Scan paths and files are not attached.",
+        "Выбери PNG или JPEG до 10 МБ. Изображение не удалось подготовить — текст сохранён.":
+            "Choose a PNG or JPEG under 10 MB. Could not prepare the image; your text has been kept.",
+        "Приватность": "Privacy", "Отправлять диагностику приложения": "Send app diagnostics",
+        "Версии приложения и macOS, время анализа и проверки дубликатов, число объектов и коды ошибок отправляются в Sentry (США). Без имён, путей, содержимого файлов и идентификатора устройства.":
+            "App and macOS versions, scan and duplicate-check timings, object counts and error codes go to Sentry (US). No names, paths, file contents or device ID.",
+        "Выключение прекращает отправку; уже отправленные сведения остаются в сервисе. Ручная обратная связь работает отдельно.":
+            "Turning this off stops sending; data already sent stays with the service. Manual feedback works independently.",
+        "Анализ и снимки остаются на Mac. Автодиагностика включается отдельно в настройках. Обращение и выбранный скриншот отправляются в Sentry только по кнопке «Отправить».":
+            "Scans and snapshots stay on your Mac. Automatic diagnostics is a separate opt-in in Settings. Feedback and a selected screenshot go to Sentry only when you click Send.",
         "Справка Disk Atlas": "Disk Atlas Help", "Сообщить об ошибке…": "Report a Bug…",
         "Сообщить об ошибке": "Report a Bug", "Открыть форму обратной связи": "Open the feedback form",
         "Обратная связь": "Feedback", "Тип обращения": "Feedback type", "Ошибка": "Bug", "Предложение": "Suggestion",

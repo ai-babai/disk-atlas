@@ -327,10 +327,18 @@ frozen pre-existing complexity debt are explicit. Native UI review remains requi
 
 Use **Help → Disk Atlas Help** for the local guide. **Report a Bug…** in Help,
 or the bug button at the bottom right, opens a short form for bugs and suggestions.
-Only clicking **Send** submits the message and optional reply email to Sentry (US).
-App/macOS version details are optional and off by default. No automatic telemetry,
-crash reporting, screenshots, source files or scan snapshots are sent. Closing the
-form retains its draft in memory until you quit; a failed send keeps your text.
+Clicking **Send** submits your message, optional reply email, app/macOS versions,
+active tab and a small technical summary to Sentry (US). Expand **Technical details**
+to review it. **Attach** adds one PNG/JPEG screenshot with a preview and Remove action;
+the app resizes and re-encodes it without original metadata or source filename.
+No screen is captured automatically. Closing keeps the draft in memory until quit;
+failed sends keep text and image.
+
+**Settings → Privacy → Send app diagnostics** separately enables automatic scan and
+duplicate-check timings, object counts and fixed error codes. It defaults off;
+turning it off cancels pending sending. No names, paths, search terms, file contents,
+device/user ID, crash capture, session recording or persisted retry queue. Manual
+feedback works independently. CLI/MCP remain offline.
 
 ## Contact
 

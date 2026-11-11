@@ -430,22 +430,43 @@ the main copy list and the mandatory Trash review. Original Trash validation,
 Quick Look consent and content-reading boundaries remain in force.
 
 
-## Help and manual feedback
+## Help, feedback and diagnostics
 
-`AtlasHelpView` is a local guide reachable from the native Help menu. Help and the
-bottom-right status-bar action open one feedback window. `FeedbackModel` owns an
-in-memory draft so closing/reopening preserves text without writing personal data
-to disk. Sending is explicit, cancellable, and keeps input on network/rate-limit
-failure. Optional version/macOS details default off and are previewed before Send.
+`AtlasHelpView` is a local guide reachable from Help. Help and the bottom-right
+ladybug open the same `FeedbackView`; `FeedbackModel` retains one draft/image in
+memory until quit. Send is explicit and cancellable; errors preserve the draft.
+App/build/macOS versions are automatic, alongside an allowlisted screen enum and
+latest operation duration/count/status and fixed error code. Technical details
+are reviewable before Send. No raw error strings, paths or names are serialized.
 
-`FeedbackSender` sends one HTTPS `feedback` envelope to the existing Sentry project
-using the documented [feedback wire format](https://develop.sentry.dev/sdk/telemetry/feedbacks/)
-and [envelope transport](https://develop.sentry.dev/sdk/foundations/envelopes/).
-The DSN is a public ingestion key, not an account credential. No SDK or account token
-is included. The ephemeral session disables cookies/cache and refuses redirects;
-no request happens at startup, when opening the form, or while editing it.
-Only message, optional email, feedback kind and explicitly selected diagnostics are
-serialized, plus protocol-required event ID/timestamp/platform. No automatic source
-paths, files, snapshots, screenshots, crash reports, analytics or persisted retry
-queue. Feedback's HTTP acceptance is a transport acknowledgement; the service can
-still enforce its ingestion quotas/filters. CLI/MCP/scanner remain network-free.
+`FeedbackAttachment` accepts one manually selected PNG/JPEG up to 10 MB, prepares
+it on a cancellable worker with ImageIO, bounds dimensions to 1600 px and sends a
+new JPEG up to 2 MB. Only decoded pixels are re-encoded; original EXIF/GPS, filename
+and path are discarded. UI shows a preview and Remove. No automatic screen capture.
+The image lives in the draft, is kept on network failure, cleared on success.
+
+`AppDiagnostics` is GUI-only, independent from manual feedback. A default-off
+Settings preference opts into future scan/duplicate-check durations and counts and
+fixed scan/preparation/check failure codes. Normal operations use
+[Sentry transactions](https://develop.sentry.dev/sdk/foundations/envelopes/event-payloads/transaction/),
+errors use events. Hooks are at GUI operation completion/failure, never in AtlasCore.
+Only typed enums/numbers and app/macOS versions are sent. No startup request,
+previous-event replay, crash handler, breadcrumbs, sessions, user/device ID or disk
+queue. At most 20 attempts per launch, one in flight; busy events are dropped,
+transport failure suppresses automatic attempts for an hour. Disable/quit cancels
+in-flight work; data already received cannot be recalled. No recursive reporting
+of telemetry transport failures. CLI/MCP/scanner remain network-free.
+
+`FeedbackSender` shares the documented
+[feedback wire format](https://develop.sentry.dev/sdk/telemetry/feedbacks/),
+[attachment items](https://develop.sentry.dev/sdk/telemetry/attachments/) and
+[envelope transport](https://develop.sentry.dev/sdk/foundations/envelopes/).
+The public DSN grants ingestion, no account/read privileges. No SDK or account token.
+The ephemeral session disables cookies/cache and refuses redirects. Feedback's
+HTTP acceptance is a transport acknowledgement; server quotas/filters still apply.
+
+Sentry project Security & Privacy: keep server-side/default scrubbing and Prevent
+Storing of IP Addresses enabled. Additional Sensitive Fields contains `city`,
+`subdivision`, `region`, `country_code`, `ip_address` (one per line), so Sentry's
+own IP-derived geography is filtered as well. These rules apply to new events;
+settings and `[Filtered]` geography were verified with synthetic feedback.

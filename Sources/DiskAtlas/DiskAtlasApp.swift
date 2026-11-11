@@ -27,8 +27,9 @@ import SwiftUI
             .defaultSize(width: 780, height: 540)
         Window(L10n.text("Доступ к файлам"), id: "file-access") { FileAccessHelp().atlasAppearance(store) }
             .windowResizability(.contentSize)
-        Window(L10n.text("Обратная связь"), id: "feedback") { FeedbackView(model: feedback).atlasAppearance(store) }
-            .windowResizability(.contentSize)
+        Window(L10n.text("Обратная связь"), id: "feedback") {
+            FeedbackView(model: feedback, store: store).atlasAppearance(store)
+        }.windowResizability(.contentSize)
         Window(L10n.text("Справка Disk Atlas"), id: "help") { AtlasHelpView().atlasAppearance(store) }
             .windowResizability(.contentSize)
         Settings { AtlasSettings(store: store).atlasAppearance(store) }
@@ -38,6 +39,7 @@ import SwiftUI
 @MainActor final class AtlasAppDelegate: NSObject, NSApplicationDelegate {
     weak var store: AtlasStore?
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        AppDiagnostics.shared.stop()
         store?.cancel()
         store?.fileTrash.stop()
         store?.duplicates.stop()

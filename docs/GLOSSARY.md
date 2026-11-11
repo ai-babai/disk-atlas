@@ -12,4 +12,7 @@ created: "2026-11-12"
 | Обратная связь | Feedback | The report window, for bugs and suggestions |
 | Ошибка / Предложение | Bug / Suggestion | Kind of feedback |
 | Отправить | Send | Explicit submission to Sentry |
-| Приложить версию приложения и macOS | Include app and macOS versions | Optional, previewed technical details |
+| Технические сведения | Technical details | Automatic versions and allowlisted app context shown before Send |
+| Прикрепить | Attach | Choose one screenshot, without ellipsis |
+| Удалить вложение | Remove attachment | Remove the selected image from the draft |
+| Отправлять диагностику приложения | Send app diagnostics | Opt-in automatic operation timings and fixed errors |

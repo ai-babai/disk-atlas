@@ -260,7 +260,12 @@ import SwiftUI
             worker = job
             let result = try await job.value
             acceptPlan(result, key: key, autoStart: autoStart)
-        } catch is CancellationError {} catch { if generation == key { self.error = error.localizedDescription } }
+        } catch is CancellationError {} catch {
+            if generation == key {
+                AppDiagnostics.shared.failed(.duplicatePreparationFailed)
+                self.error = error.localizedDescription
+            }
+        }
     }
     private func acceptPlan(_ result: DuplicatePlan, key: UUID, autoStart: Bool) {
         guard generation == key, !Task.isCancelled else { return }
@@ -304,8 +309,11 @@ import SwiftUI
                             Task { @MainActor in if self?.generation == key { self?.progress = update } }
                         }, found: { [weak self] group in Task { @MainActor in self?.receive(group, generation: key) } })
                 }.value
+                AppDiagnostics.shared.completed(
+                    .duplicates, seconds: result.elapsed, objects: plan.candidateCount, cancelled: result.cancelled)
                 try await finish(result)
             } catch is CancellationError { error = L10n.text("Сохранение отменено.") } catch {
+                AppDiagnostics.shared.failed(.duplicateCheckFailed)
                 self.error = error.localizedDescription
             }
         }

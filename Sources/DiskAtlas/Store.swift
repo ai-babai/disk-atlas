@@ -570,13 +570,18 @@ import UniformTypeIdentifiers
                     return (scanned, PresentationIndex(scanned))
                 }.value
                 let result = prepared.0
+                AppDiagnostics.shared.completed(
+                    .scan, seconds: result.elapsed, objects: result.entries.count, cancelled: result.cancelled)
                 if result.cancelled, snapshot != nil {
                     notice = L10n.text("Анализ остановлен · предыдущий снимок сохранён")
                 } else {
                     apply(result, index: prepared.1, metadataEstimate: progressMetadataBytes)
                     if wantDuplicates { duplicates.prepare(result, id: activeHistoryID, autoStart: true) }
                 }
-            } catch { self.error = error.localizedDescription }
+            } catch {
+                AppDiagnostics.shared.failed(.scanFailed)
+                self.error = error.localizedDescription
+            }
             scanning = false
             cancellation = nil
         }
