@@ -65,8 +65,12 @@ struct ScanSetup: View {
                 return true
             }
             HStack(spacing: 16) {
-                Toggle(L10n.text("Найти дубликаты"), isOn: $store.prepareDuplicateSearch).font(.system(size: 11))
-                    .disabled(store.duplicates.busy)
+                AtlasRowToggle(
+                    state: store.prepareDuplicateSearch ? .on : .off, label: L10n.text("Найти дубликаты"),
+                    showsLabel: true
+                ) { store.prepareDuplicateSearch.toggle() }.fixedSize(horizontal: true, vertical: false).frame(
+                    height: 24
+                ).disabled(store.duplicates.busy)
                 Spacer(minLength: 8)
                 FileAccessHelpButton().id(store.language)
             }
