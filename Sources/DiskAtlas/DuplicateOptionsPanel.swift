@@ -23,11 +23,8 @@ struct DuplicateOptionsControls: View {
         return Button {
             if selected { options.kinds.remove(kind) } else { options.kinds.insert(kind) }
         } label: {
-            Label(kind.title, systemImage: kind.symbol).font(.system(size: 10)).lineLimit(1).frame(
-                maxWidth: .infinity, alignment: .leading
-            ).padding(.horizontal, 9).frame(height: 28).foregroundStyle(selected ? Palette.accent : Palette.sub)
-                .background(selected ? Palette.mark : Palette.soft, in: RoundedRectangle(cornerRadius: 5))
-        }.buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : [])
+            Label(kind.title, systemImage: kind.symbol).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+        }.buttonStyle(AtlasButtonStyle(emphasized: selected)).accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
 
@@ -52,7 +49,7 @@ struct NewDuplicateCheckSheet: View {
                 Button(L10n.text("Отмена")) { dismiss() }.keyboardShortcut(.cancelAction)
                 Spacer()
                 Button(L10n.text("Оценить время")) { confirm(options) }.keyboardShortcut(.defaultAction).buttonStyle(
-                    .borderedProminent)
+                    AtlasButtonStyle(emphasized: true))
             }
         }.padding(24).frame(width: 410).background(Palette.paper).foregroundStyle(Palette.ink)
     }

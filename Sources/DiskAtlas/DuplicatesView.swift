@@ -206,8 +206,9 @@ struct DuplicatesView: View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
                 Color.clear.frame(width: FileListMetrics.checkWidth)
-                sortHeading("Имя", key: .name).padding(.leading, 48).frame(
-                    minWidth: DuplicateTableColumns.nameWidth, maxWidth: .infinity, alignment: .leading)
+                sortHeading("Имя", key: .name).padding(
+                    .leading, 24 + FileListMetrics.iconWidth + FileListMetrics.iconTextSpacing
+                ).frame(minWidth: DuplicateTableColumns.nameWidth, maxWidth: .infinity, alignment: .leading)
                 if columns.created { dateHeading("Создан") }
                 if columns.modified { dateHeading("Изменён") }
                 sortHeading("Копии", key: .copies).frame(width: DuplicateTableColumns.copiesWidth, alignment: .trailing)
@@ -353,12 +354,9 @@ struct DuplicatesView: View {
     private func tool(
         _ icon: String, _ label: String, disabled: Bool, active: Bool = false, action: @escaping () -> Void
     ) -> some View {
-        Button(action: action) {
-            Label(L10n.text(label), systemImage: icon).font(.system(size: 11)).padding(.horizontal, 10).frame(
-                height: 28
-            ).foregroundStyle(active ? Palette.accent : Palette.ink).background(
-                active ? Palette.mark : Palette.soft, in: RoundedRectangle(cornerRadius: 6))
-        }.buttonStyle(.plain).disabled(disabled).help(L10n.text(label)).accessibilityLabel(L10n.text(label))
+        Button(action: action) { Label(L10n.text(label), systemImage: icon) }.buttonStyle(
+            AtlasButtonStyle(emphasized: active)
+        ).disabled(disabled).help(L10n.text(label)).accessibilityLabel(L10n.text(label))
     }
     @ViewBuilder private var status: some View {
         if session.trashing || session.trashPreparing || session.preparing || session.loadingReport
@@ -454,7 +452,7 @@ struct DuplicatesView: View {
                         ))
                     Spacer()
                     Button(L10n.text("Начать проверку"), systemImage: "play.fill") { session.start() }.buttonStyle(
-                        .borderedProminent
+                        AtlasButtonStyle(emphasized: true)
                     ).disabled(
                         plan.candidateCount == 0 || store.savingHistory > 0 || store.scanning || store.preparing
                             || store.viewFiltering)

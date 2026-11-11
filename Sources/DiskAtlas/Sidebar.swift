@@ -21,18 +21,6 @@ struct Sidebar: View {
                 }.padding(.horizontal, 8)
             }.padding(.horizontal, -8)
             Spacer(minLength: 12)
-            HStack {
-                Spacer()
-                Menu {
-                    Button(L10n.text("Как в системе")) { store.appearance = "system" }
-                    Button(L10n.text("Светлая")) { store.appearance = "light" }
-                    Button(L10n.text("Тёмная")) { store.appearance = "dark" }
-                } label: {
-                    Image(systemName: "circle.lefthalf.filled")
-                }.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().frame(width: 26, height: 24).help(
-                    L10n.text("Оформление")
-                ).accessibilityLabel(L10n.text("Оформление приложения"))
-            }.padding(.top, 16).padding(.bottom, 18)
         }.padding(.horizontal, 19).background(Palette.soft)
     }
 

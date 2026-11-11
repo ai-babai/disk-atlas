@@ -35,7 +35,7 @@ struct DuplicateTrashReview: View {
                             ForEach(batch.files) { file in
                                 let kind = FileKind.classify(URL(fileURLWithPath: file.path))
                                 HStack(alignment: .top) {
-                                    Image(systemName: kind.symbol).foregroundStyle(kind.tint).accessibilityHidden(true)
+                                    FileTypeIcon(kind: kind)
                                     Text(file.path).frame(maxWidth: .infinity, alignment: .leading)
                                     Text(byteString(file.bytes)).monospacedDigit()
                                 }.font(.system(size: 11)).textSelection(.enabled)
@@ -62,7 +62,7 @@ struct DuplicateTrashReview: View {
                 Spacer()
                 Button(L10n.text("Отмена"), action: cancel).keyboardShortcut(.cancelAction)
                 Button(L10n.text("Переместить в Корзину"), role: .destructive, action: confirm).buttonStyle(
-                    .borderedProminent)
+                    AtlasButtonStyle(emphasized: true))
             }
         }.padding(24).frame(width: 650, height: reviewHeight).background(Palette.paper).foregroundStyle(Palette.ink)
     }
@@ -163,9 +163,8 @@ struct DuplicateGroupRow: View {
     private func toggleExpanded() { expanded.toggle() }
     private var groupName: some View {
         let kind = representative.map { FileKind.classify(URL(fileURLWithPath: $0.path)) } ?? .other
-        return HStack(spacing: 8) {
-            Image(systemName: kind.symbol).font(.system(size: 14)).foregroundStyle(kind.tint).frame(width: 16)
-                .accessibilityHidden(true)
+        return HStack(spacing: FileListMetrics.iconTextSpacing) {
+            FileTypeIcon(kind: kind)
             VStack(alignment: .leading, spacing: 3) {
                 Text(group.displayName ?? representative.map { URL(fileURLWithPath: $0.path).lastPathComponent } ?? "")
                     .font(Font(FileListMetrics.nameFont)).lineLimit(1).truncationMode(.middle)
@@ -241,10 +240,8 @@ private struct DuplicateFileRow: View {
     }
     private var fileName: some View {
         let kind = FileKind.classify(URL(fileURLWithPath: file.path))
-        return HStack(alignment: .top, spacing: 8) {
-            Image(systemName: kind.symbol).font(.system(size: 14)).foregroundStyle(kind.tint).frame(width: 16).padding(
-                .top, 3
-            ).accessibilityHidden(true)
+        return HStack(alignment: .top, spacing: FileListMetrics.iconTextSpacing) {
+            FileTypeIcon(kind: kind).padding(.top, 3)
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 8) {
                     Text(URL(fileURLWithPath: file.path).lastPathComponent).font(Font(FileListMetrics.nameFont))

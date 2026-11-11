@@ -7,8 +7,7 @@ struct FileAccessHelpButton: View {
     @Environment(\.openWindow) private var openWindow
     var body: some View {
         Button(L10n.text("Доступ к файлам…"), systemImage: "lock.shield") { openWindow(id: "file-access") }.buttonStyle(
-            .plain
-        ).font(.system(size: 10)).foregroundStyle(Palette.sub)
+            AtlasButtonStyle())
     }
 }
 
@@ -68,7 +67,7 @@ struct FileAccessHelp: View {
                         {
                             NSWorkspace.shared.open(url)
                         }
-                    }.buttonStyle(.borderedProminent)
+                    }.buttonStyle(AtlasButtonStyle(emphasized: true))
                     Button(L10n.text("Не сейчас"), action: dismiss)
                 }.controlSize(.small)
             }

@@ -98,6 +98,13 @@ archive is attached persists its report when the history UUID becomes available.
 
 ## Rendering and storage
 
+`AtlasControls.swift` owns shared command surfaces and sliding mode selectors;
+their states and usage are documented in [DESIGN.md](DESIGN.md). One list-mode
+control remains mounted above both table bodies to retain keyboard focus and
+selection animation. Layout placeholders reserve its space without exposing
+duplicate controls to accessibility. Search-adjacent filters follow the active
+list context; appearance sits beside Language in the native toolbar.
+
 The map uses the opaque `MapPalette` colors in `Theme.swift`: lightened Tableau 10
 category hues, three neutral folder surfaces, and a separate file-label foreground.
 The light palette mixes 45% white into selected Tableau hues; the dark variant

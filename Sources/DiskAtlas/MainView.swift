@@ -26,13 +26,15 @@ struct MainView: View {
             } else {
                 ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-        }.onChange(of: store.index.map(ObjectIdentifier.init)) { _, _ in store.clearDuplicateFocus() }.onChange(
-            of: duplicateSession.search
-        ) { _, _ in store.clearDuplicateFocus() }.onChange(of: duplicateSession.resultFilter) { _, _ in
+        }.buttonStyle(AtlasButtonStyle()).onChange(of: store.index.map(ObjectIdentifier.init)) { _, _ in
             store.clearDuplicateFocus()
-        }.onChange(of: duplicateSession.trashMovedCount) { _, _ in store.clearDuplicateFocus() }.disabled(
-            store.loadingTitle != nil
-        ).background(Palette.paper).foregroundStyle(Palette.ink).tint(Palette.accent).overlay {
+        }.onChange(of: duplicateSession.search) { _, _ in store.clearDuplicateFocus() }.onChange(
+            of: duplicateSession.resultFilter
+        ) { _, _ in store.clearDuplicateFocus() }.onChange(of: duplicateSession.trashMovedCount) { _, _ in
+            store.clearDuplicateFocus()
+        }.disabled(store.loadingTitle != nil).background(Palette.paper).foregroundStyle(Palette.ink).tint(
+            Palette.accent
+        ).overlay {
             if let title = store.loadingTitle {
                 SnapshotLoadingView(title: title, stage: store.loadingStage).transition(.opacity)
             }
@@ -107,27 +109,17 @@ struct MainView: View {
         }
     }
     private var listMode: some View {
-        Picker(
-            L10n.text("Список файлов"),
+        AtlasSegments(
+            title: L10n.text("Список файлов"),
             selection: Binding(
                 get: { store.duplicateList ? 2 : store.largestFiles ? 1 : 0 },
                 set: { mode in
-                    store.duplicateList = mode == 2
-                    if mode != 2 { store.largestFiles = mode == 1 }
-                })
-        ) {
-            Text(L10n.text("Содержимое")).tag(0)
-            Text(L10n.text("Крупные файлы")).tag(1)
-            Text(L10n.text("Дубликаты")).tag(2)
-        }.pickerStyle(.segmented).labelsHidden().controlSize(.small).frame(width: 306).disabled(
-            duplicateSession.trashing || duplicateSession.trashPreparing)
+                    if store.duplicateList != (mode == 2) { store.duplicateList = mode == 2 }
+                    if mode != 2, store.largestFiles != (mode == 1) { store.largestFiles = mode == 1 }
+                }), values: [0, 1, 2], label: { L10n.text(["Содержимое", "Крупные файлы", "Дубликаты"][$0]) }
+        ).disabled(duplicateSession.trashing || duplicateSession.trashPreparing)
     }
-    private var viewOptions: some View {
-        HStack(spacing: 8) {
-            ViewFilterButton(store: store)
-            SizeModeControl(logical: $store.logical).id(store.language)
-        }
-    }
+    private var viewOptions: some View { SizeModeControl(logical: $store.logical).id(store.language) }
 
     private var workspace: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -232,10 +224,15 @@ struct MainView: View {
         ordinaryFileList.opacity(store.duplicateList ? 0 : 1).allowsHitTesting(!store.duplicateList)
             .accessibilityHidden(store.duplicateList).overlay {
                 if store.duplicateList {
-                    DuplicatesView(store: store, session: store.duplicates, listControls: AnyView(listSummary))
-                        .background(Palette.paper)
+                    DuplicatesView(
+                        store: store, session: store.duplicates, listControls: AnyView(listControlPlaceholder)
+                    ).background(Palette.paper)
                 }
-            }
+            }.overlay(alignment: .topLeading) { listSummary }
+    }
+    // Preserve one mode control across both table bodies: keyboard focus and the sliding pill stay mounted.
+    private var listControlPlaceholder: some View {
+        listSummary.hidden().accessibilityHidden(true).allowsHitTesting(false)
     }
     private var ordinaryFileList: some View {
         VStack(spacing: 0) {
@@ -257,13 +254,17 @@ struct MainView: View {
         VStack(alignment: .leading, spacing: 8) {
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 10) {
-                    listSummary
+                    listControlPlaceholder
                     Spacer(minLength: 8)
                     listSearch.frame(width: 214)
+                    ViewFilterButton(store: store)
                 }
                 VStack(alignment: .leading, spacing: 8) {
-                    listSummary
-                    listSearch
+                    listControlPlaceholder
+                    HStack(spacing: 10) {
+                        listSearch
+                        ViewFilterButton(store: store)
+                    }
                 }
             }
             HStack(spacing: 8) {
@@ -282,7 +283,7 @@ struct MainView: View {
                 store.clearMapSelection()
             } label: {
                 Label(L10n.text("Снять выделение"), systemImage: "xmark.circle.fill")
-            }.buttonStyle(.plain).font(.system(size: 10)).fixedSize()
+            }.buttonStyle(AtlasButtonStyle()).fixedSize()
         } else if let listHint {
             Text(L10n.text(listHint)).font(.system(size: 10)).foregroundStyle(Palette.sub).lineLimit(1)
         }
@@ -313,7 +314,7 @@ struct MainView: View {
                                 : L10n.text("Типы: ") + String(store.selectedKinds.count)))
                     Image(systemName: "xmark").font(.system(size: 8))
                 }
-            }.font(.system(size: 10)).buttonStyle(.bordered).help(
+            }.font(.system(size: 10)).buttonStyle(AtlasButtonStyle()).help(
                 store.selectedKinds.map(\.title).sorted().joined(separator: ", ")
             ).accessibilityLabel(L10n.text("Сбросить фильтр типов"))
         }
@@ -404,14 +405,6 @@ struct MainView: View {
                 AtlasMark()
                 Text("Disk Atlas").font(.system(size: 20, weight: .semibold))
                 Spacer()
-                Menu {
-                    Button(L10n.text("Как в системе")) { store.appearance = "system" }
-                    Button(L10n.text("Светлая")) { store.appearance = "light" }
-                    Button(L10n.text("Тёмная")) { store.appearance = "dark" }
-                } label: {
-                    Image(systemName: "circle.lefthalf.filled")
-                }.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().frame(width: 28, height: 28).help(
-                    L10n.text("Оформление"))
             }.padding(.bottom, 3)
             Group {
                 if let volume = store.startupVolume {
@@ -425,13 +418,14 @@ struct MainView: View {
             ).tracking(-0.5)
             if store.scanning {
                 progressBanner.frame(maxWidth: 620)
-                Button(L10n.text("Остановить анализ")) { store.cancel() }.buttonStyle(.bordered)
+                Button(L10n.text("Остановить анализ")) { store.cancel() }.buttonStyle(AtlasButtonStyle())
             } else {
                 HStack(alignment: .top, spacing: 26) {
                     VStack(alignment: .leading, spacing: 24) {
                         ScanSetup(store: store)
-                        Button(L10n.text("Открыть сохранённый снимок…")) { store.importSnapshot() }.buttonStyle(.plain)
-                            .foregroundStyle(Palette.accent).font(.system(size: 12))
+                        Button(L10n.text("Открыть сохранённый снимок…")) { store.importSnapshot() }.buttonStyle(
+                            AtlasButtonStyle()
+                        ).foregroundStyle(Palette.accent).font(.system(size: 12))
                     }.frame(maxWidth: .infinity, alignment: .leading)
                     if !store.historyRecords.isEmpty { RecentScans(store: store).frame(width: 250) }
                 }

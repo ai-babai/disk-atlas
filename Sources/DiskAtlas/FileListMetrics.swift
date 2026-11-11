@@ -10,6 +10,8 @@ enum FileListMetrics {
     static let checkWidth: CGFloat = 44
     static let dateWidth: CGFloat = 92
     static let sizeWidth: CGFloat = 100
+    static let iconWidth: CGFloat = 16
+    static let iconTextSpacing: CGFloat = 9
     static let nameFontSize: CGFloat = 12
     static let dateFontSize: CGFloat = 10
     @MainActor static var nameFont: NSFont { .systemFont(ofSize: nameFontSize, weight: .medium) }
@@ -17,6 +19,16 @@ enum FileListMetrics {
     @MainActor static var dateFont: NSFont { .monospacedDigitSystemFont(ofSize: dateFontSize, weight: .regular) }
     @MainActor static var sizeFont: NSFont { .monospacedDigitSystemFont(ofSize: 11, weight: .regular) }
     @MainActor static var headerFont: NSFont { .systemFont(ofSize: dateFontSize, weight: .medium) }
+}
+
+/// Fit even wide symbols (such as code) inside the same bounds as AppKit's file icons.
+struct FileTypeIcon: View {
+    let kind: FileKind
+    var body: some View {
+        Image(systemName: kind.symbol).resizable().scaledToFit().frame(
+            width: FileListMetrics.iconWidth, height: FileListMetrics.iconWidth
+        ).foregroundStyle(kind.tint).accessibilityHidden(true)
+    }
 }
 
 struct DuplicateTableColumns {

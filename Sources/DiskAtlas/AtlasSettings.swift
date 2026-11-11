@@ -32,8 +32,10 @@ struct AtlasSettings: View {
 private struct AtlasAppearance: ViewModifier {
     @ObservedObject var store: AtlasStore
     func body(content: Content) -> some View {
-        content.id(store.language).environment(\.locale, Locale(identifier: store.language)).tint(Palette.accent)
-            .preferredColorScheme(store.appearance == "light" ? .light : store.appearance == "dark" ? .dark : nil)
+        content.buttonStyle(AtlasButtonStyle()).id(store.language).environment(
+            \.locale, Locale(identifier: store.language)
+        ).tint(Palette.accent).preferredColorScheme(
+            store.appearance == "light" ? .light : store.appearance == "dark" ? .dark : nil)
     }
 }
 extension View { func atlasAppearance(_ store: AtlasStore) -> some View { modifier(AtlasAppearance(store: store)) } }

@@ -83,11 +83,8 @@ struct FileSizeRange: View {
         }
     }
     private func preset(_ text: String, selected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(L10n.text(text)).font(.system(size: 10)).lineLimit(1).frame(maxWidth: .infinity).frame(height: 26)
-                .foregroundStyle(selected ? Palette.accent : Palette.sub).background(
-                    selected ? Palette.mark : Palette.soft, in: RoundedRectangle(cornerRadius: 5))
-        }.buttonStyle(.plain)
+        Button(action: action) { Text(L10n.text(text)).lineLimit(1).frame(maxWidth: .infinity) }.buttonStyle(
+            AtlasButtonStyle(emphasized: selected))
     }
     static func parse(_ input: String) -> Int64? {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines).uppercased().replacingOccurrences(
@@ -163,34 +160,29 @@ struct ViewFilterButton: View {
         Button {
             showing.toggle()
         } label: {
-            Label(L10n.text("Фильтры"), systemImage: "line.3.horizontal.decrease").fixedSize().font(
-                .system(size: 11, weight: .medium)
-            ).foregroundStyle(store.viewFiltersEnabled ? Palette.accent : Palette.ink).padding(.horizontal, 10).frame(
-                height: 28
-            ).background(store.viewFiltersEnabled ? Palette.mark : Palette.soft, in: RoundedRectangle(cornerRadius: 6))
-        }.buttonStyle(.plain).help(L10n.text("Фильтры карты и списка")).accessibilityLabel(
-            L10n.text("Фильтры карты и списка")
-        ).popover(isPresented: $showing) {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Text(L10n.text("Размер и дата")).font(.system(size: 14, weight: .semibold))
-                    Spacer()
-                    if store.viewFiltersEnabled {
-                        Button(L10n.text("Сбросить")) {
-                            store.viewFiltersEnabled = false
-                            store.viewOptions = DuplicateOptions()
-                        }.buttonStyle(.plain).font(.system(size: 11))
+            Label(L10n.text("Фильтры"), systemImage: "line.3.horizontal.decrease").fixedSize()
+        }.buttonStyle(AtlasButtonStyle(emphasized: store.viewFiltersEnabled)).help(L10n.text("Фильтры карты и списка"))
+            .accessibilityLabel(L10n.text("Фильтры карты и списка")).popover(isPresented: $showing) {
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack {
+                        Text(L10n.text("Размер и дата")).font(.system(size: 14, weight: .semibold))
+                        Spacer()
+                        if store.viewFiltersEnabled {
+                            Button(L10n.text("Сбросить")) {
+                                store.viewFiltersEnabled = false
+                                store.viewOptions = DuplicateOptions()
+                            }.buttonStyle(.plain).font(.system(size: 11))
+                        }
                     }
-                }
-                FileCriteria(
-                    options: Binding(
-                        get: { store.viewOptions },
-                        set: { value in
-                            store.viewOptions = value
-                            store.viewFiltersEnabled = value != DuplicateOptions()
-                        }))
-                if store.viewFiltering { ProgressView().controlSize(.mini) }
-            }.padding(18).frame(width: 320).background(Palette.paper)
-        }
+                    FileCriteria(
+                        options: Binding(
+                            get: { store.viewOptions },
+                            set: { value in
+                                store.viewOptions = value
+                                store.viewFiltersEnabled = value != DuplicateOptions()
+                            }))
+                    if store.viewFiltering { ProgressView().controlSize(.mini) }
+                }.padding(18).frame(width: 320).background(Palette.paper)
+            }
     }
 }

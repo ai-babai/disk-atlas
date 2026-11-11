@@ -74,8 +74,9 @@ struct AtlasToolbar: ToolbarContent {
         }
     }
     private var language: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) {
+        ToolbarItemGroup(placement: .primaryAction) {
             LanguagePicker(store: store).menuStyle(.borderlessButton).foregroundStyle(Palette.sub)
+            AppearancePicker(store: store).menuStyle(.borderlessButton).foregroundStyle(Palette.sub)
         }
     }
     private var inspector: some ToolbarContent {

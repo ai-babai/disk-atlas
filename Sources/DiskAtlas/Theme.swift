@@ -122,5 +122,21 @@ struct LanguagePicker: View {
     }
 }
 
+struct AppearancePicker: View {
+    @ObservedObject var store: AtlasStore
+    var body: some View {
+        Menu {
+            Picker(L10n.text("Оформление"), selection: $store.appearance) {
+                Text(L10n.text("Как в системе")).tag("system")
+                Text(L10n.text("Светлая")).tag("light")
+                Text(L10n.text("Тёмная")).tag("dark")
+            }.pickerStyle(.inline)
+        } label: {
+            Image(systemName: "circle.lefthalf.filled").font(.system(size: 12))
+        }.menuIndicator(.hidden).fixedSize().help(L10n.text("Оформление")).accessibilityLabel(
+            L10n.text("Оформление приложения"))
+    }
+}
+
 /// Shared timing for small, interruptible UI changes.
 enum Motion { static let quick = 0.16 }

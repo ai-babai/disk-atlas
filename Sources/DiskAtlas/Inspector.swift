@@ -123,9 +123,8 @@ struct Inspector: View {
                 Image(systemName: icon).frame(width: 15)
                 Text(title)
                 Spacer()
-            }.font(.system(size: 11)).padding(.vertical, 8).padding(.horizontal, 10).background(
-                Palette.soft, in: RoundedRectangle(cornerRadius: 6))
-        }.buttonStyle(.plain)
+            }
+        }.buttonStyle(AtlasButtonStyle())
     }
 }
 

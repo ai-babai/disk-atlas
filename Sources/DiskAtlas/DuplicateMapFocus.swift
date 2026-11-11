@@ -152,7 +152,7 @@ struct DuplicateMapSelectionInfo: View {
             Text(L10n.text("На карте: ") + "\(focus.counts[store.folderID, default: 0]) / \(focus.selectedCount)")
                 .monospacedDigit().foregroundStyle(Palette.sub)
             if focus.counts[store.folderID, default: 0] < focus.selectedCount, store.folderID != 0 {
-                Button(L10n.text("Обзор")) { store.showDuplicateOverview(focus.group) }.buttonStyle(.plain)
+                Button(L10n.text("Обзор")) { store.showDuplicateOverview(focus.group) }.buttonStyle(AtlasButtonStyle())
             }
             Button {
                 store.clearMapSelection()

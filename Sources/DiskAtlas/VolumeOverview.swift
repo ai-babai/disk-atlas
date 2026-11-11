@@ -32,10 +32,9 @@ struct SizeModeControl: View {
     @Binding var logical: Bool
     var body: some View {
         HStack(spacing: 4) {
-            Picker(L10n.text("Как считается размер"), selection: $logical) {
-                Text(L10n.text("На диске")).tag(false)
-                Text(L10n.text("Размер файлов")).tag(true)
-            }.pickerStyle(.segmented).labelsHidden().frame(width: 210)
+            AtlasSegments(
+                title: L10n.text("Как считается размер"), selection: $logical, values: [false, true],
+                label: { L10n.text($0 ? "Размер файлов" : "На диске") })
             SizeInfo()
         }
     }

@@ -5,7 +5,7 @@ enum SnapshotColumns {
     static let gap: CGFloat = 12
     static let snapshot: CGFloat = 84
     static let report: CGFloat = 120
-    static let open: CGFloat = 60
+    static let open: CGFloat = 80
     static let trash: CGFloat = 24
 }
 
@@ -31,12 +31,9 @@ struct SavedSnapshotRow: View {
             }.buttonStyle(.plain).help(record.roots.joined(separator: "\n")).accessibilityLabel(
                 store.historyTitle(record)
             ).accessibilityValue(accessibleDetails).accessibilityAddTraits(selected ? [.isSelected] : [])
-            Button(action: open) {
-                Text(L10n.text("Открыть")).font(.system(size: 11, weight: .medium)).frame(
-                    width: SnapshotColumns.open, height: 26
-                ).background(Palette.soft, in: RoundedRectangle(cornerRadius: 6))
-            }.buttonStyle(.plain).foregroundStyle(Palette.accent).disabled(openDisabled).accessibilityLabel(
-                L10n.text("Открыть снимок") + " " + store.historyTitle(record))
+            Button(action: open) { Text(L10n.text("Открыть")).lineLimit(1).frame(width: SnapshotColumns.open - 20) }
+                .buttonStyle(AtlasButtonStyle()).disabled(openDisabled).accessibilityLabel(
+                    L10n.text("Открыть снимок") + " " + store.historyTitle(record))
             SnapshotDeleteButton(store: store, record: record).frame(width: SnapshotColumns.trash)
         }.padding(.horizontal, 12).padding(.vertical, 8).frame(minHeight: 56).foregroundStyle(
             selected ? Palette.selectedText : Palette.ink

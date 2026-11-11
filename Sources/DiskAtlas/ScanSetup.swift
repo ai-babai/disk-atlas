@@ -69,7 +69,7 @@ struct ScanSetup: View {
             duplicateChoice
             HStack(spacing: 16) {
                 Button(L10n.text("Анализировать"), systemImage: "chart.pie") { store.analyzeSelection() }.buttonStyle(
-                    .borderedProminent
+                    AtlasButtonStyle(emphasized: true)
                 ).controlSize(.large).disabled(store.pendingPaths.isEmpty || store.scanning)
                 Text(L10n.text("Включая вложенные папки · без повторного подсчёта\nФайлы не изменяются")).font(
                     .system(size: 10)
@@ -98,9 +98,8 @@ struct ScanSetup: View {
             store.addSelection(URL(fileURLWithPath: path))
         } label: {
             Label(title, systemImage: icon).font(.system(size: 11)).foregroundStyle(Palette.accent).frame(
-                maxWidth: .infinity, alignment: .leading
-            ).padding(.vertical, 5)
-        }.buttonStyle(.plain).help(path)
+                maxWidth: .infinity, alignment: .leading)
+        }.buttonStyle(AtlasButtonStyle()).help(path)
     }
 
     private func selectedRow(_ path: String) -> some View {

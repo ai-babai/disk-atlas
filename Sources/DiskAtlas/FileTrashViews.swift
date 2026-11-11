@@ -18,17 +18,18 @@ struct TrashSelectionBar: View {
                 actions(labels: true)
                 actions(labels: false)
             }
-        }.font(.system(size: 11)).padding(.horizontal, compact ? 6 : 10).frame(height: compact ? 28 : 40).background(
-            Palette.soft.opacity(count > 0 || busy ? 1 : 0), in: RoundedRectangle(cornerRadius: 6))
+        }.buttonStyle(AtlasButtonStyle()).font(.system(size: 11)).padding(.horizontal, compact ? 6 : 10).frame(
+            height: compact ? 28 : 40
+        ).background(Palette.soft.opacity(count > 0 || busy ? 1 : 0), in: RoundedRectangle(cornerRadius: 6))
     }
     private func actions(labels: Bool) -> some View {
         HStack(spacing: compact ? 6 : 10) {
             selectionSummary(labels: labels)
             Button(action: clear) {
-                if labels { Text(L10n.text("Снять выбор")) } else { Image(systemName: "xmark.circle") }
-            }.buttonStyle(.plain).opacity(count > 0 ? 1 : 0).disabled(count == 0 || busy).accessibilityHidden(
-                count == 0
-            ).accessibilityLabel(L10n.text("Снять выбор"))
+                if labels && !compact { Text(L10n.text("Снять выбор")) } else { Image(systemName: "xmark.circle") }
+            }.buttonStyle(AtlasButtonStyle()).opacity(count > 0 ? 1 : 0).disabled(count == 0 || busy)
+                .accessibilityHidden(count == 0).help(L10n.text("Снять выбор")).accessibilityLabel(
+                    L10n.text("Снять выбор"))
             if compact {
                 Image(systemName: "info.circle").frame(width: 14).opacity(notice == nil ? 0 : 1).help(notice ?? "")
                     .accessibilityHidden(notice == nil)
@@ -123,8 +124,7 @@ private struct FileTrashReview: View {
                 LazyVStack(alignment: .leading, spacing: 12) {
                     ForEach(plan.items) { item in
                         HStack(alignment: .top) {
-                            Image(systemName: item.entry.kind.symbol).foregroundStyle(item.entry.kind.tint)
-                                .accessibilityHidden(true)
+                            FileTypeIcon(kind: item.entry.kind)
                             Text(item.entry.path).frame(maxWidth: .infinity, alignment: .leading).textSelection(
                                 .enabled)
                             Text(byteString(item.entry.bytes)).monospacedDigit()
@@ -136,7 +136,7 @@ private struct FileTrashReview: View {
                 Spacer()
                 Button(L10n.text("Отмена"), action: cancel).keyboardShortcut(.cancelAction)
                 Button(L10n.text("Переместить в Корзину"), role: .destructive, action: confirm).buttonStyle(
-                    .borderedProminent)
+                    AtlasButtonStyle(emphasized: true))
             }
         }.padding(24).frame(width: 650, height: min(570, 300 + CGFloat(plan.items.count) * 45)).background(
             Palette.paper
