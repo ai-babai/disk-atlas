@@ -19,8 +19,11 @@ The feeling is calm, clear, consistent; content and the map remain primary.
   accent text and a subtle accent outline. Keyboard focus has a stronger outline.
 - Disabled controls retain their position and use muted text. The native Button
   still owns actions, disabled behavior, shortcuts and accessibility roles.
-- `AtlasSegments` groups mutually exclusive real buttons inside one 28 pt surface.
-  The selected pill moves between intrinsic-width labels, with Reduce Motion honored.
+- `AtlasSegments` groups mutually exclusive real buttons inside one 32 pt surface,
+  with 28 pt button targets. Inactive labels use `Palette.sub`; the selected label
+  uses `Palette.selectedText` over `Palette.mark`.
+  A single persistent pill moves between measured button bounds in 240 ms,
+  including width changes. Only the pill animates; Reduce Motion skips the movement.
   Selected state is exposed to accessibility; Left/Right moves selection within the focused group.
   Draw focus on the selected pill only: group focus propagates to its children,
   so grouped button surfaces must never draw their own focus borders.
@@ -46,6 +49,12 @@ Filters appear once to the left of the list search: ordinary size/date criteria 
 
 Home keeps duplicate setup to one checkbox; checking it does not expand more controls
 or retain hidden size/type restrictions. File access guidance sits at the right below
-the folder drop area. In the results toolbar, New analysis precedes Repeat and Save;
+the folder drop area. In the results toolbar, New analysis, Repeat and Save sit on
+the left after navigation. Thin noninteractive separators divide navigation,
+New analysis, and Repeat/Save. Language and appearance stay on the right;
 Save snapshot uses a diskette silhouette, with its accessible name and shortcut hint.
 Agent context belongs to automation/documentation, not the inspector surface.
+
+Duplicate disclosure arrows keep their 24 pt column and use a rectangular 24×40 pt
+hit area. Transparent space around the glyph must accept clicks, without overlapping
+the separate Trash checkbox or the row's map-selection action.

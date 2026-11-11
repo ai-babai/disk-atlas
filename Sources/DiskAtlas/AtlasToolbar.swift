@@ -5,8 +5,8 @@ struct AtlasToolbar: ToolbarContent {
     @ObservedObject var store: AtlasStore
     var body: some ToolbarContent {
         navigation
-        path
         actions
+        path
         language
         inspector
     }
@@ -61,17 +61,22 @@ struct AtlasToolbar: ToolbarContent {
         }
     }
     private var actions: some ToolbarContent {
-        ToolbarItemGroup(placement: .primaryAction) {
+        ToolbarItemGroup(placement: .navigation) {
             Group {
                 if store.snapshot != nil {
+                    separator
                     Button(L10n.text("Новый анализ"), systemImage: "plus") { store.beginSelection() }.disabled(
                         store.scanning || store.preparing || store.fileTrash.busy
                     ).labelStyle(.titleAndIcon).help(L10n.text("Новый анализ") + " · ⌘N")
+                    separator
                     if store.showDuplicates { duplicateActions } else { scanActions }
-
                 }
             }.buttonStyle(.borderless).foregroundStyle(Palette.sub)
         }
+    }
+    private var separator: some View {
+        Rectangle().fill(Palette.line).frame(width: 1, height: 16).padding(.horizontal, 2).allowsHitTesting(false)
+            .accessibilityHidden(true)
     }
     private var language: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {

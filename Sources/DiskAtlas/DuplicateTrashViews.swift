@@ -157,7 +157,7 @@ struct DuplicateGroupRow: View {
     private var disclosureButton: some View {
         Button(action: toggleExpanded) {
             Image(systemName: expanded ? "chevron.down" : "chevron.right").font(.system(size: 8, weight: .semibold))
-                .frame(width: 16, height: 28).padding(.trailing, 8)
+                .frame(width: 24, height: 40).contentShape(Rectangle())
         }.buttonStyle(.plain).accessibilityLabel(L10n.text("Показать все копии") + ": " + (group.displayName ?? ""))
     }
     private func toggleExpanded() { expanded.toggle() }

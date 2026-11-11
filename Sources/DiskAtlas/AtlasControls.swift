@@ -19,7 +19,7 @@ private struct AtlasButtonSurface: View {
     @State private var hovered = false
     private var fill: Color {
         guard enabled else { return grouped ? .clear : Palette.soft }
-        if grouped { return configuration.isPressed ? Palette.mark : hovered ? Palette.mark.opacity(0.4) : .clear }
+        if grouped { return configuration.isPressed || hovered ? Palette.line.opacity(0.2) : .clear }
         return emphasized || configuration.isPressed
             ? Palette.mark : hovered ? Palette.mark.opacity(0.65) : Palette.soft
     }
@@ -30,8 +30,11 @@ private struct AtlasButtonSurface: View {
     }
     var body: some View {
         configuration.label.font(.system(size: 11)).foregroundStyle(
-            enabled ? (emphasized ? Palette.accent : Palette.ink) : Palette.sub.opacity(0.65)
-        ).padding(.horizontal, 10).padding(.vertical, 4).frame(minHeight: grouped ? 24 : size == .large ? 32 : 28)
+            enabled
+                ? (grouped
+                    ? (emphasized ? Palette.selectedText : Palette.sub) : (emphasized ? Palette.accent : Palette.ink))
+                : Palette.sub.opacity(0.65)
+        ).padding(.horizontal, 10).padding(.vertical, 4).frame(minHeight: grouped ? 28 : size == .large ? 32 : 28)
             .background(fill, in: RoundedRectangle(cornerRadius: 6)).overlay {
                 RoundedRectangle(cornerRadius: 6).strokeBorder(
                     border, lineWidth: !grouped && focused && enabled ? 2 : 1)
@@ -46,7 +49,8 @@ struct AtlasSegments<Value: Hashable>: View {
     let values: [Value]
     let label: (Value) -> String
     @FocusState private var focused: Bool
-    @Namespace private var highlight
+    @State private var pillFrame = CGRect.zero
+    @State private var displayedSelection: Value?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
         HStack(spacing: 2) {
@@ -56,20 +60,32 @@ struct AtlasSegments<Value: Hashable>: View {
                     focused = true
                 } label: {
                     Text(label(value)).lineLimit(1).fixedSize(horizontal: true, vertical: false)
-                }.buttonStyle(AtlasButtonStyle(emphasized: selection == value, grouped: true)).background {
-                    if selection == value {
-                        RoundedRectangle(cornerRadius: 6).fill(Palette.mark).overlay {
-                            RoundedRectangle(cornerRadius: 6).strokeBorder(
-                                focused ? Palette.accent : Palette.accent.opacity(0.45), lineWidth: focused ? 2 : 1)
-                        }.matchedGeometryEffect(id: "selection", in: highlight)
-                    }
-                }.accessibilityAddTraits(selection == value ? .isSelected : [])
+                }.buttonStyle(AtlasButtonStyle(emphasized: selection == value, grouped: true)).anchorPreference(
+                    key: AtlasSegmentBounds<Value>.self, value: .bounds
+                ) { [value: $0] }.accessibilityAddTraits(selection == value ? .isSelected : [])
             }
-        }.padding(2).background(Palette.soft, in: RoundedRectangle(cornerRadius: 8)).overlay {
-            RoundedRectangle(cornerRadius: 8).strokeBorder(Palette.line.opacity(0.6))
-        }.fixedSize().animation(reduceMotion ? nil : .easeInOut(duration: Motion.quick), value: selection).focusable()
-            .focusEffectDisabled().focused($focused).accessibilityElement(children: .contain).accessibilityLabel(title)
-            .onKeyPress(.space) { return .handled }.onKeyPress(.leftArrow) {
+        }.padding(2).backgroundPreferenceValue(AtlasSegmentBounds<Value>.self) { anchors in
+            GeometryReader { geometry in
+                ZStack(alignment: .topLeading) {
+                    RoundedRectangle(cornerRadius: 8).fill(Palette.soft).overlay {
+                        RoundedRectangle(cornerRadius: 8).strokeBorder(Palette.line.opacity(0.6))
+                    }
+                    RoundedRectangle(cornerRadius: 6).fill(Palette.mark).overlay {
+                        RoundedRectangle(cornerRadius: 6).strokeBorder(
+                            focused ? Palette.accent : Palette.accent.opacity(0.6), lineWidth: focused ? 1.5 : 1)
+                    }.frame(width: pillFrame.width, height: pillFrame.height).offset(
+                        x: pillFrame.minX, y: pillFrame.minY
+                    ).opacity(pillFrame.isEmpty ? 0 : 1)
+                }.allowsHitTesting(false).onChange(of: anchors[selection].map { geometry[$0] } ?? .zero, initial: true)
+                { _, rect in
+                    guard !rect.isEmpty else { return }
+                    let animate = !pillFrame.isEmpty && displayedSelection != selection && !reduceMotion
+                    withAnimation(animate ? .easeInOut(duration: 0.24) : nil) { pillFrame = rect }
+                    displayedSelection = selection
+                }
+            }
+        }.fixedSize().focusable().focusEffectDisabled().focused($focused).accessibilityElement(children: .contain)
+            .accessibilityLabel(title).onKeyPress(.space) { return .handled }.onKeyPress(.leftArrow) {
                 move(-1)
                 return .handled
             }.onKeyPress(.rightArrow) {
@@ -81,5 +97,13 @@ struct AtlasSegments<Value: Hashable>: View {
         guard let index = values.firstIndex(of: selection), values.indices.contains(index + offset) else { return }
         selection = values[index + offset]
         focused = true
+    }
+}
+
+/// Measure all segments once; the single persistent pill moves between their actual bounds.
+private struct AtlasSegmentBounds<Value: Hashable>: PreferenceKey {
+    static var defaultValue: [Value: Anchor<CGRect>] { [:] }
+    static func reduce(value: inout [Value: Anchor<CGRect>], nextValue: () -> [Value: Anchor<CGRect>]) {
+        value.merge(nextValue(), uniquingKeysWith: { $1 })
     }
 }
