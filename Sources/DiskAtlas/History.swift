@@ -131,11 +131,12 @@ struct HistoryWindow: View {
             }.disabled(store.historyBusy || (store.historyRecords.isEmpty && store.historyStorageBytes == 0))
             if store.deletingHistory { ProgressView().controlSize(.small) }
             Spacer()
-            Toggle(
-                L10n.text("Подтверждать удаление"),
-                isOn: Binding(
-                    get: { !store.skipHistoryDeleteConfirmation }, set: { store.skipHistoryDeleteConfirmation = !$0 })
-            ).toggleStyle(.checkbox).disabled(store.deletingHistory)
+            AtlasRowToggle(
+                state: store.skipHistoryDeleteConfirmation ? .off : .on, label: L10n.text("Подтверждать удаление"),
+                showsLabel: true
+            ) { store.skipHistoryDeleteConfirmation.toggle() }.fixedSize(horizontal: true, vertical: false).frame(
+                height: 24
+            ).disabled(store.deletingHistory)
         }.font(.system(size: 11)).controlSize(.small)
     }
     private func storageMetric(_ title: String, symbol: String, bytes: Int64) -> some View {

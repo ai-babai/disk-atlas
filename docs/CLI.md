@@ -22,7 +22,7 @@ disk-atlas help
 
 Use the app's actual path if installed elsewhere (including `~/Applications`).
 Alternatively download
-`disk-atlas-cli-0.15.3-universal.zip` from [Releases](https://github.com/ai-babai/disk-atlas/releases/latest),
+`disk-atlas-cli-0.15.4-universal.zip` from [Releases](https://github.com/ai-babai/disk-atlas/releases/latest),
 unzip into a permanent folder, then run `./disk-atlas install`.
 
 `install` creates a symlink in `~/.local/bin`, is idempotent for that same binary,

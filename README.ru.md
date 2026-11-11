@@ -8,7 +8,7 @@ created: "2026-11-07"
   <h1>Disk Atlas</h1>
   <p><strong>Место для важного.</strong></p>
   <p>Нативная карта занятого места на Mac — для человека и агента.</p>
-  <p><a href="https://github.com/ai-babai/disk-atlas/releases">Скачать для macOS</a> · <a href="README.md">English</a> · <a href="docs/ARCHITECTURE.md">Архитектура</a> · <a href="#контакты">Контакты</a></p>
+  <p><a href="https://github.com/ai-babai/disk-atlas/releases/latest">Скачать для macOS</a> · <a href="README.md">English</a> · <a href="docs/ARCHITECTURE.md">Архитектура</a> · <a href="#контакты">Контакты</a></p>
   <p>macOS 14+ · Apple Silicon и Intel · English / Русский · Ранний доступ</p>
 </div>
 
@@ -58,7 +58,7 @@ created: "2026-11-07"
 ## Скачать и установить
 
 1. Открой [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Скачай **Disk-Atlas-0.15.3-universal.dmg**. Одна сборка подходит для Apple Silicon
+2. Скачай **Disk-Atlas-0.15.4-universal.dmg**. Одна сборка подходит для Apple Silicon
    и Intel с **macOS 14 Sonoma или новее**.
 3. Открой DMG, перетащи **Disk Atlas.app** в **Applications («Программы»)**,
    извлеки образ и запусти приложение из «Программ». Также доступен ZIP.

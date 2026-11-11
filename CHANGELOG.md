@@ -5,6 +5,15 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.15.4 — 2026-11-11
+
+- Keep file-type totals and expanded extensions tied to the inspected folder, including nested selections.
+- Match duplicate group checkboxes, disclosure arrows and setup/history checkboxes to the native file lists.
+- Improve Trash selection-bar spacing and use a restrained red accent for the final confirmation. Align Analyze with shared action buttons.
+- Hide duplicate table headings before results exist and keep the start-check card usable in narrow panes.
+- Place full-report duplicate filters beside Search, show active types with Reset, and mark type choices with shared colored icons and checkmarks.
+- Ship Developer ID signed, Apple notarized and stapled universal builds for Apple Silicon and Intel.
+
 ## 0.15.3 — 2026-11-11
 
 - View duplicates below the folder map alongside Contents and Largest files. Select a group or one copy to locate it without changing map scale; large groups use bounded folder highlights.

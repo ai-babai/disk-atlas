@@ -8,7 +8,7 @@ created: "2026-11-07"
   <h1>Disk Atlas</h1>
   <p><strong>Room for what matters.</strong></p>
   <p>A native map of your Mac’s storage. Built for people and agents.</p>
-  <p><a href="https://github.com/ai-babai/disk-atlas/releases">Download for macOS</a> · <a href="README.ru.md">По-русски</a> · <a href="docs/ARCHITECTURE.md">Architecture</a> · <a href="#contact">Contact</a></p>
+  <p><a href="https://github.com/ai-babai/disk-atlas/releases/latest">Download for macOS</a> · <a href="README.ru.md">По-русски</a> · <a href="docs/ARCHITECTURE.md">Architecture</a> · <a href="#contact">Contact</a></p>
   <p>macOS 14+ · Apple Silicon & Intel · English / Русский · Early access</p>
 </div>
 
@@ -59,7 +59,7 @@ table in place when you check Trash candidates.
 ## Download & install
 
 1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Download **Disk-Atlas-0.15.3-universal.dmg**. The same app supports Apple Silicon
+2. Download **Disk-Atlas-0.15.4-universal.dmg**. The same app supports Apple Silicon
    and Intel Macs running **macOS 14 Sonoma or later**.
 3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
    then launch the app from Applications. A ZIP is also available.
