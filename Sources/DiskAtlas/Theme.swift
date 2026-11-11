@@ -33,6 +33,32 @@ enum Palette {
     static let mark = adaptive(0xdcebe0, 0x2e4b37)
 }
 
+/// Opaque map colors: a file's category never changes with its containing folder.
+/// Tableau 10 hues, lightened 45% for light mode and another 8% for dark mode.
+enum MapPalette {
+    static let fileText = Palette.adaptive(0x223329, 0x223329)
+    static let folderLine = Palette.adaptive(0xd6dde2, 0x4a555b, contrastLight: 0x657780, contrastDark: 0xb8c8ce)
+    static func folder(depth: Int = 0) -> Color {
+        switch depth {
+        case 0: return Palette.adaptive(0xf1f4f5, 0x242e32)
+        case 1: return Palette.adaptive(0xe8edf0, 0x2a353b)
+        default: return Palette.adaptive(0xe1e7eb, 0x303d43)
+        }
+    }
+    static func fill(_ kind: FileKind) -> Color {
+        switch kind {
+        case .folder: return folder()
+        case .video: return Palette.adaptive(0x9eb5cf, 0xa6bbd3)
+        case .image: return Palette.adaptive(0xf8c18b, 0xf9c694)
+        case .audio: return Palette.adaptive(0xd3b6cb, 0xd7bccf)
+        case .document: return Palette.adaptive(0xa4cb9e, 0xabcfa6)
+        case .archive: return Palette.adaptive(0xf5e19b, 0xf6e3a3)
+        case .code: return Palette.adaptive(0xb4d7d5, 0xbadad8)
+        case .other, .link: return Palette.adaptive(0xd9d4d1, 0xdcd7d5)
+        }
+    }
+}
+
 extension FileKind {
     var tint: Color {
         switch self {

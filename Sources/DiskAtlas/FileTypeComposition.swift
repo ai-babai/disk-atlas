@@ -58,7 +58,7 @@ struct FileTypeComposition: View {
                             systemName: store.selectedKinds.contains(item.kind)
                                 ? "checkmark.circle.fill" : "circle.fill"
                         ).font(.system(size: store.selectedKinds.contains(item.kind) ? 10 : 6)).foregroundStyle(
-                            item.kind.tint
+                            store.selectedKinds.contains(item.kind) ? Palette.accent : MapPalette.fill(item.kind)
                         ).frame(width: 12)
                         Text(item.kind.title).font(.system(size: 11)).lineLimit(1).minimumScaleFactor(0.8)
                         Spacer(minLength: 4)
@@ -69,7 +69,7 @@ struct FileTypeComposition: View {
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
                             Capsule().fill(Palette.soft)
-                            Capsule().fill(item.kind.tint).frame(
+                            Capsule().fill(MapPalette.fill(item.kind)).frame(
                                 width: max(2, geo.size.width * Double(item.bytes) / Double(total)))
                         }
                     }.frame(height: 3)

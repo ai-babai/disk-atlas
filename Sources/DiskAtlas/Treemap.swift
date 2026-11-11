@@ -206,7 +206,8 @@ private struct TreemapTile: View, Equatable {
     private var artwork: some View {
         ZStack(alignment: .topLeading) {
             RoundedRectangle(cornerRadius: 5).fill(
-                isFolder ? Palette.mark : (entry?.kind.tint ?? FileKind.other.tint).opacity(0.68))
+                isFolder ? MapPalette.folder() : MapPalette.fill(entry?.kind ?? .other))
+            if isFolder { RoundedRectangle(cornerRadius: 5).strokeBorder(MapPalette.folderLine, lineWidth: 1) }
             if showsChildren, let entry {
                 NestedMapArtwork(
                     index: index, parent: entry.id, logical: logical, language: language,
@@ -215,7 +216,8 @@ private struct TreemapTile: View, Equatable {
                 ).equatable().allowsHitTesting(false)
             }
             if tile.rect.width > 45 && tile.rect.height > 28 { label }
-            RoundedRectangle(cornerRadius: 5).strokeBorder(selected ? Palette.ink : Color.clear, lineWidth: 2)
+            RoundedRectangle(cornerRadius: 5).strokeBorder(
+                selected ? (isFolder ? Palette.ink : MapPalette.fileText) : Color.clear, lineWidth: 2)
             if duplicateCopies > 0 && (coarseDuplicates || !showsChildren) {
                 DuplicateTileHighlight(copies: duplicateCopies, radius: 5)
             }
@@ -227,7 +229,7 @@ private struct TreemapTile: View, Equatable {
             if tile.rect.height > 42 {
                 Text(byteString(tile.bytes)).font(.system(size: 10, design: .monospaced)).lineLimit(1).opacity(0.8)
             }
-        }.padding(8).foregroundStyle(isFolder ? Palette.ink : Color.black.opacity(0.85))
+        }.padding(8).foregroundStyle(isFolder ? Palette.ink : MapPalette.fileText)
     }
     @ViewBuilder private var actions: some View {
         if let entry {
@@ -309,7 +311,9 @@ private struct NestedMapArtwork: View, Equatable {
                         ancestors: index.mapSelectionAncestors(selection, within: parent),
                         hasArea: logical ? node.logicalBytes > 0 : node.bytes > 0, bounds: interior)
                     ?? CGRect(origin: .zero, size: size).insetBy(dx: 2, dy: 2)
-                context.stroke(Path(roundedRect: rect, cornerRadius: 2), with: .color(Palette.ink), lineWidth: 2)
+                let outline = Path(roundedRect: rect, cornerRadius: 2)
+                context.stroke(outline, with: .color(MapPalette.fileText), lineWidth: 3)
+                context.stroke(outline, with: .color(Palette.ink), lineWidth: 1.5)
             }
         }
     }
@@ -332,9 +336,15 @@ private struct NestedMapArtwork: View, Equatable {
         let rect = tile.rect.insetBy(dx: 1, dy: 1)
         guard rect.width > 1, rect.height > 1 else { return false }
         let node = tile.id >= 0 ? index.snapshot.entries[tile.id] : nil
-        let color = node?.kind.tint ?? FileKind.other.tint
-        context.fill(Path(roundedRect: rect, cornerRadius: 2), with: .color(color.opacity(0.62)))
-        paintLabel(tile.name, rect: rect, context: &context)
+        let isFolder = node?.isDirectory == true
+        let color = isFolder ? MapPalette.folder(depth: depth + 1) : MapPalette.fill(node?.kind ?? .other)
+        context.fill(Path(roundedRect: rect, cornerRadius: 2), with: .color(color))
+        if isFolder {
+            context.stroke(
+                Path(roundedRect: rect.insetBy(dx: 0.5, dy: 0.5), cornerRadius: 1.5),
+                with: .color(MapPalette.folderLine), lineWidth: 1)
+        }
+        paintLabel(tile.name, rect: rect, isFolder: isFolder, context: &context)
         var matched = false
         if let childBounds = NestedMapGeometry.childBounds(rect, entry: node, depth: depth), let node {
             matched = paintChildren(
@@ -347,12 +357,13 @@ private struct NestedMapArtwork: View, Equatable {
         }
         return matched
     }
-    private func paintLabel(_ name: String, rect: CGRect, context: inout GraphicsContext) {
+    private func paintLabel(_ name: String, rect: CGRect, isFolder: Bool, context: inout GraphicsContext) {
         guard NestedMapGeometry.labelHeight(rect) > 0 else { return }
         var clipped = context
         clipped.clip(to: Path(CGRect(x: rect.minX + 4, y: rect.minY + 3, width: rect.width - 8, height: 14)))
         clipped.draw(
-            Text(name).font(.system(size: 9, weight: .medium)).foregroundColor(.black.opacity(0.8)),
-            at: CGPoint(x: rect.minX + 4, y: rect.minY + 3), anchor: .topLeading)
+            Text(name).font(.system(size: 9, weight: .medium)).foregroundColor(
+                isFolder ? Palette.ink : MapPalette.fileText), at: CGPoint(x: rect.minX + 4, y: rect.minY + 3),
+            anchor: .topLeading)
     }
 }

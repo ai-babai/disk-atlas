@@ -163,7 +163,7 @@ struct MainView: View {
         HStack(spacing: 12) {
             ForEach([FileKind.video, .image, .audio, .document, .archive, .code, .other], id: \.self) { kind in
                 HStack(spacing: 4) {
-                    Circle().fill(kind.tint).frame(width: 5, height: 5)
+                    Circle().fill(MapPalette.fill(kind)).frame(width: 5, height: 5)
                     Text(kind.title).font(.system(size: 10))
                 }.foregroundStyle(Palette.sub)
             }

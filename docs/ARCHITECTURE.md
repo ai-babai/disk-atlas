@@ -98,6 +98,16 @@ archive is attached persists its report when the history UUID becomes available.
 
 ## Rendering and storage
 
+The map uses the opaque `MapPalette` colors in `Theme.swift`: lightened Tableau 10
+category hues, three neutral folder surfaces, and a separate file-label foreground.
+The light palette mixes 45% white into selected Tableau hues; the dark variant
+adds 8% white. Folder depth never changes a file's category color. The map legend
+and inspector composition bars share these fills. File icons retain their deeper
+legible tints, and the app's green chrome and duplicate-focus accent stay separate.
+Folder boundaries strengthen with Increase Contrast; nested folder labels follow
+appearance while labels over the light file fills remain dark. Source palette:
+[Tableau 10 / d3-scale-chromatic](https://github.com/d3/d3-scale-chromatic/blob/main/src/categorical/Tableau10.js).
+
 The welcome screen reads startup volume name and filesystem capacity on a utility
 worker; it does not walk directories or read contents. Capacity refreshes when
 welcome appears, without polling. Home parks the current snapshot and selection
