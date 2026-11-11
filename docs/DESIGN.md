@@ -51,10 +51,14 @@ Home keeps duplicate setup to one checkbox; checking it does not expand more con
 or retain hidden size/type restrictions. File access guidance sits at the right below
 the folder drop area. In the results toolbar, New analysis, Repeat and Save sit on
 the left after navigation. Thin noninteractive separators divide navigation,
-New analysis, and Repeat/Save. Language and appearance stay on the right;
+New analysis, Repeat and Save into separate targets. Language and appearance stay on the right;
 Save snapshot uses a diskette silhouette, with its accessible name and shortcut hint.
 Agent context belongs to automation/documentation, not the inspector surface.
 
 Duplicate disclosure arrows keep their 24 pt column and use a rectangular 24×40 pt
 hit area. Transparent space around the glyph must accept clicks, without overlapping
 the separate Trash checkbox or the row's map-selection action.
+
+The workspace list extends to the status bar without bottom page padding. Reserve
+the small list-status row only for an actual empty-result or presentation-limit
+message; an invisible message must not consume table height.

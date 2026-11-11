@@ -120,6 +120,7 @@ struct AtlasToolbar: ToolbarContent {
                 Label(L10n.text("Проверить снова"), systemImage: "arrow.clockwise").labelStyle(.iconOnly)
             }.help(L10n.text("Проверить снова")).disabled(store.preparing)
         }
+        separator
         Button {
             store.duplicates.export()
         } label: {
@@ -141,6 +142,7 @@ struct AtlasToolbar: ToolbarContent {
                 Label(L10n.text("Повторить"), systemImage: "arrow.clockwise").labelStyle(.iconOnly)
             }.help(L10n.text("Повторить сканирование · ⌘R")).disabled(store.preparing)
         }
+        separator
         Button {
             store.exportSnapshot()
         } label: {

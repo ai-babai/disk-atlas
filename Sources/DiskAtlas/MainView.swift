@@ -146,9 +146,10 @@ struct MainView: View {
                 }.frame(minHeight: 230, idealHeight: 290).background(WorkspaceSplitConfiguration())
                 fileList.frame(minHeight: 190, idealHeight: 320).padding(.top, 10)
             }
-        }.padding(24).background { Color.clear.contentShape(Rectangle()).onTapGesture { store.clearMapSelection() } }
-            .opacity(store.viewFiltering ? 0.65 : 1).animation(
-                reduceMotion ? nil : .easeOut(duration: 0.12), value: store.viewFiltering)
+        }.padding([.top, .horizontal], 24).background {
+            Color.clear.contentShape(Rectangle()).onTapGesture { store.clearMapSelection() }
+        }.opacity(store.viewFiltering ? 0.65 : 1).animation(
+            reduceMotion ? nil : .easeOut(duration: 0.12), value: store.viewFiltering)
     }
 
     private var mapLegend: some View {
@@ -238,9 +239,9 @@ struct MainView: View {
         VStack(spacing: 0) {
             fileListHeader
             fileTable.frame(maxHeight: .infinity)
-            Text(listStatus).font(.system(size: 10)).foregroundStyle(Palette.sub).frame(height: 18).opacity(
-                listStatus.isEmpty ? 0 : 1
-            ).accessibilityHidden(listStatus.isEmpty)
+            if !listStatus.isEmpty {
+                Text(listStatus).font(.system(size: 10)).foregroundStyle(Palette.sub).frame(height: 18)
+            }
         }
     }
 
