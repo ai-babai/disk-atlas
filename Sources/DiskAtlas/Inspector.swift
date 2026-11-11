@@ -4,7 +4,9 @@ import SwiftUI
 struct Inspector: View {
     @ObservedObject var store: AtlasStore
     var body: some View {
-        if let group = store.mapGroup, store.selection == nil {
+        if let focus = store.visibleDuplicateFocus {
+            DuplicateMapInspector(focus: focus, store: store)
+        } else if let group = store.mapGroup, store.selection == nil {
             MapGroupInspector(group: group, parent: store.index?.snapshot.entries[group.parent].path ?? "").id(
                 store.language)
         } else {

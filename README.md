@@ -95,9 +95,14 @@ shasum -a 256 -c SHA256SUMS.txt
 | ⌘B / ⌥⌘I | Toggle navigation / inspector |
 | ⇧⌘C | Copy the current scope as agent-friendly JSON |
 
-The folder map stays visible in **Disk usage**. Use **Contents / Largest files**
+The folder map stays visible in **Disk usage**. Use **Contents / Largest files / Duplicates**
 directly above the list to switch between immediate contents and files throughout
-the current folder. Search, type filters and selection stay in place. Selecting a
+the current folder, or confirmed duplicate groups from the saved report. In Duplicates,
+select a group to highlight its copies on the current map; use its disclosure arrow
+to compare individual copies. Creation and modification dates have their own columns,
+and full duplicate paths wrap instead of being truncated. The inspector summarizes
+folders and copy counts. Switching list modes preserves the map divider and scale.
+Search and filters are retained in their respective lists. Selecting an ordinary
 row outlines its location on the map, or the nearest visible containing folder or
 grouped area, without changing the map scale. Drag the divider below the map to allocate more height to the list. Resize column headers, use Shift-click for checkbox ranges, and choose secondary columns in Settings. Click a column heading to sort
 by name, creation date, modification date, size or share; click again to reverse.

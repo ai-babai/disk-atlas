@@ -139,9 +139,12 @@ the scroll destination, including header insets, before the short animation. Agg
 tiles select a temporary list group. Inspector content is constrained to its viewport width so long
 paths cannot stretch or shift the panel.
 
-The map remains above the file list in both Contents and Largest files modes.
+The map remains above Contents, Largest files and Duplicates lists.
 The segmented control sits with the list count and search, making its scope local;
-it changes the existing row query without navigating or replacing the index.
+it changes the lower list without navigating or replacing the index. Duplicate groups reuse
+the current confirmed report and its metadata filters; entering that mode does not
+start content comparison. The ordinary outline remains mounted beneath the duplicate
+overlay to preserve expansion state and the split's fitting geometry.
 The table viewport depends on window height, not mode or result count; fixed count
 and status slots avoid shifting the map when only rows change. Narrow controls
 wrap before the table. This follows [Apple’s segmented-control grouping guidance](https://developer.apple.com/design/human-interface-guidelines/segmented-controls)
@@ -312,7 +315,7 @@ These checks are outside the repository; no durable test artifacts are added.
 ## Workspace and saved-analysis windows
 
 The native vertical split between map and list remembers its divider position.
-Contents/Largest files still changes only the lower list. File rows allow native
+Contents/Largest files/Duplicates changes only the lower list. File rows allow native
 column resizing; optional created/modified/share columns and appearance persist
 in local preferences. Shift-click selects a checkbox range without changing the
 single inspector/Quick Look focus. Settings uses the standard ⌘, command;
@@ -363,3 +366,34 @@ The file-list header draws the same native AppKit switch cell as row checkboxes.
 Its states are empty / mixed / checked, based only on displayed objects, and its
 accessibility role/value expose that state. The default disclosure instruction is
 removed; the reserved selection/action row keeps its height when selection changes.
+
+
+## Duplicate list presentation
+
+The embedded and full-report views share group/copy rows. `FileListMetrics` keeps
+native proportions: 33-point ordinary rows and a 43-point minimum for two-line
+rows/groups. Duplicate paths wrap to their full height; checkboxes never change
+that height. Created/modified columns honor the same preferences as the ordinary
+table, use numeric dates and show no fabricated group date. The embedded column
+header stays fixed while copies scroll; narrow tables scroll horizontally.
+
+Group focus, disclosure and Trash selection are independent in the embedded list.
+Only an explicit group-row selection starts map highlighting; entering the mode,
+restoring a requested group or expanding copies does not. Focus builds
+ancestor copy counts on a cancellable metadata worker for the current presentation
+index. Outlines are painted from the exact rectangles used by the tile painter,
+inside their bounds, with a 1.5-point border. Up to 12 copies in the current folder
+use their deepest visible locations. Larger groups use occupied top-level areas
+with copy counts; if those exceed 12, one outline represents the current map
+folder. The number of marks is bounded and no paths are searched per frame.
+It never navigates automatically.
+An explicit overview action returns to the snapshot root for copies outside the
+current folder. Source/index identity checks reject stale focus results. The
+highlight has its own light/dark/high-contrast token, leaving the application
+palette and file-kind colors unchanged.
+
+The inspector contains copy count, copy size, repeated volume and up to four
+folder summaries, chosen with a bounded top-four pass, rather than a second list
+of every path. Full paths remain in
+the main copy list and the mandatory Trash review. Original Trash validation,
+Quick Look consent and content-reading boundaries remain in force.

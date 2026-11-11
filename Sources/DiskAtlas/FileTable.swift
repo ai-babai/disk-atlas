@@ -46,7 +46,7 @@ struct FileTable: NSViewRepresentable {
         scroll.autohidesScrollers = true
         scroll.drawsBackground = false
         let table = AtlasTableView()
-        table.headerView = AtlasHeaderView(frame: NSRect(x: 0, y: 0, width: 500, height: 28))
+        table.headerView = AtlasHeaderView(frame: NSRect(x: 0, y: 0, width: 500, height: FileListMetrics.headerHeight))
         table.autoresizesOutlineColumn = false
         table.indentationPerLevel = 14
         table.style = .plain
@@ -111,7 +111,7 @@ struct FileTable: NSViewRepresentable {
             scheme == .dark ? .accessibilityHighContrastDarkAqua : .accessibilityHighContrastAqua
         scroll.appearance = NSAppearance(named: contrast == .increased ? highContrast : appearance)
         table.backgroundColor = NSColor(Palette.paper)
-        table.rowHeight = showPaths ? 43 : 33
+        table.rowHeight = showPaths ? FileListMetrics.pathRowHeight : FileListMetrics.rowHeight
         let titles = [
             "name": "Имя", "created": "Создан", "modified": "Изменён", "size": logical ? "Размер" : "На диске",
             "share": "Доля",

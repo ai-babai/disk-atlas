@@ -9,6 +9,8 @@ import UniformTypeIdentifiers
         didSet {
             mapSelectionID = nil
             mapGroup = nil
+            clearDuplicateFocus()
+            updateDuplicateListScope()
             refreshRows()
         }
     }
@@ -41,6 +43,16 @@ import UniformTypeIdentifiers
             refreshRows()
         }
     }
+    @Published var duplicateList = false {
+        didSet {
+            clearDuplicateFocus()
+            if duplicateList { prepareDuplicateList() }
+        }
+    }
+    @Published var duplicateSelectionID: String?
+    @Published var duplicateMapFocus: DuplicateMapFocus?
+    var duplicateFocusTask: Task<Void, Never>?
+    var duplicateFocusWorker: Task<DuplicateMapFocus, Error>?
     @Published var largestFiles = false { didSet { refreshRows() } }
     @Published var logical = false {
         didSet {
@@ -360,19 +372,21 @@ import UniformTypeIdentifiers
     }
     func openDuplicateScope(_ entry: Entry) {
         guard duplicates.snapshotCreated == snapshot?.created, duplicates.lookup != nil else { return }
+        showDuplicates = false
+        duplicateList = true
         duplicates.resultFilter = DuplicateOptions()
         duplicates.scopePath = entry.isDirectory && !isVirtual(entry) ? entry.path : nil
         duplicates.focusedGroupID = entry.isDirectory ? nil : duplicates.lookup?.byPath[entry.path]
-        showDuplicates = true
     }
     func showDuplicateGroup(for path: String) {
         guard duplicates.snapshotCreated == snapshot?.created, let groupID = duplicates.lookup?.byPath[path] else {
             return
         }
+        showDuplicates = false
+        duplicateList = true
         duplicates.resultFilter = DuplicateOptions()
         duplicates.scopePath = nil
         duplicates.focusedGroupID = groupID
-        showDuplicates = true
     }
     func prepareDuplicates(debounce: Bool = false) {
         guard let snapshot else { return }
@@ -588,6 +602,7 @@ import UniformTypeIdentifiers
         baseIndex = index
         self.index = index
         fileTrash.reset()
+        duplicateList = false
         snapshot = value
         pendingPaths = value.scanRoots
         folderID = 0
@@ -630,6 +645,7 @@ import UniformTypeIdentifiers
         }
     }
     func selectMapGroup(_ group: MapGroup) {
+        clearDuplicateFocus()
         mapGroup = group
         selection = nil
         mapSelectionID = nil
@@ -638,6 +654,7 @@ import UniformTypeIdentifiers
     }
     var hasMapSelection: Bool { selection != nil || mapGroup != nil || mapSelectionID != nil }
     func clearMapSelection() {
+        clearDuplicateFocus()
         let scoped = mapGroup != nil || mapSelectionID != nil
         selection = nil
         mapGroup = nil
@@ -645,6 +662,7 @@ import UniformTypeIdentifiers
         if scoped { refreshRows() }
     }
     func selectFromMap(_ id: Int) {
+        clearDuplicateFocus()
         mapGroup = nil
         guard let snapshot = index?.snapshot, snapshot.entries.indices.contains(id) else { return }
         selection = id

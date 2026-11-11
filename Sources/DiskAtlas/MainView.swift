@@ -4,6 +4,11 @@ import SwiftUI
 
 struct MainView: View {
     @ObservedObject var store: AtlasStore
+    @ObservedObject private var duplicateSession: DuplicateSession
+    init(store: AtlasStore) {
+        self.store = store
+        duplicateSession = store.duplicates
+    }
     @Environment(\.openWindow) private var openWindow
     @FocusState private var searchFocused: Bool
     @State private var previewURL: URL?
@@ -21,9 +26,13 @@ struct MainView: View {
             } else {
                 ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-        }.disabled(store.loadingTitle != nil).background(Palette.paper).foregroundStyle(Palette.ink).tint(
-            Palette.accent
-        ).overlay {
+        }.onChange(of: store.index.map(ObjectIdentifier.init)) { _, _ in store.clearDuplicateFocus() }.onChange(
+            of: duplicateSession.search
+        ) { _, _ in store.clearDuplicateFocus() }.onChange(of: duplicateSession.resultFilter) { _, _ in
+            store.clearDuplicateFocus()
+        }.onChange(of: duplicateSession.trashMovedCount) { _, _ in store.clearDuplicateFocus() }.disabled(
+            store.loadingTitle != nil
+        ).background(Palette.paper).foregroundStyle(Palette.ink).tint(Palette.accent).overlay {
             if let title = store.loadingTitle {
                 SnapshotLoadingView(title: title, stage: store.loadingStage).transition(.opacity)
             }
@@ -43,9 +52,9 @@ struct MainView: View {
                 openWindow(id: "history")
                 store.showHistory = false
             }
-        }.onChange(of: store.searchRequest) { _, _ in if !store.showDuplicates { searchFocused = true } }.sheet(
-            isPresented: $store.showSourcePicker
-        ) {
+        }.onChange(of: store.searchRequest) { _, _ in
+            if !store.showDuplicates && !store.duplicateList { searchFocused = true }
+        }.sheet(isPresented: $store.showSourcePicker) {
             VStack(alignment: .leading, spacing: 23) {
                 Text(L10n.text("Что будем анализировать?")).font(.system(size: 25, weight: .semibold))
                 ScanSetup(store: store)
@@ -98,10 +107,20 @@ struct MainView: View {
         }
     }
     private var listMode: some View {
-        Picker(L10n.text("Список файлов"), selection: $store.largestFiles) {
-            Text(L10n.text("Содержимое")).tag(false)
-            Text(L10n.text("Крупные файлы")).tag(true)
-        }.pickerStyle(.segmented).labelsHidden().controlSize(.small).frame(width: 210)
+        Picker(
+            L10n.text("Список файлов"),
+            selection: Binding(
+                get: { store.duplicateList ? 2 : store.largestFiles ? 1 : 0 },
+                set: { mode in
+                    store.duplicateList = mode == 2
+                    if mode != 2 { store.largestFiles = mode == 1 }
+                })
+        ) {
+            Text(L10n.text("Содержимое")).tag(0)
+            Text(L10n.text("Крупные файлы")).tag(1)
+            Text(L10n.text("Дубликаты")).tag(2)
+        }.pickerStyle(.segmented).labelsHidden().controlSize(.small).frame(width: 306).disabled(
+            duplicateSession.trashing || duplicateSession.trashPreparing)
     }
     private var viewOptions: some View {
         HStack(spacing: 8) {
@@ -129,10 +148,10 @@ struct MainView: View {
             if store.scanning { progressBanner }
             VSplitView {
                 VStack(alignment: .leading, spacing: 10) {
-                    displayControls
+                    displayControls.fixedSize(horizontal: false, vertical: true)
                     TreemapView(store: store).frame(minHeight: 120, maxHeight: .infinity)
                     mapLegend.padding(.bottom, 8)
-                }.frame(minHeight: 175, idealHeight: 290).background(WorkspaceSplitConfiguration())
+                }.frame(minHeight: 230, idealHeight: 290).background(WorkspaceSplitConfiguration())
                 fileList.frame(minHeight: 190, idealHeight: 320).padding(.top, 10)
             }
         }.padding(24).background { Color.clear.contentShape(Rectangle()).onTapGesture { store.clearMapSelection() } }
@@ -210,6 +229,15 @@ struct MainView: View {
     }
 
     private var fileList: some View {
+        ordinaryFileList.opacity(store.duplicateList ? 0 : 1).allowsHitTesting(!store.duplicateList)
+            .accessibilityHidden(store.duplicateList).overlay {
+                if store.duplicateList {
+                    DuplicatesView(store: store, session: store.duplicates, listControls: AnyView(listSummary))
+                        .background(Palette.paper)
+                }
+            }
+    }
+    private var ordinaryFileList: some View {
         VStack(spacing: 0) {
             fileListHeader
             fileTable.frame(maxHeight: .infinity)
@@ -267,8 +295,9 @@ struct MainView: View {
     private var listSummary: some View {
         HStack(spacing: 10) {
             listMode
-            Text(store.rowCount.formatted()).font(.system(size: 10, design: .monospaced)).foregroundStyle(Palette.sub)
-                .frame(width: 74, alignment: .leading)
+            Text((store.duplicateList ? duplicateSession.orderedCount : store.rowCount).formatted()).font(
+                .system(size: 10, design: .monospaced)
+            ).foregroundStyle(Palette.sub).frame(width: 74, alignment: .leading)
         }
     }
     @ViewBuilder private var typeSelection: some View {

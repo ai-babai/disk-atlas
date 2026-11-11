@@ -84,7 +84,7 @@ struct TreemapView: View {
         if let index = store.index {
             TreemapSurface(
                 index: index, folder: store.folderID, logical: store.logical, language: store.language,
-                selection: store.mapHighlight, store: store
+                selection: store.mapHighlight, duplicateFocus: store.visibleDuplicateFocus, store: store
             ).equatable()
         }
     }
@@ -97,12 +97,14 @@ private struct TreemapSurface: View, Equatable {
     let logical: Bool
     let language: String
     let selection: Int?
+    let duplicateFocus: DuplicateMapFocus?
     let store: AtlasStore
     @State private var interaction = MapInteraction()
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.index === rhs.index && lhs.folder == rhs.folder && lhs.logical == rhs.logical
             && lhs.language == rhs.language && lhs.selection == rhs.selection
+            && lhs.duplicateFocus === rhs.duplicateFocus
     }
     var body: some View {
         GeometryReader { geometry in
@@ -117,6 +119,7 @@ private struct TreemapSurface: View, Equatable {
                     logical ? index.snapshot.entries[$0].logicalBytes > 0 : index.snapshot.entries[$0].bytes > 0
                 } ?? false
             let focused = MapSelectionGeometry.target(tiles, ancestors: ancestors, hasArea: hasArea)?.id
+            let detail = duplicateFocus?.detail(in: folder, tiles: tiles)
             ZStack(alignment: .topLeading) {
                 Palette.soft
                 if tiles.isEmpty {
@@ -125,11 +128,12 @@ private struct TreemapSurface: View, Equatable {
                         description: Text(L10n.text("Папка пуста или данные недоступны.")))
                 }
                 ForEach(tiles) { tile in
-                    TreemapTile(
-                        tile: tile, index: index, logical: logical, language: language,
-                        selection: focused == tile.id ? selection : nil, parent: folder, siblings: tiles, store: store
-                    ).equatable().frame(width: max(0, tile.rect.width - 3), height: max(0, tile.rect.height - 3))
-                        .position(x: tile.rect.midX, y: tile.rect.midY)
+                    tileView(tile, siblings: tiles, focused: focused, detail: detail).frame(
+                        width: max(0, tile.rect.width - 3), height: max(0, tile.rect.height - 3)
+                    ).position(x: tile.rect.midX, y: tile.rect.midY)
+                }
+                if detail == .overview, let duplicateFocus {
+                    DuplicateTileHighlight(copies: duplicateFocus.counts[folder, default: 0], radius: 9)
                 }
             }.clipShape(RoundedRectangle(cornerRadius: 9)).contentShape(Rectangle()).gesture(
                 SpatialTapGesture().onEnded { tap in
@@ -147,6 +151,18 @@ private struct TreemapSurface: View, Equatable {
         }.onChange(of: selection) { _, value in if value == nil { interaction = MapInteraction() } }
     }
 
+    private func tileView(_ tile: MapTile, siblings: [MapTile], focused: Int?, detail: DuplicateMapFocus.Detail?)
+        -> some View
+    {
+        TreemapTile(
+            tile: tile, index: index, logical: logical, language: language,
+            selection: focused == tile.id ? selection : nil, duplicateFocus: detail == .overview ? nil : duplicateFocus,
+            duplicateCopies: detail == .overview
+                ? 0 : duplicateFocus?.copies(in: tile, parent: folder, siblings: siblings) ?? 0,
+            coarseDuplicates: detail == .folders, parent: folder, siblings: siblings, store: store
+        ).equatable()
+    }
+
 }
 
 private struct TreemapTile: View, Equatable {
@@ -155,6 +171,9 @@ private struct TreemapTile: View, Equatable {
     let logical: Bool
     let language: String
     let selection: Int?
+    let duplicateFocus: DuplicateMapFocus?
+    let duplicateCopies: Int
+    let coarseDuplicates: Bool
     let parent: Int
     let siblings: [MapTile]
     let store: AtlasStore
@@ -166,7 +185,8 @@ private struct TreemapTile: View, Equatable {
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.tile == rhs.tile && lhs.index === rhs.index && lhs.logical == rhs.logical && lhs.language == rhs.language
-            && lhs.selection == rhs.selection
+            && lhs.selection == rhs.selection && lhs.duplicateFocus === rhs.duplicateFocus
+            && lhs.duplicateCopies == rhs.duplicateCopies && lhs.coarseDuplicates == rhs.coarseDuplicates
     }
     var body: some View {
         artwork.clipped().contentShape(Rectangle()).help(
@@ -190,11 +210,15 @@ private struct TreemapTile: View, Equatable {
             if showsChildren, let entry {
                 NestedMapArtwork(
                     index: index, parent: entry.id, logical: logical, language: language,
-                    selection: selected ? nil : selection
+                    selection: selected ? nil : selection, duplicateFocus: coarseDuplicates ? nil : duplicateFocus,
+                    duplicateCopies: coarseDuplicates ? 0 : duplicateCopies
                 ).equatable().allowsHitTesting(false)
             }
             if tile.rect.width > 45 && tile.rect.height > 28 { label }
             RoundedRectangle(cornerRadius: 5).strokeBorder(selected ? Palette.ink : Color.clear, lineWidth: 2)
+            if duplicateCopies > 0 && (coarseDuplicates || !showsChildren) {
+                DuplicateTileHighlight(copies: duplicateCopies, radius: 5)
+            }
         }
     }
     private var label: some View {
@@ -261,14 +285,22 @@ private struct NestedMapArtwork: View, Equatable {
     let logical: Bool
     let language: String
     let selection: Int?
+    let duplicateFocus: DuplicateMapFocus?
+    let duplicateCopies: Int
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.index === rhs.index && lhs.parent == rhs.parent && lhs.logical == rhs.logical
             && lhs.language == rhs.language && lhs.selection == rhs.selection
+            && lhs.duplicateFocus === rhs.duplicateFocus && lhs.duplicateCopies == rhs.duplicateCopies
     }
     var body: some View {
         Canvas(rendersAsynchronously: true) { context, size in
             let interior = CGRect(x: 5, y: 40, width: max(0, size.width - 10), height: max(0, size.height - 45))
-            paintChildren(snapshot: index.snapshot, parent: parent, bounds: interior, depth: 0, context: &context)
+            let matched = paintChildren(
+                snapshot: index.snapshot, parent: parent, bounds: interior, depth: 0, context: &context)
+            if duplicateCopies > 0 && !matched {
+                DuplicateMapHighlight.draw(
+                    CGRect(origin: .zero, size: size), copies: duplicateCopies, radius: 5, context: &context)
+            }
             if let selection {
                 let node = index.snapshot.entries[selection]
                 let rect =
@@ -283,29 +315,44 @@ private struct NestedMapArtwork: View, Equatable {
     }
     private func paintChildren(
         snapshot: Snapshot, parent: Int, bounds: CGRect, depth: Int, context: inout GraphicsContext
-    ) {
+    ) -> Bool {
         let tiles = TreemapLayout.tiles(
             index.children(of: parent, logical: logical, limit: 40), logical: logical, in: bounds, limit: 40,
             totalCount: snapshot.entries[parent].children.count,
             totalBytes: logical ? snapshot.entries[parent].logicalBytes : snapshot.entries[parent].bytes)
+        var matched = false
         for tile in tiles {
-            let rect = tile.rect.insetBy(dx: 1, dy: 1)
-            guard rect.width > 1, rect.height > 1 else { continue }
-            let node = tile.id >= 0 ? snapshot.entries[tile.id] : nil
-            let color = node?.kind.tint ?? FileKind.other.tint
-            context.fill(Path(roundedRect: rect, cornerRadius: 2), with: .color(color.opacity(0.62)))
-            let labelHeight = NestedMapGeometry.labelHeight(rect)
-            if labelHeight > 0 {
-                var clipped = context
-                clipped.clip(to: Path(CGRect(x: rect.minX + 4, y: rect.minY + 3, width: rect.width - 8, height: 14)))
-                clipped.draw(
-                    Text(tile.name).font(.system(size: 9, weight: .medium)).foregroundColor(.black.opacity(0.8)),
-                    at: CGPoint(x: rect.minX + 4, y: rect.minY + 3), anchor: .topLeading)
-            }
-            if let childBounds = NestedMapGeometry.childBounds(rect, entry: node, depth: depth), let node {
-                paintChildren(
-                    snapshot: snapshot, parent: node.id, bounds: childBounds, depth: depth + 1, context: &context)
-            }
+            matched = paintTile(tile, siblings: tiles, parent: parent, depth: depth, context: &context) || matched
         }
+        return matched
+    }
+    private func paintTile(
+        _ tile: MapTile, siblings: [MapTile], parent: Int, depth: Int, context: inout GraphicsContext
+    ) -> Bool {
+        let rect = tile.rect.insetBy(dx: 1, dy: 1)
+        guard rect.width > 1, rect.height > 1 else { return false }
+        let node = tile.id >= 0 ? index.snapshot.entries[tile.id] : nil
+        let color = node?.kind.tint ?? FileKind.other.tint
+        context.fill(Path(roundedRect: rect, cornerRadius: 2), with: .color(color.opacity(0.62)))
+        paintLabel(tile.name, rect: rect, context: &context)
+        var matched = false
+        if let childBounds = NestedMapGeometry.childBounds(rect, entry: node, depth: depth), let node {
+            matched = paintChildren(
+                snapshot: index.snapshot, parent: node.id, bounds: childBounds, depth: depth + 1, context: &context)
+        }
+        let copies = duplicateFocus?.copies(in: tile, parent: parent, siblings: siblings) ?? 0
+        if copies > 0 && !matched && rect.width > 3 && rect.height > 3 {
+            DuplicateMapHighlight.draw(rect, copies: copies, radius: 2, context: &context)
+            return true
+        }
+        return matched
+    }
+    private func paintLabel(_ name: String, rect: CGRect, context: inout GraphicsContext) {
+        guard NestedMapGeometry.labelHeight(rect) > 0 else { return }
+        var clipped = context
+        clipped.clip(to: Path(CGRect(x: rect.minX + 4, y: rect.minY + 3, width: rect.width - 8, height: 14)))
+        clipped.draw(
+            Text(name).font(.system(size: 9, weight: .medium)).foregroundColor(.black.opacity(0.8)),
+            at: CGPoint(x: rect.minX + 4, y: rect.minY + 3), anchor: .topLeading)
     }
 }

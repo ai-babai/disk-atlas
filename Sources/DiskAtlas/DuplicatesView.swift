@@ -4,7 +4,14 @@ import SwiftUI
 struct DuplicatesView: View {
     @ObservedObject var store: AtlasStore
     @ObservedObject var session: DuplicateSession
+    var listControls: AnyView? = nil
+    private var embedded: Bool { listControls != nil }
     @FocusState private var searchFocused: Bool
+    @AppStorage("atlas.column.created") private var createdVisible = true
+    @AppStorage("atlas.column.modified") private var modifiedVisible = true
+    private var columns: DuplicateTableColumns {
+        DuplicateTableColumns(created: createdVisible, modified: modifiedVisible)
+    }
     @State private var parameters = false
     @State private var expanded = Set<String>()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -30,20 +37,9 @@ struct DuplicatesView: View {
         return result
     }
     var body: some View {
-        ScrollViewReader { reader in
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    header
-                    errorBanner
-                    scopeSwitch
-                    status
-                    coverageNotice
-                    resultSearch
-                    trashSelectionBar
-                    results
-                    reportFooter
-                }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
-            }.onAppear { focus(reader) }.onChange(of: session.focusedGroupID) { _, _ in focus(reader) }
+        VStack(spacing: 0) {
+            if embedded { embeddedHeader }
+            resultViewport
         }.onChange(of: store.searchRequest) { _, _ in searchFocused = true }.background(Palette.paper).sheet(
             item: $session.trashReview
         ) { plan in
@@ -55,6 +51,70 @@ struct DuplicatesView: View {
                 } ?? session.title, options: session.hasResultContext ? session.resultFilter : session.options,
                 confirm: store.prepareDuplicateCheck)
         }
+    }
+    @ViewBuilder private var resultViewport: some View { if embedded { embeddedViewport } else { fullViewport } }
+    private var embeddedViewport: some View {
+        GeometryReader { geometry in
+            ScrollView(.horizontal) {
+                VStack(spacing: 0) {
+                    groupTableHeader
+                    ScrollViewReader { reader in
+                        ScrollView(.vertical) { reportContent.frame(maxWidth: .infinity, alignment: .topLeading) }
+                            .onAppear { focus(reader) }.onChange(of: session.focusedGroupID) { _, _ in focus(reader) }
+                    }
+                }.frame(width: max(columns.minimumWidth, geometry.size.width), height: geometry.size.height)
+            }
+        }
+    }
+    private var fullViewport: some View {
+        GeometryReader { geometry in
+            ScrollViewReader { reader in
+                ScrollView([.vertical, .horizontal]) {
+                    reportContent.frame(width: max(columns.minimumWidth, geometry.size.width - 48), alignment: .leading)
+                        .frame(minHeight: max(0, geometry.size.height - 48), alignment: .topLeading).padding(24)
+                }.onAppear { focus(reader) }.onChange(of: session.focusedGroupID) { _, _ in focus(reader) }
+            }
+        }
+    }
+    private var reportContent: some View {
+        VStack(alignment: .leading, spacing: embedded ? 12 : 20) {
+            if !embedded { header }
+            errorBanner
+            scopeSwitch
+            if !embedded || session.busy || session.report == nil { status }
+            coverageNotice
+            if !embedded {
+                resultSearch
+                trashSelectionBar
+            }
+            results
+            if !embedded { reportFooter }
+        }
+    }
+    private var embeddedHeader: some View {
+        VStack(spacing: 8) {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) {
+                    listControls
+                    Spacer(minLength: 8)
+                    resultSearch.frame(width: 214)
+                    parametersButton
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    listControls
+                    HStack {
+                        resultSearch
+                        Spacer(minLength: 8)
+                        parametersButton
+                    }
+                }
+            }
+            HStack {
+                if let focus = store.visibleDuplicateFocus { DuplicateMapSelectionInfo(focus: focus, store: store) }
+                Spacer(minLength: 0)
+                trashSelectionBar.frame(maxWidth: 400, alignment: .trailing)
+            }.frame(height: 28)
+        }.padding(.bottom, 6)
     }
     @ViewBuilder private var errorBanner: some View {
         if let error = session.error {
@@ -77,7 +137,7 @@ struct DuplicatesView: View {
     }
     @ViewBuilder private var results: some View {
         if !visibleGroups.isEmpty {
-            groupTable.id(store.language)
+            Group { if embedded { groupRows } else { groupTable } }.id(store.language)
             if session.hasMoreResults {
                 HStack {
                     Text("\(session.orderedGroups.count.formatted()) / \(session.orderedCount.formatted())").font(
@@ -105,7 +165,7 @@ struct DuplicatesView: View {
                     Image(systemName: "xmark.circle.fill")
                 }.buttonStyle(.plain)
             }
-        }.font(.system(size: 12)).padding(8).frame(maxWidth: 360).background(
+        }.font(.system(size: embedded ? 11 : 12)).padding(embedded ? 7 : 8).frame(maxWidth: 360).background(
             Palette.soft, in: RoundedRectangle(cornerRadius: 6)
         ).disabled(!session.canFilterResults)
     }
@@ -137,26 +197,42 @@ struct DuplicatesView: View {
     }
     private var groupTable: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                sortHeading("Файлы", key: .name).padding(.leading, 70)
-                Spacer()
-                ProgressView().controlSize(.mini).frame(width: 16, height: 16).opacity(session.sorting ? 1 : 0)
-                    .accessibilityHidden(!session.sorting)
-                sortHeading("Копии", key: .copies).frame(width: 52, alignment: .trailing)
-                sortHeading("Повторы", key: .repeatedBytes).frame(width: 100, alignment: .trailing).help(
+            groupTableHeader
+            groupRows
+        }
+    }
+    private var groupRows: some View { LazyVStack(spacing: 0) { ForEach(visibleGroups) { group in groupRow(group) } } }
+    private var groupTableHeader: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                Color.clear.frame(width: FileListMetrics.checkWidth)
+                sortHeading("Имя", key: .name).padding(.leading, 40).frame(
+                    minWidth: DuplicateTableColumns.nameWidth, maxWidth: .infinity, alignment: .leading)
+                if columns.created { dateHeading("Создан") }
+                if columns.modified { dateHeading("Изменён") }
+                sortHeading("Копии", key: .copies).frame(width: DuplicateTableColumns.copiesWidth, alignment: .trailing)
+                sortHeading("Повторы", key: .repeatedBytes).padding(.horizontal, 6).frame(
+                    width: FileListMetrics.sizeWidth, alignment: .trailing
+                ).help(
                     L10n.text(
                         "Повторный объём не равен гарантированно освобождаемому месту: APFS может разделять блоки."))
-                Color.clear.frame(width: 24)
-            }.font(.system(size: 10, weight: .medium)).foregroundStyle(Palette.sub).padding(.horizontal, 12).padding(
-                .bottom, 10)
+                ProgressView().controlSize(.mini).frame(width: DuplicateTableColumns.actionsWidth, height: 16).opacity(
+                    session.sorting ? 1 : 0
+                ).accessibilityHidden(!session.sorting)
+            }.font(.system(size: 10, weight: .medium)).foregroundStyle(Palette.sub).padding(.horizontal, 8).frame(
+                height: FileListMetrics.headerHeight)
             Divider().overlay(Palette.line)
-            LazyVStack(spacing: 0) { ForEach(visibleGroups) { group in groupRow(group) } }
         }
+    }
+    private func dateHeading(_ label: String) -> some View {
+        Text(L10n.text(label)).padding(.horizontal, 6).frame(width: FileListMetrics.dateWidth, alignment: .leading)
     }
     private func groupRow(_ group: DuplicateGroup) -> some View {
         DuplicateGroupRow(
             group: group, session: session,
-            expanded: Binding(get: { expanded.contains(group.id) }, set: { setExpanded(group.id, value: $0) })
+            expanded: Binding(get: { expanded.contains(group.id) }, set: { setExpanded(group.id, value: $0) }),
+            columns: columns, select: embedded ? { store.focusDuplicateGroup(group) } : nil,
+            selected: embedded && store.duplicateSelectionID == group.id
         ).id(group.id)
     }
     private func setExpanded(_ id: String, value: Bool) {
@@ -169,7 +245,7 @@ struct DuplicatesView: View {
                 "Размер содержимого всех выбранных копий. APFS может разделять блоки; это не гарантированно освобождаемое место."
             ), busy: session.trashPreparing || session.trashing, notice: session.trashNotice,
             clear: { session.trashSelection = DuplicateTrashSelection() }, review: { session.reviewTrash() },
-            stop: session.stop
+            stop: session.stop, compact: embedded
         ).id(store.language).disabled(session.busy && !session.trashPreparing && !session.trashing)
     }
     @ViewBuilder private var reportFooter: some View {

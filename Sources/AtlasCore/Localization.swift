@@ -354,7 +354,7 @@ public enum L10n {
         "Весь диск Mac · данные": "Mac · data volume", "Убрать из анализа": "Remove from scan",
         "Не удалось выполнить действие": "Could not complete the action", "Понятно": "OK",
         "Что будем анализировать?": "What would you like to analyze?", "Отмена": "Cancel",
-        "На уровень выше · ⌘↑": "Go up · ⌘↑", "Обзор пространства": "Space overview",
+        "На уровень выше · ⌘↑": "Go up · ⌘↑", "Обзор пространства": "Space overview", "На карте: ": "On map: ",
         "Повторить сканирование · ⌘R": "Rescan · ⌘R", "Сохранить снимок · ⌘S": "Save snapshot · ⌘S",
         "Новый анализ": "New scan", "Карта папки": "Folder map", "Двойной щелчок — внутрь": "Double-click to explore",
         "Размер": "Size", "Выделенные блоки или логический размер файлов": "Allocated blocks or logical file size",
