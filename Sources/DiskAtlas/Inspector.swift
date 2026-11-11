@@ -23,8 +23,10 @@ struct Inspector: View {
                         selectionFacts(entry)
                         selectionActions(entry)
                     }
-                    Divider().overlay(Palette.line)
-                    FileTypeComposition(store: store)
+                    if let entry = store.selected, entry.isDirectory {
+                        Divider().overlay(Palette.line)
+                        FileTypeComposition(store: store, folder: entry).id(entry.id)
+                    }
                     Divider().overlay(Palette.line)
                     Text(
                         L10n.text(

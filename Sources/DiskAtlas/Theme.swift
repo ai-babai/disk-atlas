@@ -29,6 +29,8 @@ enum Palette {
     static let line = adaptive(0xdce4de, 0x3a4d40, contrastLight: 0x708478, contrastDark: 0x91ac99)
     static let accent = adaptive(0x426f52, 0x9ec4a8)
     static let duplicateHighlight = adaptive(0x18796c, 0x7de0c3, contrastLight: 0x0c5d52, contrastDark: 0xb1f3d9)
+    static let destructive = adaptive(0xb3261e, 0xff9a91, contrastLight: 0x8f1812, contrastDark: 0xffc2bb)
+    static let destructiveFill = adaptive(0xfce9e7, 0x452524)
     static let selectedText = adaptive(0x315b40, 0xd6eddb)
     static let mark = adaptive(0xdcebe0, 0x2e4b37)
 }

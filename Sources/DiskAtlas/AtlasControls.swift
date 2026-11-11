@@ -15,30 +15,34 @@ private struct AtlasButtonSurface: View {
     let grouped: Bool
     @Environment(\.isEnabled) private var enabled
     @Environment(\.isFocused) private var focused
-    @Environment(\.controlSize) private var size
     @State private var hovered = false
+    private var destructive: Bool { configuration.role == .destructive }
     private var fill: Color {
         guard enabled else { return grouped ? .clear : Palette.soft }
         if grouped { return configuration.isPressed || hovered ? Palette.line.opacity(0.2) : .clear }
+        if destructive {
+            return configuration.isPressed || hovered ? Palette.destructive.opacity(0.22) : Palette.destructiveFill
+        }
         return emphasized || configuration.isPressed
             ? Palette.mark : hovered ? Palette.mark.opacity(0.65) : Palette.soft
     }
     private var border: Color {
         if grouped { return .clear }
+        if destructive && enabled { return Palette.destructive.opacity(focused ? 1 : 0.6) }
         if focused && enabled { return Palette.accent }
         return emphasized && enabled ? Palette.accent.opacity(0.45) : Palette.line.opacity(enabled ? 0.6 : 0.4)
     }
     var body: some View {
         configuration.label.font(.system(size: 11)).foregroundStyle(
             enabled
-                ? (grouped
-                    ? (emphasized ? Palette.selectedText : Palette.sub) : (emphasized ? Palette.accent : Palette.ink))
+                ? (destructive
+                    ? Palette.destructive : emphasized ? Palette.selectedText : grouped ? Palette.sub : Palette.ink)
                 : Palette.sub.opacity(0.65)
-        ).padding(.horizontal, 10).padding(.vertical, 4).frame(minHeight: grouped ? 28 : size == .large ? 32 : 28)
-            .background(fill, in: RoundedRectangle(cornerRadius: 6)).overlay {
-                RoundedRectangle(cornerRadius: 6).strokeBorder(
-                    border, lineWidth: !grouped && focused && enabled ? 2 : 1)
-            }.contentShape(RoundedRectangle(cornerRadius: 6)).onHover { hovered = $0 }
+        ).padding(.horizontal, 10).padding(.vertical, 4).frame(minHeight: 28).background(
+            fill, in: RoundedRectangle(cornerRadius: 6)
+        ).overlay {
+            RoundedRectangle(cornerRadius: 6).strokeBorder(border, lineWidth: !grouped && focused && enabled ? 2 : 1)
+        }.contentShape(RoundedRectangle(cornerRadius: 6)).onHover { hovered = $0 }
     }
 }
 

@@ -3,15 +3,16 @@ import SwiftUI
 
 struct FileTypeComposition: View {
     @ObservedObject var store: AtlasStore
+    let folder: Entry
     @State private var expanded: FileKind?
     @State private var values: [ExtensionTotal] = []
     @State private var loading = false
     private var request: String {
         let identity = store.index.map { String(describing: ObjectIdentifier($0)) } ?? ""
-        return "\(identity)-\(store.folderID)-\(store.logical)-\(expanded?.rawValue ?? "")"
+        return "\(identity)-\(folder.id)-\(store.logical)-\(expanded?.rawValue ?? "")"
     }
     var body: some View {
-        let kinds = store.index?.totals(of: store.folderID, logical: store.logical) ?? []
+        let kinds = store.index?.totals(of: folder.id, logical: store.logical) ?? []
         let total = max(1, kinds.reduce(Int64(0)) { $0 + $1.bytes })
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -21,8 +22,9 @@ struct FileTypeComposition: View {
                     Button(L10n.text("Все")) { store.selectedKinds = [] }.font(.system(size: 10)).buttonStyle(.plain)
                 }
             }
-            Text(L10n.text("Фильтр списка") + " · " + (store.folder.map(store.name) ?? "")).font(.system(size: 10))
-                .foregroundStyle(Palette.sub).lineLimit(1).truncationMode(.middle).help(store.folder?.path ?? "")
+            Text(store.name(folder)).font(.system(size: 10)).foregroundStyle(Palette.sub).lineLimit(1).truncationMode(
+                .middle
+            ).help(folder.path)
             ForEach(kinds, id: \.kind) { item in
                 VStack(spacing: 4) {
                     category(item, total: total)
@@ -108,10 +110,10 @@ struct FileTypeComposition: View {
             return
         }
         loading = true
-        let folder = store.folderID
+        let folderID = folder.id
         let logical = store.logical
         let worker = Task.detached(priority: .userInitiated) {
-            index.extensions(of: folder, kind: kind, logical: logical)
+            index.extensions(of: folderID, kind: kind, logical: logical)
         }
         let result = await withTaskCancellationHandler {
             await worker.value

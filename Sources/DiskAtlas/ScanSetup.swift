@@ -73,7 +73,7 @@ struct ScanSetup: View {
             HStack(spacing: 16) {
                 Button(L10n.text("Анализировать"), systemImage: "chart.pie") { store.analyzeSelection() }.buttonStyle(
                     AtlasButtonStyle(emphasized: true)
-                ).controlSize(.large).disabled(store.pendingPaths.isEmpty || store.scanning)
+                ).disabled(store.pendingPaths.isEmpty || store.scanning)
                 Text(L10n.text("Включая вложенные папки · без повторного подсчёта\nФайлы не изменяются")).font(
                     .system(size: 10)
                 ).foregroundStyle(Palette.sub).lineSpacing(3)

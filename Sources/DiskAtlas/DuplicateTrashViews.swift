@@ -117,15 +117,10 @@ struct DuplicateGroupRow: View {
         }.accessibilityAddTraits(selected ? .isSelected : [])
     }
     private var groupCheckbox: some View {
-        Button {
-            session.trashSelection.toggle(group)
-        } label: {
-            Image(
-                systemName: selectedCount == 0
-                    ? "square" : selectedCount == group.files.count ? "checkmark.square.fill" : "minus.square.fill"
-            ).frame(width: 24, height: 28)
-        }.buttonStyle(.plain).disabled(session.busy).help(L10n.text("Выбрать все копии группы для корзины"))
-            .accessibilityLabel(L10n.text("Выбрать все копии группы") + ": " + (group.displayName ?? ""))
+        AtlasRowToggle(
+            state: selectedCount == 0 ? .off : selectedCount == group.files.count ? .on : .mixed,
+            label: L10n.text("Выбрать все копии группы") + ": " + (group.displayName ?? "")
+        ) { session.trashSelection.toggle(group) }.frame(width: 24, height: 24).disabled(session.busy)
     }
     private func restorePreviewFocus(_ previous: URL?, current: URL?) {
         guard current == nil, let previous, expanded else { return }
@@ -155,10 +150,10 @@ struct DuplicateGroupRow: View {
             select == nil ? L10n.text("Показать все копии") : L10n.text("На карте: ") + (group.displayName ?? ""))
     }
     private var disclosureButton: some View {
-        Button(action: toggleExpanded) {
-            Image(systemName: expanded ? "chevron.down" : "chevron.right").font(.system(size: 8, weight: .semibold))
-                .frame(width: 24, height: 40).contentShape(Rectangle())
-        }.buttonStyle(.plain).accessibilityLabel(L10n.text("Показать все копии") + ": " + (group.displayName ?? ""))
+        AtlasRowToggle(
+            state: expanded ? .on : .off, disclosure: true,
+            label: L10n.text("Показать все копии") + ": " + (group.displayName ?? ""), action: toggleExpanded
+        ).frame(width: 24, height: 40)
     }
     private func toggleExpanded() { expanded.toggle() }
     private var groupName: some View {

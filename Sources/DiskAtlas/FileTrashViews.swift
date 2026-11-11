@@ -3,6 +3,7 @@ import SwiftUI
 
 /// This slot remains mounted at a fixed height, including with no checked items.
 struct TrashSelectionBar: View {
+    static let compactHeight: CGFloat = 36
     let count: Int
     let bytes: Int64?
     let sizeHelp: String
@@ -19,8 +20,8 @@ struct TrashSelectionBar: View {
                 actions(labels: false)
             }
         }.buttonStyle(AtlasButtonStyle()).font(.system(size: 11)).padding(.horizontal, compact ? 6 : 10).frame(
-            height: compact ? 28 : 40
-        ).background(Palette.soft.opacity(count > 0 || busy ? 1 : 0), in: RoundedRectangle(cornerRadius: 6))
+            height: compact ? Self.compactHeight : 40
+        ).background(Palette.soft.opacity(count > 0 || busy ? 1 : 0), in: RoundedRectangle(cornerRadius: 8))
     }
     private func actions(labels: Bool) -> some View {
         HStack(spacing: compact ? 6 : 10) {

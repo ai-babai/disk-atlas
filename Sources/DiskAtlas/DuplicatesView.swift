@@ -57,12 +57,14 @@ struct DuplicatesView: View {
         GeometryReader { geometry in
             ScrollView(.horizontal) {
                 VStack(spacing: 0) {
-                    groupTableHeader
+                    if !visibleGroups.isEmpty { groupTableHeader }
                     ScrollViewReader { reader in
                         ScrollView(.vertical) { reportContent.frame(maxWidth: .infinity, alignment: .topLeading) }
                             .onAppear { focus(reader) }.onChange(of: session.focusedGroupID) { _, _ in focus(reader) }
                     }
-                }.frame(width: max(columns.minimumWidth, geometry.size.width), height: geometry.size.height)
+                }.frame(
+                    width: max(visibleGroups.isEmpty ? 0 : columns.minimumWidth, geometry.size.width),
+                    height: geometry.size.height)
             }
         }
     }
@@ -70,8 +72,10 @@ struct DuplicatesView: View {
         GeometryReader { geometry in
             ScrollViewReader { reader in
                 ScrollView([.vertical, .horizontal]) {
-                    reportContent.frame(width: max(columns.minimumWidth, geometry.size.width - 48), alignment: .leading)
-                        .frame(minHeight: max(0, geometry.size.height - 48), alignment: .topLeading).padding(24)
+                    reportContent.frame(
+                        width: max(visibleGroups.isEmpty ? 0 : columns.minimumWidth, geometry.size.width - 48),
+                        alignment: .leading
+                    ).frame(minHeight: max(0, geometry.size.height - 48), alignment: .topLeading).padding(24)
                 }.onAppear { focus(reader) }.onChange(of: session.focusedGroupID) { _, _ in focus(reader) }
             }
         }
@@ -113,7 +117,7 @@ struct DuplicatesView: View {
                 if let focus = store.visibleDuplicateFocus { DuplicateMapSelectionInfo(focus: focus, store: store) }
                 Spacer(minLength: 0)
                 trashSelectionBar.frame(maxWidth: 400, alignment: .trailing)
-            }.frame(height: 28)
+            }.frame(height: TrashSelectionBar.compactHeight)
         }.padding(.bottom, 6)
     }
     @ViewBuilder private var errorBanner: some View {

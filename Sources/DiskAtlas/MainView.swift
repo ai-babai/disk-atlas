@@ -275,7 +275,7 @@ struct MainView: View {
                 Spacer(minLength: 4)
                 FileTrashControls(session: store.fileTrash, store: store, compact: true).id(store.language).frame(
                     maxWidth: 400, alignment: .trailing)
-            }.frame(height: 28, alignment: .leading)
+            }.frame(height: TrashSelectionBar.compactHeight, alignment: .leading)
         }.padding(.bottom, 6)
     }
     @ViewBuilder private var listSelectionInfo: some View {

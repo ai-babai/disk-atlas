@@ -11,12 +11,15 @@ The feeling is calm, clear, consistent; content and the map remain primary.
 
 `AtlasControls.swift` owns command surfaces:
 
-- `AtlasButtonStyle`: system 11 pt, 10 pt horizontal inset, radius 6, height 28 pt.
-  The existing large Analyze action uses the same geometry at 32 pt height.
+- `AtlasButtonStyle`: system 11 pt, 10 pt horizontal inset, radius 6, height 28 pt,
+  including Analyze and sheet confirmation actions.
 - Rest uses `Palette.soft`, `Palette.ink` and a subtle `Palette.line` outline. Hover uses a gentle `Palette.mark`;
   pressed uses the full mark. These states do not change geometry or animate.
 - Emphasized/default actions and selected modes use the same marked surface,
   accent text and a subtle accent outline. Keyboard focus has a stronger outline.
+- Destructive-role actions use the same geometry with a muted red surface, red
+  text and outline. Only the explicit final Trash confirmation receives this
+  destructive treatment; opening its review stays neutral.
 - Disabled controls retain their position and use muted text. The native Button
   still owns actions, disabled behavior, shortcuts and accessibility roles.
 - `AtlasSegments` groups mutually exclusive real buttons inside one 32 pt surface,
@@ -55,10 +58,24 @@ New analysis, Repeat and Save into separate targets. Language and appearance sta
 Save snapshot uses a diskette silhouette, with its accessible name and shortcut hint.
 Agent context belongs to automation/documentation, not the inspector surface.
 
-Duplicate disclosure arrows keep their 24 pt column and use a rectangular 24×40 pt
-hit area. Transparent space around the glyph must accept clicks, without overlapping
-the separate Trash checkbox or the row's map-selection action.
+Duplicate group checkboxes and disclosure arrows use AppKit controls to match the
+file outline, including mixed selection. Disclosure arrows keep their 24 pt column
+and a 24×40 pt hit area, separate from Trash checks and map selection.
+Compact Trash selection bars reserve 36 pt in every state: 28 pt buttons have
+4 pt above and below, inside an 8 pt rounded container. Checking items cannot
+change the table's header position.
+
+Duplicate table headings appear only with actual groups. The preparation/estimate,
+in-progress-without-matches and empty-result states have no empty table header.
+Those states fit the available panel width; the table's minimum width applies
+only when there are result rows.
 
 The workspace list extends to the status bar without bottom page padding. Reserve
 the small list-status row only for an actual empty-result or presentation-limit
 message; an invisible message must not consume table height.
+
+Inspector file-type totals and expanded extensions describe the inspected folder,
+including a single-click selection that leaves the map at its current level. With
+no selection they describe the open folder. Hide folder composition for individual
+files; their type already appears in the file details. Changing the inspected folder
+resets expanded extension rows and cancels the previous folder's metadata request.
