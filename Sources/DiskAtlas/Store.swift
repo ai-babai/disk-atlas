@@ -49,7 +49,8 @@ import UniformTypeIdentifiers
             if duplicateList { prepareDuplicateList() }
         }
     }
-    @Published var duplicateSelectionID: String?
+    @Published var duplicateSelectedGroup: DuplicateGroup?
+    var duplicateSelectionID: String? { duplicateSelectedGroup?.id }
     @Published var duplicateMapFocus: DuplicateMapFocus?
     var duplicateFocusTask: Task<Void, Never>?
     var duplicateFocusWorker: Task<DuplicateMapFocus, Error>?

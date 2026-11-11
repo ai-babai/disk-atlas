@@ -386,6 +386,9 @@ rows/groups. Duplicate paths wrap to their full height; checkboxes never change
 that height. Created/modified columns honor the same preferences as the ordinary
 table, use numeric dates and show no fabricated group date. The embedded column
 header stays fixed while copies scroll; narrow tables scroll horizontally.
+Groups are sections of one lazy stack, so expanding a group instantiates only
+nearby copies. Nested lazy stacks are avoided: they can leave empty scroll regions
+when the enclosing group moves offscreen. Disclosure updates without animation.
 
 Group focus, disclosure and Trash selection are independent in the embedded list.
 Only an explicit group-row selection starts map highlighting; entering the mode,
@@ -401,6 +404,12 @@ An explicit overview action returns to the snapshot root for copies outside the
 current folder. Source/index identity checks reject stale focus results. The
 highlight has its own light/dark/high-contrast token, leaving the application
 palette and file-kind colors unchanged.
+
+The selected group metadata is published synchronously, independently of the
+background map-count result. The inspector immediately shows the new duplicate
+name/count/size and fills folder summaries when ready, rather than briefly
+returning to ordinary file details. Cancelled/stale workers cannot replace a newer
+selection. The sidebar has no agent setup button; CLI usage is documented.
 
 The inspector contains copy count, copy size, repeated volume and up to four
 folder summaries, chosen with a bounded top-four pass, rather than a second list

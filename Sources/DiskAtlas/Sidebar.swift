@@ -21,17 +21,6 @@ struct Sidebar: View {
                 }.padding(.horizontal, 8)
             }.padding(.horizontal, -8)
             Spacer(minLength: 12)
-            Button {
-                store.showAgent = true
-            } label: {
-                HStack {
-                    Image(systemName: "terminal").font(.system(size: 14))
-                    Text(L10n.text("Для агента")).font(.system(size: 12, weight: .medium))
-                    Spacer()
-                    Image(systemName: "arrow.up.right").font(.system(size: 10))
-                }.foregroundStyle(Palette.accent).padding(11).background(
-                    Palette.mark, in: RoundedRectangle(cornerRadius: 8))
-            }.buttonStyle(.plain)
             HStack {
                 Text(L10n.text("Локально на твоём Mac")).font(.system(size: 10)).foregroundStyle(Palette.sub)
                 Spacer()

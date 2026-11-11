@@ -75,6 +75,7 @@ final class DuplicateMapFocus: Sendable {
 }
 
 extension AtlasStore {
+    var inspectedDuplicateGroup: DuplicateGroup? { duplicateList && !showDuplicates ? duplicateSelectedGroup : nil }
     var visibleDuplicateFocus: DuplicateMapFocus? {
         guard duplicateList, !showDuplicates, let focus = duplicateMapFocus, focus.index === index else { return nil }
         return focus
@@ -104,16 +105,18 @@ extension AtlasStore {
         duplicateFocusTask = nil
         duplicateFocusWorker = nil
         duplicateMapFocus = nil
-        duplicateSelectionID = nil
+        duplicateSelectedGroup = nil
     }
     func focusDuplicateGroup(_ group: DuplicateGroup) {
         guard let index, duplicates.snapshotCreated == snapshot?.created else { return }
         clearMapSelection()
-        duplicateSelectionID = group.id
+        duplicateSelectedGroup = group
         let worker = Task.detached(priority: .userInitiated) { try DuplicateMapFocus.build(group, index: index) }
         duplicateFocusWorker = worker
         duplicateFocusTask = Task {
-            guard let focus = try? await worker.value, !Task.isCancelled, self.index === index else { return }
+            guard let focus = try? await worker.value, !Task.isCancelled, self.index === index,
+                duplicateSelectionID == group.id
+            else { return }
             duplicateMapFocus = focus
         }
     }
@@ -143,35 +146,40 @@ struct DuplicateMapSelectionInfo: View {
 }
 
 struct DuplicateMapInspector: View {
-    let focus: DuplicateMapFocus
+    let group: DuplicateGroup
+    let focus: DuplicateMapFocus?
     @ObservedObject var store: AtlasStore
     var body: some View {
         GeometryReader { geometry in
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     SectionLabel(text: L10n.text("Дубликаты"))
-                    Text(focus.group.displayName ?? "").font(.system(size: 18, weight: .semibold)).textSelection(
-                        .enabled)
-                    fact("Копии", value: focus.group.files.count.formatted())
-                    fact("Размер копии", value: byteString(focus.group.fileBytes))
-                    fact("Повторы", value: byteString(focus.group.repeatedBytes))
+                    Text(group.displayName ?? "").font(.system(size: 18, weight: .semibold)).textSelection(.enabled)
+                    fact("Копии", value: group.files.count.formatted())
+                    fact("Размер копии", value: byteString(group.fileBytes))
+                    fact("Повторы", value: byteString(group.repeatedBytes))
                     Divider().overlay(Palette.line)
-                    SectionLabel(text: L10n.text("Папки") + " · " + focus.folderCount.formatted())
-                    ForEach(focus.locations.prefix(4)) { location in
-                        HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            Image(systemName: "folder").foregroundStyle(Palette.accent)
-                            Text(focus.locationName(location.path)).lineLimit(2).help(location.path)
-                            Spacer(minLength: 4)
-                            Text(location.count.formatted()).monospacedDigit().foregroundStyle(Palette.sub)
-                        }
-                    }
-                    if focus.folderCount > focus.locations.count {
-                        Text("+ \(focus.folderCount - focus.locations.count)").foregroundStyle(Palette.sub)
-                    }
+                    folders
                 }.font(.system(size: 11)).frame(width: max(0, geometry.size.width - 44), alignment: .leading).padding(
                     22)
             }
-        }.background(Palette.paper)
+        }.background(Palette.paper).transaction { $0.animation = nil }
+    }
+    @ViewBuilder private var folders: some View {
+        SectionLabel(text: L10n.text("Папки") + " · " + (focus?.folderCount.formatted() ?? "—"))
+        if let focus {
+            ForEach(focus.locations.prefix(4)) { location in
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Image(systemName: "folder").foregroundStyle(Palette.accent)
+                    Text(focus.locationName(location.path)).lineLimit(2).help(location.path)
+                    Spacer(minLength: 4)
+                    Text(location.count.formatted()).monospacedDigit().foregroundStyle(Palette.sub)
+                }
+            }
+            if focus.folderCount > focus.locations.count {
+                Text("+ \(focus.folderCount - focus.locations.count)").foregroundStyle(Palette.sub)
+            }
+        }
     }
     private func fact(_ title: String, value: String) -> some View {
         HStack {

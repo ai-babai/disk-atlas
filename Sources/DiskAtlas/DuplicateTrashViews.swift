@@ -76,37 +76,42 @@ struct DuplicateGroupRow: View {
     var selected = false
     @State private var previewURL: URL?
     @State private var focusedFile: String?
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var selectedCount: Int {
         session.trashSelection.paths.isEmpty ? 0 : session.trashSelection.count(in: group)
     }
     private var representative: DuplicateFile? { group.files.first }
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                groupCheckbox.frame(width: FileListMetrics.checkWidth)
-                disclosureButton
-                expandButton
-                HStack(spacing: 0) {
-                    Color.clear.frame(width: 64)
-                    Button {
-                        session.reviewTrash(group)
-                    } label: {
-                        Image(systemName: "trash").frame(width: 24, height: 28)
-                    }.buttonStyle(.plain).disabled(session.busy).help(L10n.text("В корзину группу…"))
-                        .accessibilityLabel(L10n.text("В корзину копии группы") + ": " + (group.displayName ?? ""))
-                }.frame(width: DuplicateTableColumns.actionsWidth)
-            }.padding(.horizontal, 8).frame(minHeight: FileListMetrics.pathRowHeight).background {
-                RoundedRectangle(cornerRadius: 5).fill(selected ? Palette.mark : .clear).padding(.horizontal, 2)
-                    .padding(.vertical, 1)
-            }.accessibilityAddTraits(selected ? .isSelected : [])
+        // Keep copies in the parent's lazy stack, including when the group header scrolls offscreen.
+        Section {
             if expanded { files }
+        } header: {
+            header
+        } footer: {
             Divider().overlay(Palette.line)
         }.quickLookPreview($previewURL, in: group.files.prefix(200).map { URL(fileURLWithPath: $0.path) }).onChange(
             of: previewURL
         ) { previous, current in restorePreviewFocus(previous, current: current) }.onChange(of: expanded) { _, value in
             if !value { previewURL = nil }
         }.onDisappear { previewURL = nil }
+    }
+    private var header: some View {
+        HStack(spacing: 0) {
+            groupCheckbox.frame(width: FileListMetrics.checkWidth)
+            disclosureButton
+            expandButton
+            HStack(spacing: 0) {
+                Color.clear.frame(width: 64)
+                Button {
+                    session.reviewTrash(group)
+                } label: {
+                    Image(systemName: "trash").frame(width: 24, height: 28)
+                }.buttonStyle(.plain).disabled(session.busy).help(L10n.text("В корзину группу…")).accessibilityLabel(
+                    L10n.text("В корзину копии группы") + ": " + (group.displayName ?? ""))
+            }.frame(width: DuplicateTableColumns.actionsWidth)
+        }.padding(.horizontal, 8).frame(minHeight: FileListMetrics.pathRowHeight).background {
+            RoundedRectangle(cornerRadius: 5).fill(selected ? Palette.mark : .clear).padding(.horizontal, 2).padding(
+                .vertical, 1)
+        }.accessibilityAddTraits(selected ? .isSelected : [])
     }
     private var groupCheckbox: some View {
         Button {
@@ -152,7 +157,7 @@ struct DuplicateGroupRow: View {
                 .frame(width: 16, height: 28)
         }.buttonStyle(.plain).accessibilityLabel(L10n.text("Показать все копии") + ": " + (group.displayName ?? ""))
     }
-    private func toggleExpanded() { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.15)) { expanded.toggle() } }
+    private func toggleExpanded() { expanded.toggle() }
     private var groupName: some View {
         HStack(spacing: 8) {
             Image(systemName: representative.map { FileKind.classify(URL(fileURLWithPath: $0.path)).symbol } ?? "doc")
@@ -172,19 +177,17 @@ struct DuplicateGroupRow: View {
         }.padding(.vertical, 4).padding(.trailing, 8).frame(
             minWidth: DuplicateTableColumns.nameWidth - 16, maxWidth: .infinity, alignment: .leading)
     }
-    private var files: some View {
+    @ViewBuilder private var files: some View {
         let groupHasSelection = selectedCount > 0
-        return VStack(spacing: 0) {
-            ForEach(group.files.prefix(200)) { file in
-                DuplicateFileRow(
-                    file: file, group: group, session: session, focusedFile: $focusedFile, columns: columns,
-                    groupHasSelection: groupHasSelection
-                ) { previewURL = URL(fileURLWithPath: file.path) }
-            }
-            if group.files.count > 200 {
-                Text(L10n.text("Остальные копии доступны в экспорте.")).font(.caption).foregroundStyle(Palette.sub)
-            }
-        }.background(Palette.soft.opacity(0.6))
+        ForEach(group.files.prefix(200)) { file in
+            DuplicateFileRow(
+                file: file, group: group, session: session, focusedFile: $focusedFile, columns: columns,
+                groupHasSelection: groupHasSelection
+            ) { previewURL = URL(fileURLWithPath: file.path) }.background(Palette.soft.opacity(0.6))
+        }
+        if group.files.count > 200 {
+            Text(L10n.text("Остальные копии доступны в экспорте.")).font(.caption).foregroundStyle(Palette.sub)
+        }
     }
 }
 
