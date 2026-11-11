@@ -88,7 +88,12 @@ struct DuplicatesView: View {
             if !embedded || session.busy || session.report == nil { status }
             coverageNotice
             if !embedded {
-                resultSearch
+                HStack(spacing: 8) {
+                    parametersButton
+                    resultSearch
+                    Spacer(minLength: 0)
+                }
+                activeFilters
                 trashSelectionBar
             }
             results
@@ -113,6 +118,7 @@ struct DuplicatesView: View {
                     }
                 }
             }
+            activeFilters
             HStack {
                 if let focus = store.visibleDuplicateFocus { DuplicateMapSelectionInfo(focus: focus, store: store) }
                 Spacer(minLength: 0)
@@ -172,6 +178,24 @@ struct DuplicatesView: View {
         }.font(.system(size: embedded ? 11 : 12)).padding(embedded ? 7 : 8).frame(maxWidth: 360).background(
             Palette.soft, in: RoundedRectangle(cornerRadius: 6)
         ).disabled(!session.canFilterResults)
+    }
+    @ViewBuilder private var activeFilters: some View {
+        if session.hasResultContext && session.resultFilterActive {
+            HStack(spacing: 8) {
+                Text(filterSummary).font(.system(size: 11)).foregroundStyle(Palette.sub).lineLimit(1).truncationMode(
+                    .middle
+                ).help(filterSummary)
+                Button(L10n.text("Сбросить")) { session.resultFilter = DuplicateOptions() }.buttonStyle(
+                    AtlasButtonStyle())
+            }.disabled(!session.canFilterResults)
+        }
+    }
+    private var filterSummary: String {
+        let options = session.resultFilter
+        var parts = FileKind.allCases.filter { options.kinds.contains($0) }.map(\.title)
+        if options.minimumBytes > 0 || options.maximumBytes != nil { parts.append(L10n.text("Размер")) }
+        if options.modifiedAfter != nil || options.modifiedBefore != nil { parts.append(L10n.text("Изменён")) }
+        return parts.joined(separator: " · ")
     }
     private var emptyResults: some View {
         VStack(spacing: 12) {
@@ -306,7 +330,6 @@ struct DuplicatesView: View {
                     ).frame(height: 28).contentShape(Rectangle())
                 }.buttonStyle(.plain).help(L10n.text("Все группы"))
             }
-            parametersButton
         }.lineLimit(1).fixedSize(horizontal: true, vertical: false)
     }
     private var parametersButton: some View {

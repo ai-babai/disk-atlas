@@ -72,6 +72,13 @@ in-progress-without-matches and empty-result states have no empty table header.
 Those states fit the available panel width; the table's minimum width applies
 only when there are result rows.
 
+In the full duplicate report, Filters sits immediately before search, as in the
+embedded list. Type choices use the shared colored file icons and a checkmark for
+each selected type; multiple types can be combined. Active types/size/date filters
+remain visible beside Reset after closing the popover. Filtering uses the entire
+saved result index and keeps every copy in each matching group; it does not start
+a new check or alter the saved report.
+
 The workspace list extends to the status bar without bottom page padding. Reserve
 the small list-status row only for an actual empty-result or presentation-limit
 message; an invisible message must not consume table height.

@@ -23,7 +23,14 @@ struct DuplicateOptionsControls: View {
         return Button {
             if selected { options.kinds.remove(kind) } else { options.kinds.insert(kind) }
         } label: {
-            Label(kind.title, systemImage: kind.symbol).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: 8) {
+                FileTypeIcon(kind: kind)
+                Text(kind.title).lineLimit(1)
+                Spacer(minLength: 0)
+                Image(systemName: "checkmark").font(.system(size: 10, weight: .semibold)).frame(width: 12).opacity(
+                    selected ? 1 : 0
+                ).accessibilityHidden(true)
+            }.frame(maxWidth: .infinity, alignment: .leading)
         }.buttonStyle(AtlasButtonStyle(emphasized: selected)).accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
