@@ -323,6 +323,15 @@ frozen pre-existing complexity debt are explicit. Native UI review remains requi
 
 ---
 
+## Help and feedback
+
+Use **Help → Disk Atlas Help** for the local guide. **Report a Bug…** in Help,
+or the bug button at the bottom right, opens a short form for bugs and suggestions.
+Only clicking **Send** submits the message and optional reply email to Sentry (US).
+App/macOS version details are optional and off by default. No automatic telemetry,
+crash reporting, screenshots, source files or scan snapshots are sent. Closing the
+form retains its draft in memory until you quit; a failed send keeps your text.
+
 ## Contact
 
 Author: **Maksim Popkov** · [GitHub repository](https://github.com/ai-babai/disk-atlas).

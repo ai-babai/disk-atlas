@@ -3,10 +3,19 @@ import SwiftUI
 
 struct AtlasCommands: Commands {
     @ObservedObject var store: AtlasStore
+    @Environment(\.openWindow) private var openWindow
     var body: some Commands {
         workspace
         files
         scanning
+        CommandGroup(replacing: .help) {
+            Button(L10n.text("Справка Disk Atlas")) { openWindow(id: "help") }.keyboardShortcut(
+                "?", modifiers: .command)
+            Button(L10n.text("Сообщить об ошибке…")) { openWindow(id: "feedback") }
+            Divider()
+            Link(L10n.text("Релизы и обновления…"), destination: AtlasLinks.releases)
+            Link("GitHub · Disk Atlas", destination: AtlasLinks.repository)
+        }
         CommandGroup(after: .textEditing) {
             Button(L10n.text("Найти…")) { store.searchRequest &+= 1 }.keyboardShortcut("f").disabled(
                 store.snapshot == nil)

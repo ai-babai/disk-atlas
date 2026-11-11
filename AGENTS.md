@@ -27,3 +27,4 @@ Component map and validation: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - Documentation images must use illustrative data, never real user paths or scan history.
 
 - Every wait must have visible progress/activity and an accessible stop action where applicable. Duplicate jobs must not block the main workspace; honor Reduce Motion.
+- Manual GUI feedback is authorized (2026-11-12): send only the form's explicit fields to the configured Sentry project after Send. Optional app/macOS details are off by default. No automatic telemetry, crash capture, source paths, snapshots, screenshots or content attachments; CLI/MCP remain offline. Never add account/auth tokens to the app; the ingestion DSN is public configuration.

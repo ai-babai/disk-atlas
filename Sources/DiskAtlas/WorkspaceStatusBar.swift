@@ -5,6 +5,7 @@ import SwiftUI
 struct WorkspaceStatusBar: View {
     @ObservedObject var store: AtlasStore
     @ObservedObject var session: DuplicateSession
+    @Environment(\.openWindow) private var openWindow
     private var showsDuplicates: Bool {
         !session.roots.isEmpty && (session.busy || session.plan != nil || session.report != nil)
             && (store.snapshot != nil || session.busy) && (!store.showDuplicates || session.running)
@@ -20,6 +21,13 @@ struct WorkspaceStatusBar: View {
             if let notice = session.trashNotice ?? store.notice {
                 Text(notice).lineLimit(1).truncationMode(.tail).help(notice).layoutPriority(-2)
             }
+            Button {
+                openWindow(id: "feedback")
+            } label: {
+                Label(L10n.text("Сообщить об ошибке"), systemImage: "ladybug").labelStyle(.iconOnly).frame(
+                    width: 28, height: 24
+                ).contentShape(Rectangle())
+            }.buttonStyle(.plain).help(L10n.text("Открыть форму обратной связи"))
         }.font(.system(size: 10)).monospacedDigit().foregroundStyle(Palette.sub).padding(.horizontal, 16).frame(
             height: 30
         ).background(Palette.soft).overlay(alignment: .top) { Divider().overlay(Palette.line) }

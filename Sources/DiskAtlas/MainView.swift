@@ -434,7 +434,6 @@ struct MainView: View {
             }
             Spacer()
             HStack(spacing: 25) {
-                Label(L10n.text("Без облака"), systemImage: "internaldrive")
                 Label(L10n.text("Файлы не изменяются"), systemImage: "lock.shield")
                 Label("CLI + MCP", systemImage: "terminal")
             }.font(.system(size: 11)).foregroundStyle(Palette.sub).padding(.bottom, 32)

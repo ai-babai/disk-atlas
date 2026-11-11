@@ -60,6 +60,46 @@ public enum L10n {
         (". Используй --help.", ". Use --help."), ("\nДвойной щелчок — открыть папку", "\nDouble-click to open folder"),
     ]
     private static let english: [String: String] = [
+        "Справка Disk Atlas": "Disk Atlas Help", "Сообщить об ошибке…": "Report a Bug…",
+        "Сообщить об ошибке": "Report a Bug", "Открыть форму обратной связи": "Open the feedback form",
+        "Обратная связь": "Feedback", "Тип обращения": "Feedback type", "Ошибка": "Bug", "Предложение": "Suggestion",
+        "Что произошло или что можно улучшить?": "What happened, or what could be improved?", "Сообщение": "Message",
+        "Почта для ответа — необязательно": "Reply email — optional",
+        "Приложить версию приложения и macOS": "Include app and macOS versions",
+        "Сообщение и указанная почта отправятся в Sentry (США). Файлы, пути и снимки автоматически не прикладываются.":
+            "Your message and any email you enter will be sent to Sentry (US). Files, paths and snapshots are not attached automatically.",
+        "Приватность Sentry": "Sentry privacy policy", "Отправить": "Send", "Закрыть": "Close",
+        "Спасибо! Сообщение отправлено.": "Thank you! Your message has been sent.", "Написать ещё": "Write another",
+        "Напиши, что произошло или что можно улучшить.": "Describe what happened or what could be improved.",
+        "Сократи сообщение до 4096 символов.": "Shorten your message to 4096 characters or fewer.",
+        "Проверь почту или оставь поле пустым.": "Check the email address or leave it empty.",
+        "Сообщение слишком большое. Сократи текст и попробуй ещё раз.":
+            "The message is too large. Shorten it and try again.",
+        "Сервис временно ограничил отправку. Попробуй позже — текст сохранён.":
+            "Sending is temporarily rate limited. Try later; your text has been kept.",
+        "Не удалось отправить сообщение. Попробуй позже — текст сохранён.":
+            "Could not send the message. Try later; your text has been kept.",
+        "Нет связи с сервисом. Проверь интернет и повтори отправку — текст сохранён.":
+            "Cannot reach the service. Check your connection and try again; your text has been kept.",
+        "Отправка остановлена. Текст сохранён; сообщение могло уже попасть в сервис.":
+            "Sending stopped. Your text has been kept; the service may already have received the message.",
+        "Начало работы": "Getting started", "Размеры и дубликаты": "Sizes and duplicates", "Пробел": "Space",
+        "Данные и Корзина": "Data and Trash", "Горячие клавиши": "Keyboard shortcuts",
+        "Релизы и обновления…": "Releases and updates…",
+        "Добавь папки и нажми «Анализировать». Выбор папки сам по себе не запускает анализ.":
+            "Add folders, then click Analyze. Selecting a folder never starts a scan on its own.",
+        "Один щелчок по карте показывает подробности. Двойной щелчок открывает папку; стрелки в списке раскрывают её содержимое.":
+            "Click the map once for details. Double-click to enter a folder; arrows in the list expand its contents.",
+        "«Крупные файлы» помогает найти самые большие объекты. «Дубликаты» показывает подтверждённые одинаковые копии; фильтры стоят слева от поиска.":
+            "Largest files helps you find the biggest items. Duplicates shows confirmed identical copies; filters sit to the left of Search.",
+        "«На диске» — выделенные файлу блоки, «Размер файлов» — длина содержимого. APFS может разделять блоки между копиями: повторный объём не равен гарантированно освобождаемому месту.":
+            "On disk means allocated blocks; File size means content length. APFS can share blocks between copies, so duplicate size does not guarantee reclaimable space.",
+        "Обычный анализ читает метаданные. Поиск дубликатов читает содержимое только после галочки «Найти дубликаты» или явного запуска проверки.":
+            "An ordinary scan reads metadata. Duplicate checking reads contents only after you choose Find duplicates or explicitly start a check.",
+        "Анализ и снимки остаются на Mac. Автоматическая телеметрия не отправляется. Обратная связь передаётся в Sentry только по кнопке «Отправить».":
+            "Scans and snapshots stay on your Mac. No automatic telemetry is sent. Feedback goes to Sentry only when you click Send.",
+        "Перенос файлов в Корзину всегда требует проверки списка и подтверждения. Восстановить файлы можно через Finder. Удаление сохранённого снимка не удаляет исходные файлы.":
+            "Moving files to Trash always requires reviewing the list and confirming. Restore files using Finder. Deleting a saved snapshot does not delete the original files.",
         "Без расширения": "No extension", "Расширения": "Extensions",
         "Показать расширения файлов": "Show file extensions", "Тип по имени": "Type by name",
         "Приложение": "Application", "Пакет": "Package", "Медиатека": "Media library",

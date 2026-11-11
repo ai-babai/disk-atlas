@@ -3,6 +3,7 @@ import SwiftUI
 
 @main struct DiskAtlasApp: App {
     @StateObject private var store = AtlasStore()
+    @StateObject private var feedback = FeedbackModel()
     @NSApplicationDelegateAdaptor(AtlasAppDelegate.self) private var appDelegate
     var body: some Scene {
         Window("Disk Atlas", id: "main") {
@@ -25,6 +26,10 @@ import SwiftUI
         Window(L10n.text("Сохранённые снимки"), id: "history") { HistoryWindow(store: store).atlasAppearance(store) }
             .defaultSize(width: 780, height: 540)
         Window(L10n.text("Доступ к файлам"), id: "file-access") { FileAccessHelp().atlasAppearance(store) }
+            .windowResizability(.contentSize)
+        Window(L10n.text("Обратная связь"), id: "feedback") { FeedbackView(model: feedback).atlasAppearance(store) }
+            .windowResizability(.contentSize)
+        Window(L10n.text("Справка Disk Atlas"), id: "help") { AtlasHelpView().atlasAppearance(store) }
             .windowResizability(.contentSize)
         Settings { AtlasSettings(store: store).atlasAppearance(store) }
     }

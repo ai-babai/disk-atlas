@@ -428,3 +428,24 @@ folder summaries, chosen with a bounded top-four pass, rather than a second list
 of every path. Full paths remain in
 the main copy list and the mandatory Trash review. Original Trash validation,
 Quick Look consent and content-reading boundaries remain in force.
+
+
+## Help and manual feedback
+
+`AtlasHelpView` is a local guide reachable from the native Help menu. Help and the
+bottom-right status-bar action open one feedback window. `FeedbackModel` owns an
+in-memory draft so closing/reopening preserves text without writing personal data
+to disk. Sending is explicit, cancellable, and keeps input on network/rate-limit
+failure. Optional version/macOS details default off and are previewed before Send.
+
+`FeedbackSender` sends one HTTPS `feedback` envelope to the existing Sentry project
+using the documented [feedback wire format](https://develop.sentry.dev/sdk/telemetry/feedbacks/)
+and [envelope transport](https://develop.sentry.dev/sdk/foundations/envelopes/).
+The DSN is a public ingestion key, not an account credential. No SDK or account token
+is included. The ephemeral session disables cookies/cache and refuses redirects;
+no request happens at startup, when opening the form, or while editing it.
+Only message, optional email, feedback kind and explicitly selected diagnostics are
+serialized, plus protocol-required event ID/timestamp/platform. No automatic source
+paths, files, snapshots, screenshots, crash reports, analytics or persisted retry
+queue. Feedback's HTTP acceptance is a transport acknowledgement; the service can
+still enforce its ingestion quotas/filters. CLI/MCP/scanner remain network-free.
