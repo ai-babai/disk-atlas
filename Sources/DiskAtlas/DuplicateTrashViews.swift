@@ -78,7 +78,9 @@ struct DuplicateGroupRow: View {
     var selectedPath: String?
     var selectFile: ((DuplicateFile) -> Void)?
     @State private var previewURL: URL?
+    @State private var previewURLs: [URL] = []
     @State private var focusedFile: String?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var selectedCount: Int {
         session.trashSelection.paths.isEmpty ? 0 : session.trashSelection.count(in: group)
     }
@@ -91,11 +93,9 @@ struct DuplicateGroupRow: View {
             header
         } footer: {
             Divider().overlay(Palette.line)
-        }.quickLookPreview($previewURL, in: group.files.prefix(200).map { URL(fileURLWithPath: $0.path) }).onChange(
-            of: previewURL
-        ) { previous, current in restorePreviewFocus(previous, current: current) }.onChange(of: expanded) { _, value in
-            if !value { previewURL = nil }
-        }.onDisappear { previewURL = nil }
+        }.quickLookPreview($previewURL, in: previewURLs).onChange(of: previewURL) { previous, current in
+            restorePreviewFocus(previous, current: current)
+        }.onChange(of: expanded) { _, value in if !value { previewURL = nil } }.onDisappear { previewURL = nil }
     }
     private var header: some View {
         HStack(spacing: 0) {
@@ -155,7 +155,9 @@ struct DuplicateGroupRow: View {
             label: L10n.text("Показать все копии") + ": " + (group.displayName ?? ""), action: toggleExpanded
         ).frame(width: 24, height: 40)
     }
-    private func toggleExpanded() { expanded.toggle() }
+    private func toggleExpanded() {
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { expanded.toggle() }
+    }
     private var groupName: some View {
         let kind = representative.map { FileKind.classify(URL(fileURLWithPath: $0.path)) } ?? .other
         return HStack(spacing: FileListMetrics.iconTextSpacing) {
@@ -181,7 +183,10 @@ struct DuplicateGroupRow: View {
                 file: file, group: group, session: session, focusedFile: $focusedFile, columns: columns,
                 groupHasSelection: groupHasSelection, mapSelected: selectedPath == file.path,
                 select: selectFile.map { action in { action(file) } }
-            ) { previewURL = URL(fileURLWithPath: file.path) }.background(Palette.soft.opacity(0.6))
+            ) {
+                previewURLs = group.files.prefix(200).map { URL(fileURLWithPath: $0.path) }
+                previewURL = URL(fileURLWithPath: file.path)
+            }.background(Palette.soft.opacity(0.6)).transition(.opacity.combined(with: .offset(y: -6)))
         }
         if group.files.count > 200 {
             Text(L10n.text("Остальные копии доступны в экспорте.")).font(.caption).foregroundStyle(Palette.sub)
@@ -199,7 +204,6 @@ private struct DuplicateFileRow: View {
     let mapSelected: Bool
     let select: (() -> Void)?
     let preview: () -> Void
-    @FocusState private var checkboxFocused: Bool
     private var focused: Bool { focusedFile == file.path }
     private var selected: Bool { session.trashSelection.paths.contains(file.path) }
     private var keeper: Bool { !selected && groupHasSelection }
@@ -225,13 +229,11 @@ private struct DuplicateFileRow: View {
         }
     }
     private var checkbox: some View {
-        Toggle(L10n.text("Выбрать для корзины"), isOn: Binding(get: { selected }, set: { _ in toggleTrashSelection() }))
-            .labelsHidden().toggleStyle(.checkbox).focusable().focusEffectDisabled().focused($checkboxFocused)
-            .onKeyPress(.space) {
-                toggleTrashSelection()
-                return .handled
-            }.disabled(session.busy).help(L10n.text("Выбрать для корзины")).accessibilityLabel(
-                L10n.text("Выбрать для корзины") + ": " + URL(fileURLWithPath: file.path).lastPathComponent)
+        AtlasRowToggle(
+            state: selected ? .on : .off,
+            label: L10n.text("Выбрать для корзины") + ": " + URL(fileURLWithPath: file.path).lastPathComponent,
+            focusOnPress: true, action: toggleTrashSelection
+        ).frame(width: 24, height: 24).disabled(session.busy).help(L10n.text("Выбрать для корзины"))
     }
     private var fileName: some View {
         let kind = FileKind.classify(URL(fileURLWithPath: file.path))
@@ -277,11 +279,9 @@ private struct DuplicateFileRow: View {
     private func toggleTrashSelection() {
         guard !session.busy else { return }
         focusedFile = nil
-        checkboxFocused = true
         session.trashSelection.toggle(file, in: group)
     }
     private func openPreview() {
-        checkboxFocused = false
         focusedFile = file.path
         preview()
     }

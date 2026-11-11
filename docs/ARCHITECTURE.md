@@ -397,7 +397,15 @@ table, use numeric dates and show no fabricated group date. The embedded column
 header stays fixed while copies scroll; narrow tables scroll horizontally.
 Groups are sections of one lazy stack, so expanding a group instantiates only
 nearby copies. Nested lazy stacks are avoided: they can leave empty scroll regions
-when the enclosing group moves offscreen. Disclosure updates without animation.
+when the enclosing group moves offscreen. Disclosure uses a 200 ms ease-in/out
+transition with a small upward offset/fade, disabled by Reduce Motion. Copy checks
+reuse the native row control and retain keyboard focus; Quick Look URLs are built
+only when the user opens a preview. No content is prefetched.
+
+Sorting and map-focus activity use reserved indicator slots, appearing only after
+150 ms to avoid flashing during quick work. Existing rows stay in place during
+background work. Map-focus completion is guarded by a selection generation, so a
+cancelled or superseded job cannot clear a newer job's loading state.
 
 Group focus, disclosure and Trash selection are independent in the embedded list.
 Explicit group-row selection highlights the group; selecting a copy highlights only

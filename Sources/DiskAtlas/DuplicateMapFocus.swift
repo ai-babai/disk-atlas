@@ -110,6 +110,8 @@ extension AtlasStore {
         }
     }
     func clearDuplicateFocus() {
+        duplicateFocusGeneration = UUID()
+        duplicateFocusLoading = false
         duplicateFocusTask?.cancel()
         duplicateFocusWorker?.cancel()
         duplicateFocusTask = nil
@@ -126,11 +128,20 @@ extension AtlasStore {
         clearMapSelection()
         duplicateSelectedGroup = group
         duplicateSelectedFile = file
+        duplicateFocusLoading = true
+        let generation = duplicateFocusGeneration
         let worker = Task.detached(priority: .userInitiated) {
             try DuplicateMapFocus.build(group, index: index, file: file)
         }
         duplicateFocusWorker = worker
         duplicateFocusTask = Task {
+            defer {
+                if duplicateFocusGeneration == generation {
+                    duplicateFocusLoading = false
+                    duplicateFocusTask = nil
+                    duplicateFocusWorker = nil
+                }
+            }
             guard let focus = try? await worker.value, !Task.isCancelled, self.index === index,
                 duplicateSelectionID == group.id, duplicateSelectedFile?.path == file?.path
             else { return }
@@ -184,7 +195,11 @@ struct DuplicateMapInspector: View {
         }.background(Palette.paper).transaction { $0.animation = nil }
     }
     @ViewBuilder private var folders: some View {
-        SectionLabel(text: L10n.text("Папки") + " · " + (focus?.folderCount.formatted() ?? "—"))
+        HStack {
+            SectionLabel(text: L10n.text("Папки") + " · " + (focus?.folderCount.formatted() ?? "—"))
+            Spacer(minLength: 4)
+            DelayedActivity(active: store.duplicateFocusLoading, title: L10n.text("Готовим подсветку…"))
+        }.frame(height: 16)
         if let focus {
             ForEach(focus.locations.prefix(4)) { location in
                 HStack(alignment: .firstTextBaseline, spacing: 8) {

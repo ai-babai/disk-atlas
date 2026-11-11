@@ -53,6 +53,8 @@ import UniformTypeIdentifiers
     @Published var duplicateSelectedFile: DuplicateFile?
     var duplicateSelectionID: String? { duplicateSelectedGroup?.id }
     @Published var duplicateMapFocus: DuplicateMapFocus?
+    @Published var duplicateFocusLoading = false
+    var duplicateFocusGeneration = UUID()
     var duplicateFocusTask: Task<Void, Never>?
     var duplicateFocusWorker: Task<DuplicateMapFocus, Error>?
     @Published var largestFiles = false { didSet { refreshRows() } }

@@ -60,9 +60,10 @@ public enum L10n {
         (". Используй --help.", ". Use --help."), ("\nДвойной щелчок — открыть папку", "\nDouble-click to open folder"),
     ]
     private static let english: [String: String] = [
-        "Экран": "Screen", "Главная": "Home", "Все дубликаты": "All duplicates", "Объектов": "Objects",
-        "Код ошибки": "Error code", "Завершено": "Completed", "Проверка дубликатов": "Duplicate check",
-        "Прикрепить": "Attach", "Выбрать скриншот PNG или JPEG": "Choose a PNG or JPEG screenshot",
+        "Готовим подсветку…": "Preparing highlights…", "Экран": "Screen", "Главная": "Home",
+        "Все дубликаты": "All duplicates", "Объектов": "Objects", "Код ошибки": "Error code", "Завершено": "Completed",
+        "Проверка дубликатов": "Duplicate check", "Прикрепить": "Attach",
+        "Выбрать скриншот PNG или JPEG": "Choose a PNG or JPEG screenshot",
         "Предпросмотр скриншота": "Screenshot preview", "Скриншот": "Screenshot",
         "Удалить вложение": "Remove attachment",
         "Проверь, что на изображении нет личных данных.": "Check that the image contains no private information.",

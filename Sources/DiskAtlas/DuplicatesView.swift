@@ -85,7 +85,8 @@ struct DuplicatesView: View {
             if !embedded { header }
             errorBanner
             scopeSwitch
-            if !embedded || session.busy || session.report == nil { status }
+            // Existing rows stay in place; ongoing work already has the fixed footer/header indicators.
+            if !embedded || (visibleGroups.isEmpty && session.report == nil) { status }
             coverageNotice
             if !embedded {
                 HStack(spacing: 8) {
@@ -120,7 +121,19 @@ struct DuplicatesView: View {
             }
             activeFilters
             HStack {
-                if let focus = store.visibleDuplicateFocus { DuplicateMapSelectionInfo(focus: focus, store: store) }
+                if let focus = store.visibleDuplicateFocus {
+                    DuplicateMapSelectionInfo(focus: focus, store: store)
+                } else if store.duplicateFocusLoading {
+                    HStack(spacing: 8) {
+                        DelayedActivity(active: true, title: L10n.text("Готовим подсветку…"))
+                        Text(L10n.text("Готовим подсветку…")).font(.system(size: 10)).foregroundStyle(Palette.sub)
+                        Button {
+                            store.clearDuplicateFocus()
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                        }.buttonStyle(.plain).help(L10n.text("Остановить")).accessibilityLabel(L10n.text("Остановить"))
+                    }
+                }
                 Spacer(minLength: 0)
                 trashSelectionBar.frame(maxWidth: 400, alignment: .trailing)
             }.frame(height: TrashSelectionBar.compactHeight)
@@ -245,9 +258,8 @@ struct DuplicatesView: View {
                 ).help(
                     L10n.text(
                         "Повторный объём не равен гарантированно освобождаемому месту: APFS может разделять блоки."))
-                ProgressView().controlSize(.mini).frame(width: DuplicateTableColumns.actionsWidth, height: 16).opacity(
-                    session.sorting ? 1 : 0
-                ).accessibilityHidden(!session.sorting)
+                DelayedActivity(active: session.sorting, title: L10n.text("Фильтруем результаты…")).frame(
+                    width: DuplicateTableColumns.actionsWidth, height: 16)
             }.font(Font(FileListMetrics.headerFont)).foregroundStyle(Palette.sub).padding(.horizontal, 8).frame(
                 height: FileListMetrics.headerHeight)
             Divider().overlay(Palette.line)
@@ -451,7 +463,7 @@ struct DuplicatesView: View {
                 Text(L10n.text("групп")).font(.system(size: 10)).foregroundStyle(Palette.sub)
             }
             Spacer()
-            if session.sorting { ProgressView().controlSize(.small).help(L10n.text("Фильтруем результаты…")) }
+            DelayedActivity(active: session.sorting, title: L10n.text("Фильтруем результаты…"))
             if report.cancelled || report.inputPartial == true {
                 Label(L10n.text("Неполный результат"), systemImage: "stop.circle").font(.system(size: 10))
                     .foregroundStyle(Palette.sub)

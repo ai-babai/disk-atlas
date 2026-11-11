@@ -120,3 +120,45 @@ one treemap packing sample. This is a short interaction sample, not an FPS or
 battery-life guarantee. No live cloud data was downloaded for verification.
 The scoped no-materialization policy follows [Apple TN3150](https://developer.apple.com/documentation/technotes/tn3150-getting-ready-for-data-less-files).
 See the [detailed method and limits](PERFORMANCE.ru.md).
+
+
+## Smooth duplicate disclosure — 2026-11-12
+
+Optimized arm64 GUI builds on the same Mac, window 1380×940, baseline `b715d5d`.
+The scratch harness invoked the real disclosure action (including its animation)
+and Trash check action in seven expand/check/uncheck/collapse cycles. Medians
+below exclude the first cold cycle. A maximum-order `CFRunLoopObserver.beforeWaiting`
+records time to the first prepared layout/Core Animation commit, not displayed
+pixels, animation completion or FPS. No compiler or profiler ran during timing.
+
+| Fixture / action | Before | After |
+| --- | ---: | ---: |
+| 67 copies: expand | 85.9 ms | 50.4 ms |
+| 67 copies: check | 98.4 ms | 62.3 ms |
+| 67 copies: uncheck | 91.4 ms | 81.9 ms |
+| 67 copies: collapse | 74.5 ms | 52.6 ms |
+| 5,000 copies: expand | 64.3 ms | 54.5 ms |
+| 5,000 copies: check | 99.0 ms | 95.6 ms |
+| 5,000 copies: uncheck | 79.3 ms | 82.3 ms |
+| 5,000 copies: collapse | 56.6 ms | 45.1 ms |
+
+The larger fixture has smaller archive files and a different group order, leaving
+six visible copy rows versus seven in the 67-copy fixture. Compare before/after
+within each fixture. Expansion evaluated only those nearby rows; the existing
+200-copy display cap remains. Native copy checkboxes avoid SwiftUI's extra focus
+graph, and preview URL arrays are prepared only on explicit Quick Look. Checking
+still updates nearby rows and is not constant-time for arbitrary group sizes.
+The large-fixture uncheck result does not establish an improvement.
+
+Animation lasts 200 ms and respects Reduce Motion. A 16 ms main-actor heartbeat
+in the final runs had p95 gaps of 42.2/22.0 ms and maxima 115.9/118.3 ms for the
+67/5,000 fixtures respectively; this does not establish 60 FPS or absence of every
+stutter. Synthetic metadata checks and raw probes stay outside tracked sources.
+
+Manual QA covered embedded and full reports, both themes, the 1080×730 minimum
+window, long wrapping paths, end-of-group scrolling, mouse/Space checks, native
+Quick Look focus restoration and a Reduce Motion override in the scratch app.
+An eight-second scratch map-worker delay showed both activity slots while group
+metadata remained visible; Stop cleared the selection without a stale return.
+These artificial delays and QA entry points are absent from the normal Dev app.
+The optimized build and existing `scripts/check.sh --base b715d5d` gate passed.

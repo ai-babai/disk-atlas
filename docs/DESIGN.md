@@ -58,9 +58,13 @@ New analysis, Repeat and Save into separate targets. Language and appearance sta
 Save snapshot uses a diskette silhouette, with its accessible name and shortcut hint.
 Agent context belongs to automation/documentation, not the inspector surface.
 
-Duplicate group checkboxes and disclosure arrows use AppKit controls to match the
+Duplicate group/copy checkboxes and disclosure arrows use AppKit controls to match the
 file outline, including mixed selection. Disclosure arrows keep their 24 pt column
 and a 24×40 pt hit area, separate from Trash checks and map selection.
+Duplicate copies reveal with a subtle 200 ms ease-in/out slide/fade; Reduce Motion
+uses immediate disclosure. Sorting/filtering does not animate the whole result set.
+Small delayed activity indicators occupy fixed slots; background updates cannot
+insert a status panel above already displayed rows.
 Find duplicates on the setup screen and Confirm deletion in snapshot history reuse
 the same checkbox with an 11 pt native title; clicking either the box or its title changes the option.
 Compact Trash selection bars reserve 36 pt in every state: 28 pt buttons have
