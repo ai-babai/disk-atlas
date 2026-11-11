@@ -123,7 +123,8 @@ private struct FileTrashReview: View {
                 LazyVStack(alignment: .leading, spacing: 12) {
                     ForEach(plan.items) { item in
                         HStack(alignment: .top) {
-                            Image(systemName: item.entry.kind.symbol)
+                            Image(systemName: item.entry.kind.symbol).foregroundStyle(item.entry.kind.tint)
+                                .accessibilityHidden(true)
                             Text(item.entry.path).frame(maxWidth: .infinity, alignment: .leading).textSelection(
                                 .enabled)
                             Text(byteString(item.entry.bytes)).monospacedDigit()

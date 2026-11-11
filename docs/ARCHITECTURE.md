@@ -384,7 +384,8 @@ The embedded and full-report views share group/copy rows. `FileListMetrics` keep
 shared AppKit/SwiftUI fonts for names, paths, dates, sizes and headings, plus
 native proportions: 33-point ordinary rows and a 43-point minimum for two-line
 rows/groups. Duplicate paths wrap to their full height; checkboxes never change
-that height. Created/modified columns honor the same preferences as the ordinary
+that height. Group/copy icons and Trash review rows use the same `FileKind.symbol`
+and `FileKind.tint` as ordinary file rows. Created/modified columns honor the same preferences as the ordinary
 table, use numeric dates and show no fabricated group date. The embedded column
 header stays fixed while copies scroll; narrow tables scroll horizontally.
 Groups are sections of one lazy stack, so expanding a group instantiates only

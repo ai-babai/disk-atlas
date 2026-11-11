@@ -33,8 +33,9 @@ struct DuplicateTrashReview: View {
                     ForEach(plan.batches, id: \.groupID) { batch in
                         Section {
                             ForEach(batch.files) { file in
+                                let kind = FileKind.classify(URL(fileURLWithPath: file.path))
                                 HStack(alignment: .top) {
-                                    Image(systemName: "trash").foregroundStyle(Palette.sub)
+                                    Image(systemName: kind.symbol).foregroundStyle(kind.tint).accessibilityHidden(true)
                                     Text(file.path).frame(maxWidth: .infinity, alignment: .leading)
                                     Text(byteString(file.bytes)).monospacedDigit()
                                 }.font(.system(size: 11)).textSelection(.enabled)
@@ -161,9 +162,10 @@ struct DuplicateGroupRow: View {
     }
     private func toggleExpanded() { expanded.toggle() }
     private var groupName: some View {
-        HStack(spacing: 8) {
-            Image(systemName: representative.map { FileKind.classify(URL(fileURLWithPath: $0.path)).symbol } ?? "doc")
-                .font(.system(size: 14)).foregroundStyle(Palette.accent).frame(width: 16)
+        let kind = representative.map { FileKind.classify(URL(fileURLWithPath: $0.path)) } ?? .other
+        return HStack(spacing: 8) {
+            Image(systemName: kind.symbol).font(.system(size: 14)).foregroundStyle(kind.tint).frame(width: 16)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
                 Text(group.displayName ?? representative.map { URL(fileURLWithPath: $0.path).lastPathComponent } ?? "")
                     .font(Font(FileListMetrics.nameFont)).lineLimit(1).truncationMode(.middle)
@@ -238,16 +240,23 @@ private struct DuplicateFileRow: View {
                 L10n.text("Выбрать для корзины") + ": " + URL(fileURLWithPath: file.path).lastPathComponent)
     }
     private var fileName: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 8) {
-                Text(URL(fileURLWithPath: file.path).lastPathComponent).font(Font(FileListMetrics.nameFont)).lineLimit(
-                    1)
-                Text(L10n.text("Останется")).font(Font(FileListMetrics.secondaryFont)).foregroundStyle(Palette.accent)
-                    .opacity(keeper ? 1 : 0).accessibilityHidden(!keeper)
-            }
-            Text(file.path).font(Font(FileListMetrics.secondaryFont)).foregroundStyle(Palette.sub).lineLimit(nil)
-                .fixedSize(horizontal: false, vertical: true)
-        }.padding(.leading, 48).padding(.trailing, 8).padding(.top, 3).frame(
+        let kind = FileKind.classify(URL(fileURLWithPath: file.path))
+        return HStack(alignment: .top, spacing: 8) {
+            Image(systemName: kind.symbol).font(.system(size: 14)).foregroundStyle(kind.tint).frame(width: 16).padding(
+                .top, 3
+            ).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 8) {
+                    Text(URL(fileURLWithPath: file.path).lastPathComponent).font(Font(FileListMetrics.nameFont))
+                        .lineLimit(1)
+                    Text(L10n.text("Останется")).font(Font(FileListMetrics.secondaryFont)).foregroundStyle(
+                        Palette.accent
+                    ).opacity(keeper ? 1 : 0).accessibilityHidden(!keeper)
+                }
+                Text(file.path).font(Font(FileListMetrics.secondaryFont)).foregroundStyle(Palette.sub).lineLimit(nil)
+                    .fixedSize(horizontal: false, vertical: true)
+            }.padding(.top, 3)
+        }.padding(.leading, 24).padding(.trailing, 8).frame(
             minWidth: DuplicateTableColumns.nameWidth, maxWidth: .infinity, alignment: .leading
         ).contentShape(Rectangle()).onTapGesture {
             focusedFile = file.path
