@@ -59,7 +59,7 @@ table in place when you check Trash candidates.
 ## Download & install
 
 1. Open [Releases](https://github.com/ai-babai/disk-atlas/releases).
-2. Download **Disk-Atlas-0.15.2-universal.dmg**. The same app supports Apple Silicon
+2. Download **Disk-Atlas-0.15.3-universal.dmg**. The same app supports Apple Silicon
    and Intel Macs running **macOS 14 Sonoma or later**.
 3. Open the DMG and drag **Disk Atlas.app** to **Applications**. Eject the image,
    then launch the app from Applications. A ZIP is also available.
@@ -242,9 +242,8 @@ authorizes comparison. JSON is automatic when piped, lists are bounded, and
 progress/errors use stderr. Ctrl-C stops work. There are no CLI cleanup commands.
 
 [CLI guide and contract](docs/CLI.md) · [Русская версия](docs/CLI.ru.md).
-A standalone universal CLI ZIP is also available in Releases. The GUI's **For
-agents** sheet copies CLI commands; optional MCP configuration is collapsed below.
-MCP still provides the five existing stdio tools without a network listener;
+A standalone universal CLI ZIP is also available in Releases. CLI and optional
+MCP setup are documented in the guides above. MCP still provides the five existing stdio tools without a network listener;
 per-request MCP progress/cancellation are not implemented.
 
 ## Local by design

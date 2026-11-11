@@ -5,6 +5,15 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.15.3 — 2026-11-11
+
+- View duplicates below the folder map alongside Contents and Largest files. Select a group or one copy to locate it without changing map scale; large groups use bounded folder highlights.
+- Expand duplicate groups in a lazy list and keep the inspector stable while switching rows. Align table typography, dates, full copy paths and file-type icon colors.
+- Use clear opaque map colors with neutral folder surfaces in light and dark mode.
+- Unify action buttons and add sliding mode controls. Simplify duplicate setup to one checkbox; move appearance beside Language and contextual filters beside Search.
+- Group New analysis, Repeat and Save on the left, separate adjacent actions, and extend file lists to the status bar. Remove agent-specific GUI controls; CLI/MCP remain available.
+- Ship a Developer ID signed, notarized and stapled universal app and DMG for Apple Silicon and Intel, macOS 14+.
+
 ## 0.15.2 — 2026-11-09
 
 - Developer ID signed, Apple notarized distribution for direct installation outside the App Store. Stapled tickets are included in the app and DMG.

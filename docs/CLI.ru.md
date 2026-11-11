@@ -19,8 +19,8 @@ disk-atlas help
 ```
 
 Укажи фактический путь приложения, если оно находится, например, в `~/Applications`.
-Кнопка **«Для агента»** в GUI копирует команды с правильным путём. Альтернатива —
-скачать `disk-atlas-cli-0.15.2-universal.zip` из [релизов](https://github.com/ai-babai/disk-atlas/releases/latest),
+Альтернатива —
+скачать `disk-atlas-cli-0.15.3-universal.zip` из [релизов](https://github.com/ai-babai/disk-atlas/releases/latest),
 распаковать в постоянную папку и выполнить `./disk-atlas install`.
 
 `install` создаёт ссылку в `~/.local/bin`. Повторный запуск для того же бинарника
