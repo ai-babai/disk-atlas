@@ -13,7 +13,7 @@ struct DuplicatesView: View {
         DuplicateTableColumns(created: createdVisible, modified: modifiedVisible)
     }
     @State private var parameters = false
-    @State private var expanded = Set<String>()
+    @State private var expansion = DuplicateExpansionState()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var settings: Binding<DuplicateOptions> {
         Binding(
@@ -52,33 +52,62 @@ struct DuplicatesView: View {
                 confirm: store.prepareDuplicateCheck)
         }
     }
-    @ViewBuilder private var resultViewport: some View { if embedded { embeddedViewport } else { fullViewport } }
-    private var embeddedViewport: some View {
+    @ViewBuilder private var resultViewport: some View {
+        if !visibleGroups.isEmpty { nativeViewport } else if embedded { embeddedViewport } else { fullViewport }
+    }
+    private var nativeViewport: some View {
         GeometryReader { geometry in
             ScrollView(.horizontal) {
-                VStack(spacing: 0) {
-                    if !visibleGroups.isEmpty { groupTableHeader }
-                    ScrollViewReader { reader in
-                        ScrollView(.vertical) { reportContent.frame(maxWidth: .infinity, alignment: .topLeading) }
-                            .onAppear { focus(reader) }.onChange(of: session.focusedGroupID) { _, _ in focus(reader) }
+                VStack(alignment: .leading, spacing: 0) {
+                    if !embedded {
+                        reportChrome.padding(.bottom, 20)
+                    } else {
+                        errorBanner
+                        scopeSwitch
+                        coverageNotice
                     }
+                    groupTableHeader
+                    DuplicateOutline(
+                        groups: visibleGroups, session: session, store: store, columns: columns, embedded: embedded,
+                        expansion: expansion)
+                    if session.hasMoreResults { moreResults.padding(.vertical, 8) }
+                    if !embedded { reportFooter.padding(.top, 16) }
                 }.frame(
-                    width: max(visibleGroups.isEmpty ? 0 : columns.minimumWidth, geometry.size.width),
-                    height: geometry.size.height)
+                    width: max(columns.minimumWidth, geometry.size.width - (embedded ? 0 : 48)),
+                    height: max(0, geometry.size.height - (embedded ? 0 : 48))
+                ).padding(embedded ? 0 : 24)
             }
         }
     }
-    private var fullViewport: some View {
-        GeometryReader { geometry in
-            ScrollViewReader { reader in
-                ScrollView([.vertical, .horizontal]) {
-                    reportContent.frame(
-                        width: max(visibleGroups.isEmpty ? 0 : columns.minimumWidth, geometry.size.width - 48),
-                        alignment: .leading
-                    ).frame(minHeight: max(0, geometry.size.height - 48), alignment: .topLeading).padding(24)
-                }.onAppear { focus(reader) }.onChange(of: session.focusedGroupID) { _, _ in focus(reader) }
+    private var reportChrome: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            header
+            errorBanner
+            scopeSwitch
+            status
+            coverageNotice
+            HStack(spacing: 8) {
+                parametersButton
+                resultSearch
+                Spacer(minLength: 0)
             }
+            activeFilters
+            trashSelectionBar
         }
+    }
+    private var moreResults: some View {
+        HStack {
+            Text("\(session.orderedGroups.count.formatted()) / \(session.orderedCount.formatted())").font(
+                .system(size: 11)
+            ).monospacedDigit().foregroundStyle(Palette.sub)
+            Button(L10n.text("Показать ещё 500 групп")) { session.loadMoreResults() }.disabled(session.sorting)
+        }
+    }
+    private var embeddedViewport: some View {
+        ScrollView(.vertical) { reportContent.frame(maxWidth: .infinity, alignment: .topLeading) }
+    }
+    private var fullViewport: some View {
+        ScrollView(.vertical) { reportContent.frame(maxWidth: .infinity, alignment: .leading).padding(24) }
     }
     private var reportContent: some View {
         VStack(alignment: .leading, spacing: embedded ? 12 : 20) {
@@ -159,17 +188,7 @@ struct DuplicatesView: View {
         if let snapshot = store.snapshot { session.select(snapshot, id: store.activeHistoryID, prepareIfMissing: true) }
     }
     @ViewBuilder private var results: some View {
-        if !visibleGroups.isEmpty {
-            Group { if embedded { groupRows } else { groupTable } }.id(store.language)
-            if session.hasMoreResults {
-                HStack {
-                    Text("\(session.orderedGroups.count.formatted()) / \(session.orderedCount.formatted())").font(
-                        .system(size: 11)
-                    ).monospacedDigit().foregroundStyle(Palette.sub)
-                    Button(L10n.text("Показать ещё 500 групп")) { session.loadMoreResults() }.disabled(session.sorting)
-                }
-            }
-        } else if session.sorting {
+        if session.sorting {
             ProgressView(L10n.text("Фильтруем результаты…")).font(.system(size: 11)).padding(.vertical, 24)
         } else if session.report != nil {
             emptyResults
@@ -236,13 +255,6 @@ struct DuplicatesView: View {
             }.font(.system(size: 10))
         }
     }
-    private var groupTable: some View {
-        VStack(spacing: 0) {
-            groupTableHeader
-            groupRows
-        }
-    }
-    private var groupRows: some View { LazyVStack(spacing: 0) { ForEach(visibleGroups) { group in groupRow(group) } } }
     private var groupTableHeader: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
@@ -268,19 +280,6 @@ struct DuplicatesView: View {
     private func dateHeading(_ label: String) -> some View {
         Text(L10n.text(label)).padding(.horizontal, 6).frame(width: FileListMetrics.dateWidth, alignment: .leading)
     }
-    private func groupRow(_ group: DuplicateGroup) -> some View {
-        DuplicateGroupRow(
-            group: group, session: session,
-            expanded: Binding(get: { expanded.contains(group.id) }, set: { setExpanded(group.id, value: $0) }),
-            columns: columns, select: embedded ? { store.focusDuplicateGroup(group) } : nil,
-            selected: embedded && store.duplicateSelectionID == group.id && store.duplicateSelectedFile == nil,
-            selectedPath: embedded ? store.duplicateSelectedFile?.path : nil,
-            selectFile: embedded ? { store.focusDuplicateFile($0, in: group) } : nil
-        ).id(group.id)
-    }
-    private func setExpanded(_ id: String, value: Bool) {
-        if value { expanded.insert(id) } else { expanded.remove(id) }
-    }
     private var trashSelectionBar: some View {
         TrashSelectionBar(
             count: session.trashSelection.paths.count, bytes: session.trashSelection.bytes,
@@ -305,14 +304,6 @@ struct DuplicatesView: View {
                     }.menuStyle(.borderlessButton).fixedSize()
                 }
             }.font(.system(size: 10)).foregroundStyle(Palette.sub)
-        }
-    }
-    private func focus(_ reader: ScrollViewProxy) {
-        guard let id = session.focusedGroupID else { return }
-        expanded.insert(id)
-        Task { @MainActor in
-            await Task.yield()
-            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { reader.scrollTo(id, anchor: .top) }
         }
     }
     private var header: some View {

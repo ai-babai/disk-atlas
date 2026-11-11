@@ -395,12 +395,17 @@ that height. Group/copy icons and Trash review rows use the same `FileKind.symbo
 and `FileKind.tint` as ordinary file rows. Created/modified columns honor the same preferences as the ordinary
 table, use numeric dates and show no fabricated group date. The embedded column
 header stays fixed while copies scroll; narrow tables scroll horizontally.
-Groups are sections of one lazy stack, so expanding a group instantiates only
-nearby copies. Nested lazy stacks are avoided: they can leave empty scroll regions
-when the enclosing group moves offscreen. Disclosure uses a 200 ms ease-in/out
-transition with a small upward offset/fade, disabled by Reduce Motion. Copy checks
-reuse the native row control and retain keyboard focus; Quick Look URLs are built
-only when the user opens a preview. No content is prefetched.
+`DuplicateOutline` uses the same AppKit `NSOutlineView` disclosure mechanism as
+Contents. Its native scroll view reuses AppKit cells; group children are prepared
+only when expanded and remain capped at 200 displayed copies. Native labels, icons and buttons share `FileListMetrics`, `AtlasRowView` and
+`TrashTableCell` with Contents. No SwiftUI hosting view participates in row insertion,
+opacity or offsets. Live expansion is cached without publishing a SwiftUI layout update.
+Row heights use the actual native cell bounds and wrapping text-cell measurement,
+and update on column/viewport changes. Existing native widths are not reassigned during disclosure. Stable
+item identity preserves expansion; a new result index replaces stale metadata.
+The full report keeps its controls and headings above the scrolling native rows.
+Copy checks reuse the native row control and retain keyboard focus; Quick Look
+URLs are built only when the user opens a preview. No content is prefetched.
 
 Sorting and map-focus activity use reserved indicator slots, appearing only after
 150 ms to avoid flashing during quick work. Existing rows stay in place during

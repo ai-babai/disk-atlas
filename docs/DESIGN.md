@@ -61,8 +61,8 @@ Agent context belongs to automation/documentation, not the inspector surface.
 Duplicate group/copy checkboxes and disclosure arrows use AppKit controls to match the
 file outline, including mixed selection. Disclosure arrows keep their 24 pt column
 and a 24×40 pt hit area, separate from Trash checks and map selection.
-Duplicate copies reveal with a subtle 200 ms ease-in/out slide/fade; Reduce Motion
-uses immediate disclosure. Sorting/filtering does not animate the whole result set.
+Duplicate copies use native outline disclosure, matching Contents; Reduce Motion
+uses immediate disclosure. No separate copy fade/offset transition is applied. Sorting/filtering does not animate the whole result set.
 Small delayed activity indicators occupy fixed slots; background updates cannot
 insert a status panel above already displayed rows.
 Find duplicates on the setup screen and Confirm deletion in snapshot history reuse
@@ -92,3 +92,5 @@ including a single-click selection that leaves the map at its current level. Wit
 no selection they describe the open folder. Hide folder composition for individual
 files; their type already appears in the file details. Changing the inspected folder
 resets expanded extension rows and cancels the previous folder's metadata request.
+
+English is the first-launch language. An explicitly saved language choice is preserved.

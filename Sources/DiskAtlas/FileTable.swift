@@ -480,7 +480,7 @@ private final class AtlasTableView: NSOutlineView {
     }
 }
 
-private final class AtlasRowView: NSTableRowView {
+final class AtlasRowView: NSTableRowView {
     override func drawBackground(in dirtyRect: NSRect) {
         NSColor(Palette.paper).setFill()
         dirtyRect.fill()

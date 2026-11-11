@@ -162,3 +162,41 @@ An eight-second scratch map-worker delay showed both activity slots while group
 metadata remained visible; Stop cleared the selection without a stale return.
 These artificial delays and QA entry points are absent from the normal Dev app.
 The optimized build and existing `scripts/check.sh --base b715d5d` gate passed.
+
+
+## Matching native disclosure — 0.15.5
+
+The duplicate list now uses the same `NSOutlineView` disclosure mechanism as
+Contents, with reused native cells. The earlier 200 ms SwiftUI insertion was not
+equivalent. A scratch presentation-position probe recorded 23 intermediate
+positions for Contents and 25 for Duplicates; Reduce Motion recorded one position.
+This checks actual movement in that scenario, not a frame-rate guarantee.
+
+The same optimized arm64 harness and timing method above, baseline `7dfae0f`,
+window 1380×940 and divider at 378.5 pt, gave these six-warm-cycle medians:
+
+| Fixture / action | Before | Native list |
+| --- | ---: | ---: |
+| 67 copies: expand | 50.4 ms | 32.3 ms |
+| 67 copies: check | 62.3 ms | 62.7 ms |
+| 67 copies: uncheck | 81.9 ms | 63.2 ms |
+| 67 copies: collapse | 52.6 ms | 40.5 ms |
+| 5,000 copies: expand | 54.5 ms | 35.5 ms |
+| 5,000 copies: check | 95.6 ms | 84.0 ms |
+| 5,000 copies: uncheck | 82.3 ms | 80.7 ms |
+| 5,000 copies: collapse | 45.1 ms | 53.3 ms |
+
+The large-group collapse regressed by 8.2 ms; the small-group check was unchanged.
+Expansion requested four/three native content cells respectively; check/uncheck
+reconfigured existing cells without requesting new ones. These request counts
+are not directly comparable with SwiftUI body counts. The existing 200-copy cap
+remains. Expansion state is kept outside published SwiftUI state, and complete
+paths are measured by the same native text cell used for wrapping.
+
+Heartbeat p95 gaps were 32.8/33.7 ms, maxima 80.6/102.6 ms (67/5,000 copies).
+The timing endpoint remains the first prepared layout/commit, not animation
+completion. Compare within each fixture; file sizes and group order differ.
+Manual QA covered both themes, embedded/full reports, minimum size, divider drags,
+full long paths, exact-copy map selection, type filtering, checkbox Space action
+and Quick Look focus restoration. New-install English and persisted Russian were
+checked in an isolated defaults domain. No durable tests or fixtures were added.

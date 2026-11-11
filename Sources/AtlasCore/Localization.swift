@@ -2,7 +2,7 @@ import Foundation
 
 public enum L10n {
     private static let lock = NSLock()
-    private static var cachedLanguage = UserDefaults.standard.string(forKey: "atlas.language") ?? "ru"
+    private static var cachedLanguage = UserDefaults.standard.string(forKey: "atlas.language") ?? "en"
     public static var language: String {
         get {
             lock.lock()

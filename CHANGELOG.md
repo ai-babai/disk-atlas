@@ -5,6 +5,14 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.15.5 — 2026-11-12
+
+- Use native outline rows and disclosure in Duplicates, matching Contents while keeping full paths and bounded rendering for large groups.
+- Keep background activity in stable indicator slots, with cancellable map highlighting and no extra status panel shifting completed rows.
+- Add local Help and a Report a Bug form with optional email, one manually chosen screenshot, and automatic app/macOS version details.
+- Offer application-only diagnostics through an independent Settings switch, off by default; source paths and file names are excluded.
+- Start in English unless a language choice has already been saved.
+
 ## 0.15.4 — 2026-11-11
 
 - Keep file-type totals and expanded extensions tied to the inspected folder, including nested selections.
