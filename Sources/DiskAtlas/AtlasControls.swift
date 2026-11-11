@@ -24,8 +24,8 @@ private struct AtlasButtonSurface: View {
             ? Palette.mark : hovered ? Palette.mark.opacity(0.65) : Palette.soft
     }
     private var border: Color {
-        if focused && enabled { return Palette.accent }
         if grouped { return .clear }
+        if focused && enabled { return Palette.accent }
         return emphasized && enabled ? Palette.accent.opacity(0.45) : Palette.line.opacity(enabled ? 0.6 : 0.4)
     }
     var body: some View {
@@ -33,7 +33,8 @@ private struct AtlasButtonSurface: View {
             enabled ? (emphasized ? Palette.accent : Palette.ink) : Palette.sub.opacity(0.65)
         ).padding(.horizontal, 10).padding(.vertical, 4).frame(minHeight: grouped ? 24 : size == .large ? 32 : 28)
             .background(fill, in: RoundedRectangle(cornerRadius: 6)).overlay {
-                RoundedRectangle(cornerRadius: 6).strokeBorder(border, lineWidth: focused && enabled ? 2 : 1)
+                RoundedRectangle(cornerRadius: 6).strokeBorder(
+                    border, lineWidth: !grouped && focused && enabled ? 2 : 1)
             }.contentShape(RoundedRectangle(cornerRadius: 6)).onHover { hovered = $0 }
     }
 }

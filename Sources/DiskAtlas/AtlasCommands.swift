@@ -58,9 +58,7 @@ struct AtlasCommands: Commands {
                 store.cancel()
             }.keyboardShortcut(".").disabled(!store.scanning && !store.duplicates.busy)
             Button(L10n.text("На уровень выше")) { store.up() }.keyboardShortcut(.upArrow, modifiers: .command)
-            Button(L10n.text("Контекст для агента")) { store.copyContext() }.keyboardShortcut(
-                "c", modifiers: [.command, .shift]
-            ).disabled(store.snapshot == nil)
+
         }
     }
 }

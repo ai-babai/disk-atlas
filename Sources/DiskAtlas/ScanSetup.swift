@@ -5,7 +5,6 @@ import UniformTypeIdentifiers
 struct ScanSetup: View {
     @ObservedObject var store: AtlasStore
     @State private var targeted = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let places: [(String, String, String)] = [
         (L10n.text("Загрузки"), "arrow.down.circle", "Downloads"),
         (L10n.text("Рабочий стол"), "desktopcomputer", "Desktop"), (L10n.text("Документы"), "doc.text", "Documents"),
@@ -65,8 +64,12 @@ struct ScanSetup: View {
                 }
                 return true
             }
-            FileAccessHelpButton().id(store.language)
-            duplicateChoice
+            HStack(spacing: 16) {
+                Toggle(L10n.text("Найти дубликаты"), isOn: $store.prepareDuplicateSearch).font(.system(size: 11))
+                    .disabled(store.duplicates.busy)
+                Spacer(minLength: 8)
+                FileAccessHelpButton().id(store.language)
+            }
             HStack(spacing: 16) {
                 Button(L10n.text("Анализировать"), systemImage: "chart.pie") { store.analyzeSelection() }.buttonStyle(
                     AtlasButtonStyle(emphasized: true)
@@ -76,21 +79,6 @@ struct ScanSetup: View {
                 ).foregroundStyle(Palette.sub).lineSpacing(3)
             }
         }
-    }
-
-    private var duplicateChoice: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Toggle(L10n.text("Найти дубликаты"), isOn: $store.prepareDuplicateSearch).font(.system(size: 11)).disabled(
-                store.duplicates.busy)
-            if store.prepareDuplicateSearch {
-                Text(
-                    L10n.text(
-                        "Сначала посчитаем размеры файлов, затем найдём дубликаты в фоне. Поиск дубликатов может занять время."
-                    )
-                ).font(.system(size: 10)).foregroundStyle(Palette.sub).fixedSize(horizontal: false, vertical: true)
-                DuplicateStartOptions(session: store.duplicates).transition(.opacity)
-            }
-        }.animation(reduceMotion ? nil : .easeOut(duration: Motion.quick), value: store.prepareDuplicateSearch)
     }
 
     private func quick(_ title: String, icon: String, path: String) -> some View {
@@ -123,14 +111,5 @@ struct ScanSetup: View {
             }.buttonStyle(.plain).help(L10n.text("Убрать из анализа")).accessibilityLabel(
                 L10n.text("Убрать \(path) из анализа"))
         }.padding(9).background(Palette.paper, in: RoundedRectangle(cornerRadius: 6))
-    }
-}
-
-private struct DuplicateStartOptions: View {
-    @ObservedObject var session: DuplicateSession
-    var body: some View {
-        FileSizeRange(options: $session.options).frame(maxWidth: 420, alignment: .leading).padding(.top, 8).padding(
-            .leading, 20
-        ).disabled(session.busy)
     }
 }

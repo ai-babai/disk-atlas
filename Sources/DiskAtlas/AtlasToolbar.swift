@@ -64,10 +64,10 @@ struct AtlasToolbar: ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
             Group {
                 if store.snapshot != nil {
-                    if store.showDuplicates { duplicateActions } else { scanActions }
                     Button(L10n.text("Новый анализ"), systemImage: "plus") { store.beginSelection() }.disabled(
                         store.scanning || store.preparing || store.fileTrash.busy
                     ).labelStyle(.titleAndIcon).help(L10n.text("Новый анализ") + " · ⌘N")
+                    if store.showDuplicates { duplicateActions } else { scanActions }
 
                 }
             }.buttonStyle(.borderless).foregroundStyle(Palette.sub)
@@ -139,7 +139,25 @@ struct AtlasToolbar: ToolbarContent {
         Button {
             store.exportSnapshot()
         } label: {
-            Label(L10n.text("Сохранить снимок…"), systemImage: "square.and.arrow.up").labelStyle(.iconOnly)
-        }.help(L10n.text("Сохранить снимок · ⌘S")).disabled(store.preparing)
+            SnapshotSaveIcon()
+        }.accessibilityLabel(L10n.text("Сохранить снимок…")).help(L10n.text("Сохранить снимок · ⌘S")).disabled(
+            store.preparing)
+    }
+}
+
+/// Diskette silhouette keeps Save distinct from Share in the compact toolbar.
+private struct SnapshotSaveIcon: View {
+    var body: some View {
+        Path { path in
+            path.move(to: CGPoint(x: 2, y: 1))
+            path.addLines([
+                CGPoint(x: 11, y: 1), CGPoint(x: 15, y: 5), CGPoint(x: 15, y: 15), CGPoint(x: 1, y: 15),
+                CGPoint(x: 1, y: 2),
+            ])
+            path.closeSubpath()
+            path.addRect(CGRect(x: 4, y: 1, width: 6, height: 5))
+            path.addRect(CGRect(x: 4, y: 9, width: 8, height: 6))
+        }.stroke(style: StrokeStyle(lineWidth: 1.3, lineCap: .round, lineJoin: .round)).frame(width: 16, height: 16)
+            .accessibilityHidden(true)
     }
 }

@@ -26,13 +26,6 @@ struct Inspector: View {
                     Divider().overlay(Palette.line)
                     FileTypeComposition(store: store)
                     Divider().overlay(Palette.line)
-                    Button {
-                        store.copyContext()
-                    } label: {
-                        Label(L10n.text("Контекст для агента"), systemImage: "curlybraces").font(
-                            .system(size: 11, weight: .medium))
-                    }.buttonStyle(.plain).foregroundStyle(Palette.accent).help(
-                        L10n.text("Скопировать текущую папку и 30 крупных объектов в JSON · ⇧⌘C"))
                     Text(
                         L10n.text(
                             "APFS может разделять блоки между копиями. Размер здесь не равен гарантированно освобождаемому месту."

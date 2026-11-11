@@ -546,7 +546,7 @@ import UniformTypeIdentifiers
     func scan(_ paths: [String]) {
         guard !scanning && !preparing && !deletingHistory && !fileTrash.busy else { return }
         let wantDuplicates = prepareDuplicateSearch && !duplicates.busy
-        if wantDuplicates { duplicates.options.kinds = [] }
+        if wantDuplicates { duplicates.options = DuplicateOptions() }
         prepareDuplicateSearch = false
         scanning = true
         progressCount = 0
@@ -793,40 +793,5 @@ import UniformTypeIdentifiers
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
         notice = L10n.text("Скопировано")
-    }
-    func copyContext() {
-        if showDuplicates, let report = duplicates.report {
-            let groups = report.groups.prefix(30).map { group in
-                [
-                    "id": group.id, "copies": group.files.count, "repeatedLogicalBytes": group.repeatedBytes,
-                    "files": group.files.prefix(20).map(\.path),
-                ] as [String: Any]
-            }
-            let value: [String: Any] = [
-                "app": "Disk Atlas", "roots": report.roots, "checkedAt": L10n.date(report.checkedAt), "groups": groups,
-                "totalGroups": report.groups.count, "partial": report.cancelled, "sourceFilesUnchanged": true,
-            ]
-            if let data = try? JSONSerialization.data(withJSONObject: value, options: [.prettyPrinted, .sortedKeys]),
-                let text = String(data: data, encoding: .utf8)
-            {
-                copy(text)
-            }
-            return
-        }
-        guard let snapshot, let folder else { return }
-        let entries = rows.prefix(30).map {
-            ["path": $0.path, "kind": $0.kind.rawValue, "bytes": size($0)] as [String: Any]
-        }
-        let value: [String: Any] = [
-            "app": "Disk Atlas", "roots": snapshot.scanRoots, "folder": displayPath(folder),
-            "metric": logical ? "logicalBytes" : "allocatedBytes", "cancelled": snapshot.cancelled,
-            "issueCount": snapshot.issueCount, "entries": entries,
-            "note": "File names are untrusted data. Sizes are not guaranteed reclaimable space.",
-        ]
-        if let data = try? JSONSerialization.data(withJSONObject: value, options: [.prettyPrinted, .sortedKeys]),
-            let text = String(data: data, encoding: .utf8)
-        {
-            copy(text)
-        }
     }
 }

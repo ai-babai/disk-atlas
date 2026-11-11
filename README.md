@@ -93,7 +93,6 @@ shasum -a 256 -c SHA256SUMS.txt
 | Space / Esc | Quick Look for the focused file / close preview |
 | ⌘[ | Return from Home to the current snapshot |
 | ⌘B / ⌥⌘I | Toggle navigation / inspector |
-| ⇧⌘C | Copy the current scope as agent-friendly JSON |
 
 The folder map stays visible in **Disk usage**. Use **Contents / Largest files / Duplicates**
 directly above the list to switch between immediate contents and files throughout

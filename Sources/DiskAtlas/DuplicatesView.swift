@@ -92,20 +92,20 @@ struct DuplicatesView: View {
         }
     }
     private var embeddedHeader: some View {
-        VStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 8) {
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 8) {
                     listControls
                     Spacer(minLength: 8)
-                    resultSearch.frame(width: 214)
                     parametersButton
+                    resultSearch.frame(width: 214)
                 }
                 VStack(alignment: .leading, spacing: 8) {
                     listControls
                     HStack {
-                        resultSearch
-                        Spacer(minLength: 8)
                         parametersButton
+                        resultSearch
+                        Spacer(minLength: 0)
                     }
                 }
             }

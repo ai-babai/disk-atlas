@@ -256,14 +256,14 @@ struct MainView: View {
                 HStack(spacing: 10) {
                     listControlPlaceholder
                     Spacer(minLength: 8)
-                    listSearch.frame(width: 214)
                     ViewFilterButton(store: store)
+                    listSearch.frame(width: 214)
                 }
                 VStack(alignment: .leading, spacing: 8) {
                     listControlPlaceholder
                     HStack(spacing: 10) {
-                        listSearch
                         ViewFilterButton(store: store)
+                        listSearch
                     }
                 }
             }
