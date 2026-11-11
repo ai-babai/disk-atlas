@@ -1,3 +1,4 @@
+import AppKit
 import AtlasCore
 import SwiftUI
 
@@ -11,6 +12,11 @@ enum FileListMetrics {
     static let sizeWidth: CGFloat = 100
     static let nameFontSize: CGFloat = 12
     static let dateFontSize: CGFloat = 10
+    @MainActor static var nameFont: NSFont { .systemFont(ofSize: nameFontSize, weight: .medium) }
+    @MainActor static var secondaryFont: NSFont { .systemFont(ofSize: dateFontSize) }
+    @MainActor static var dateFont: NSFont { .monospacedDigitSystemFont(ofSize: dateFontSize, weight: .regular) }
+    @MainActor static var sizeFont: NSFont { .monospacedDigitSystemFont(ofSize: 11, weight: .regular) }
+    @MainActor static var headerFont: NSFont { .systemFont(ofSize: dateFontSize, weight: .medium) }
 }
 
 struct DuplicateTableColumns {
@@ -23,7 +29,7 @@ struct DuplicateTableColumns {
         FileListMetrics.checkWidth + Self.nameWidth + Self.copiesWidth + FileListMetrics.sizeWidth + Self.actionsWidth
             + 16 + (created ? FileListMetrics.dateWidth : 0) + (modified ? FileListMetrics.dateWidth : 0)
     }
-    func date(_ value: Date?) -> some View {
+    @MainActor func date(_ value: Date?) -> some View {
         Text(
             value.map {
                 $0.formatted(
@@ -31,8 +37,7 @@ struct DuplicateTableColumns {
                         date: .numeric, time: .omitted,
                         locale: Locale(identifier: L10n.language == "en" ? "en_US" : "ru_RU")))
             } ?? "—"
-        ).font(.system(size: FileListMetrics.dateFontSize)).monospacedDigit().foregroundStyle(Palette.sub).padding(
-            .top, 5
-        ).padding(.horizontal, 6).frame(width: FileListMetrics.dateWidth, alignment: .leading)
+        ).font(Font(FileListMetrics.dateFont)).foregroundStyle(Palette.sub).padding(.top, 5).padding(.horizontal, 6)
+            .frame(width: FileListMetrics.dateWidth, alignment: .leading)
     }
 }

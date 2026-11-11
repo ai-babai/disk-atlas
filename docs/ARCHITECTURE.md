@@ -381,6 +381,7 @@ removed; the reserved selection/action row keeps its height when selection chang
 ## Duplicate list presentation
 
 The embedded and full-report views share group/copy rows. `FileListMetrics` keeps
+shared AppKit/SwiftUI fonts for names, paths, dates, sizes and headings, plus
 native proportions: 33-point ordinary rows and a 43-point minimum for two-line
 rows/groups. Duplicate paths wrap to their full height; checkboxes never change
 that height. Created/modified columns honor the same preferences as the ordinary
@@ -391,7 +392,10 @@ nearby copies. Nested lazy stacks are avoided: they can leave empty scroll regio
 when the enclosing group moves offscreen. Disclosure updates without animation.
 
 Group focus, disclosure and Trash selection are independent in the embedded list.
-Only an explicit group-row selection starts map highlighting; entering the mode,
+Explicit group-row selection highlights the group; selecting a copy highlights only
+that copy at the current map scale. Copy path labels remain ordinary wrapping text
+so text-selection focus cannot hide them; Copy path remains in the row context menu.
+Only an explicit row selection starts map highlighting; entering the mode,
 restoring a requested group or expanding copies does not. Focus builds
 ancestor copy counts on a cancellable metadata worker for the current presentation
 index. Outlines are painted from the exact rectangles used by the tile painter,

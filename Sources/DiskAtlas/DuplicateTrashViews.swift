@@ -74,6 +74,8 @@ struct DuplicateGroupRow: View {
     var columns = DuplicateTableColumns()
     var select: (() -> Void)? = nil
     var selected = false
+    var selectedPath: String?
+    var selectFile: ((DuplicateFile) -> Void)?
     @State private var previewURL: URL?
     @State private var focusedFile: String?
     private var selectedCount: Int {
@@ -143,9 +145,9 @@ struct DuplicateGroupRow: View {
                 groupName
                 if columns.created { columns.date(nil) }
                 if columns.modified { columns.date(nil) }
-                Text("\(group.files.count)").font(.system(size: 11)).monospacedDigit().frame(
+                Text("\(group.files.count)").font(Font(FileListMetrics.sizeFont)).frame(
                     width: DuplicateTableColumns.copiesWidth, alignment: .trailing)
-                Text(byteString(group.repeatedBytes)).font(.system(size: 11)).monospacedDigit().padding(.horizontal, 6)
+                Text(byteString(group.repeatedBytes)).font(Font(FileListMetrics.sizeFont)).padding(.horizontal, 6)
                     .frame(width: FileListMetrics.sizeWidth, alignment: .trailing)
             }.contentShape(Rectangle())
         }.buttonStyle(.plain).help(
@@ -154,7 +156,7 @@ struct DuplicateGroupRow: View {
     private var disclosureButton: some View {
         Button(action: toggleExpanded) {
             Image(systemName: expanded ? "chevron.down" : "chevron.right").font(.system(size: 8, weight: .semibold))
-                .frame(width: 16, height: 28)
+                .frame(width: 16, height: 28).padding(.trailing, 8)
         }.buttonStyle(.plain).accessibilityLabel(L10n.text("Показать все копии") + ": " + (group.displayName ?? ""))
     }
     private func toggleExpanded() { expanded.toggle() }
@@ -164,25 +166,25 @@ struct DuplicateGroupRow: View {
                 .font(.system(size: 14)).foregroundStyle(Palette.accent).frame(width: 16)
             VStack(alignment: .leading, spacing: 3) {
                 Text(group.displayName ?? representative.map { URL(fileURLWithPath: $0.path).lastPathComponent } ?? "")
-                    .font(.system(size: FileListMetrics.nameFontSize, weight: .medium)).lineLimit(1).truncationMode(
-                        .middle)
+                    .font(Font(FileListMetrics.nameFont)).lineLimit(1).truncationMode(.middle)
                 ZStack(alignment: .leading) {
                     Text((group.locations ?? []).joined(separator: " · ")).opacity(selectedCount == 0 ? 1 : 0)
                         .accessibilityHidden(selectedCount > 0)
                     Text(groupSelectionStatus).foregroundStyle(
                         selectedCount == group.files.count ? .orange : Palette.accent
                     ).opacity(selectedCount > 0 ? 1 : 0).accessibilityHidden(selectedCount == 0)
-                }.font(.system(size: FileListMetrics.dateFontSize)).foregroundStyle(Palette.sub).lineLimit(1)
+                }.font(Font(FileListMetrics.secondaryFont)).foregroundStyle(Palette.sub).lineLimit(1)
             }
         }.padding(.vertical, 4).padding(.trailing, 8).frame(
-            minWidth: DuplicateTableColumns.nameWidth - 16, maxWidth: .infinity, alignment: .leading)
+            minWidth: DuplicateTableColumns.nameWidth - 24, maxWidth: .infinity, alignment: .leading)
     }
     @ViewBuilder private var files: some View {
         let groupHasSelection = selectedCount > 0
         ForEach(group.files.prefix(200)) { file in
             DuplicateFileRow(
                 file: file, group: group, session: session, focusedFile: $focusedFile, columns: columns,
-                groupHasSelection: groupHasSelection
+                groupHasSelection: groupHasSelection, mapSelected: selectedPath == file.path,
+                select: selectFile.map { action in { action(file) } }
             ) { previewURL = URL(fileURLWithPath: file.path) }.background(Palette.soft.opacity(0.6))
         }
         if group.files.count > 200 {
@@ -198,6 +200,8 @@ private struct DuplicateFileRow: View {
     @Binding var focusedFile: String?
     let columns: DuplicateTableColumns
     let groupHasSelection: Bool
+    let mapSelected: Bool
+    let select: (() -> Void)?
     let preview: () -> Void
     @FocusState private var checkboxFocused: Bool
     private var focused: Bool { focusedFile == file.path }
@@ -210,12 +214,11 @@ private struct DuplicateFileRow: View {
             if columns.created { columns.date(file.created.timeIntervalSince1970 == 0 ? nil : file.created) }
             if columns.modified { columns.date(file.modified) }
             Color.clear.frame(width: DuplicateTableColumns.copiesWidth, height: 1)
-            Text(byteString(file.bytes)).font(.system(size: 11)).monospacedDigit().padding(.top, 5).padding(
-                .horizontal, 6
-            ).frame(width: FileListMetrics.sizeWidth, alignment: .trailing)
+            Text(byteString(file.bytes)).font(Font(FileListMetrics.sizeFont)).padding(.top, 5).padding(.horizontal, 6)
+                .frame(width: FileListMetrics.sizeWidth, alignment: .trailing)
             actions
         }.padding(.horizontal, 8).padding(.vertical, 4).frame(minHeight: FileListMetrics.pathRowHeight).background(
-            focused ? Palette.mark.opacity(0.5) : .clear
+            (select == nil ? focused : mapSelected) ? Palette.mark.opacity(0.5) : .clear
         ).contentShape(Rectangle()).onTapGesture(count: 2) { session.reveal(file) }.contextMenu {
             Button(L10n.text("Быстрый просмотр"), action: openPreview)
             Button(L10n.text("Показать в Finder")) { session.reveal(file) }
@@ -237,19 +240,19 @@ private struct DuplicateFileRow: View {
     private var fileName: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 8) {
-                Text(URL(fileURLWithPath: file.path).lastPathComponent).font(
-                    .system(size: FileListMetrics.nameFontSize, weight: .medium)
-                ).lineLimit(1)
-                Text(L10n.text("Останется")).font(.system(size: FileListMetrics.dateFontSize)).foregroundStyle(
-                    Palette.accent
-                ).opacity(keeper ? 1 : 0).accessibilityHidden(!keeper)
+                Text(URL(fileURLWithPath: file.path).lastPathComponent).font(Font(FileListMetrics.nameFont)).lineLimit(
+                    1)
+                Text(L10n.text("Останется")).font(Font(FileListMetrics.secondaryFont)).foregroundStyle(Palette.accent)
+                    .opacity(keeper ? 1 : 0).accessibilityHidden(!keeper)
             }
-            Text(file.path).font(.system(size: FileListMetrics.dateFontSize)).foregroundStyle(Palette.sub).lineLimit(
-                nil
-            ).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
-        }.padding(.leading, 40).padding(.trailing, 8).padding(.top, 3).frame(
+            Text(file.path).font(Font(FileListMetrics.secondaryFont)).foregroundStyle(Palette.sub).lineLimit(nil)
+                .fixedSize(horizontal: false, vertical: true)
+        }.padding(.leading, 48).padding(.trailing, 8).padding(.top, 3).frame(
             minWidth: DuplicateTableColumns.nameWidth, maxWidth: .infinity, alignment: .leading
-        ).contentShape(Rectangle()).simultaneousGesture(TapGesture().onEnded { focusedFile = file.path }).background(
+        ).contentShape(Rectangle()).onTapGesture {
+            focusedFile = file.path
+            select?()
+        }.background(
             PreviewKeyboard(active: focused, preview: openPreview, blurred: { if focused { focusedFile = nil } }))
     }
     private var actions: some View {

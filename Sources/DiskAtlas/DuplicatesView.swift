@@ -206,7 +206,7 @@ struct DuplicatesView: View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
                 Color.clear.frame(width: FileListMetrics.checkWidth)
-                sortHeading("Имя", key: .name).padding(.leading, 40).frame(
+                sortHeading("Имя", key: .name).padding(.leading, 48).frame(
                     minWidth: DuplicateTableColumns.nameWidth, maxWidth: .infinity, alignment: .leading)
                 if columns.created { dateHeading("Создан") }
                 if columns.modified { dateHeading("Изменён") }
@@ -219,7 +219,7 @@ struct DuplicatesView: View {
                 ProgressView().controlSize(.mini).frame(width: DuplicateTableColumns.actionsWidth, height: 16).opacity(
                     session.sorting ? 1 : 0
                 ).accessibilityHidden(!session.sorting)
-            }.font(.system(size: 10, weight: .medium)).foregroundStyle(Palette.sub).padding(.horizontal, 8).frame(
+            }.font(Font(FileListMetrics.headerFont)).foregroundStyle(Palette.sub).padding(.horizontal, 8).frame(
                 height: FileListMetrics.headerHeight)
             Divider().overlay(Palette.line)
         }
@@ -232,7 +232,9 @@ struct DuplicatesView: View {
             group: group, session: session,
             expanded: Binding(get: { expanded.contains(group.id) }, set: { setExpanded(group.id, value: $0) }),
             columns: columns, select: embedded ? { store.focusDuplicateGroup(group) } : nil,
-            selected: embedded && store.duplicateSelectionID == group.id
+            selected: embedded && store.duplicateSelectionID == group.id && store.duplicateSelectedFile == nil,
+            selectedPath: embedded ? store.duplicateSelectedFile?.path : nil,
+            selectFile: embedded ? { store.focusDuplicateFile($0, in: group) } : nil
         ).id(group.id)
     }
     private func setExpanded(_ id: String, value: Bool) {

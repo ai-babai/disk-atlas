@@ -22,7 +22,6 @@ struct Sidebar: View {
             }.padding(.horizontal, -8)
             Spacer(minLength: 12)
             HStack {
-                Text(L10n.text("Локально на твоём Mac")).font(.system(size: 10)).foregroundStyle(Palette.sub)
                 Spacer()
                 Menu {
                     Button(L10n.text("Как в системе")) { store.appearance = "system" }

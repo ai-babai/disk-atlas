@@ -50,6 +50,7 @@ import UniformTypeIdentifiers
         }
     }
     @Published var duplicateSelectedGroup: DuplicateGroup?
+    @Published var duplicateSelectedFile: DuplicateFile?
     var duplicateSelectionID: String? { duplicateSelectedGroup?.id }
     @Published var duplicateMapFocus: DuplicateMapFocus?
     var duplicateFocusTask: Task<Void, Never>?

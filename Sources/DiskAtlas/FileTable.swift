@@ -120,7 +120,7 @@ struct FileTable: NSViewRepresentable {
             let key = column.identifier.rawValue
             column.headerCell.stringValue =
                 L10n.text(titles[key] ?? "") + (key == sort.rawValue ? descending ? " ↓" : " ↑" : "")
-            column.headerCell.font = .systemFont(ofSize: 10, weight: .medium)
+            column.headerCell.font = FileListMetrics.headerFont
             column.headerCell.alignment = key == "size" || key == "share" ? .right : .left
             if let header = column.headerCell as? AtlasHeaderCell { header.color = NSColor(Palette.sub) }
         }
@@ -507,14 +507,11 @@ private final class AtlasCell: NSTableCellView {
         isDate = identifier.rawValue == "created" || identifier.rawValue == "modified"
         super.init(frame: .zero)
         self.identifier = identifier
-        title.font =
-            isName
-            ? .systemFont(ofSize: 12, weight: .medium)
-            : .monospacedDigitSystemFont(ofSize: isDate ? 10 : 11, weight: .regular)
+        title.font = isName ? FileListMetrics.nameFont : (isDate ? FileListMetrics.dateFont : FileListMetrics.sizeFont)
         title.textColor = NSColor(isDate ? Palette.sub : Palette.ink)
         title.lineBreakMode = .byTruncatingTail
         title.alignment = isName || isDate ? .left : .right
-        subtitle.font = .systemFont(ofSize: 9)
+        subtitle.font = FileListMetrics.secondaryFont
         subtitle.textColor = NSColor(Palette.sub)
         subtitle.lineBreakMode = .byTruncatingMiddle
         addSubview(title)

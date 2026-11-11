@@ -5,6 +5,8 @@ import SwiftUI
 final class DuplicateMapFocus: Sendable {
     let index: PresentationIndex
     let group: DuplicateGroup
+    let file: DuplicateFile?
+    var selectedCount: Int { file == nil ? group.files.count : 1 }
     let counts: [Int: Int]
     struct Location: Identifiable, Sendable {
         let path: String
@@ -15,9 +17,13 @@ final class DuplicateMapFocus: Sendable {
     let folderCount: Int
     enum Detail { case copies, folders, overview }
     static let markerLimit = 12
-    init(index: PresentationIndex, group: DuplicateGroup, counts: [Int: Int], locations: [Location], folderCount: Int) {
+    init(
+        index: PresentationIndex, group: DuplicateGroup, file: DuplicateFile?, counts: [Int: Int],
+        locations: [Location], folderCount: Int
+    ) {
         self.index = index
         self.group = group
+        self.file = file
         self.counts = counts
         self.locations = locations
         self.folderCount = folderCount
@@ -34,9 +40,9 @@ final class DuplicateMapFocus: Sendable {
         ).count
         return occupied > Self.markerLimit ? .overview : .folders
     }
-    private static func folders(_ group: DuplicateGroup) throws -> (locations: [Location], count: Int) {
+    private static func folders(_ files: [DuplicateFile]) throws -> (locations: [Location], count: Int) {
         var folders: [String: Int] = [:]
-        for (offset, file) in group.files.enumerated() {
+        for (offset, file) in files.enumerated() {
             if offset % 512 == 0 { try Task.checkCancellation() }
             folders[(file.path as NSString).deletingLastPathComponent, default: 0] += 1
         }
@@ -55,8 +61,11 @@ final class DuplicateMapFocus: Sendable {
         }
         return (root as NSString).lastPathComponent + path.dropFirst(root.count)
     }
-    static func build(_ group: DuplicateGroup, index: PresentationIndex) throws -> DuplicateMapFocus {
-        let paths = Set(group.files.map(\.path))
+    static func build(_ group: DuplicateGroup, index: PresentationIndex, file: DuplicateFile? = nil) throws
+        -> DuplicateMapFocus
+    {
+        let files = file.map { [$0] } ?? group.files
+        let paths = Set(files.map(\.path))
         var counts: [Int: Int] = [:]
         for entry in index.snapshot.entries {
             if entry.id % 512 == 0 { try Task.checkCancellation() }
@@ -68,9 +77,10 @@ final class DuplicateMapFocus: Sendable {
             }
         }
         try Task.checkCancellation()
-        let folders = try Self.folders(group)
+        let folders = try Self.folders(files)
         return DuplicateMapFocus(
-            index: index, group: group, counts: counts, locations: folders.locations, folderCount: folders.count)
+            index: index, group: group, file: file, counts: counts, locations: folders.locations,
+            folderCount: folders.count)
     }
 }
 
@@ -106,23 +116,31 @@ extension AtlasStore {
         duplicateFocusWorker = nil
         duplicateMapFocus = nil
         duplicateSelectedGroup = nil
+        duplicateSelectedFile = nil
     }
-    func focusDuplicateGroup(_ group: DuplicateGroup) {
+    func focusDuplicateGroup(_ group: DuplicateGroup) { focusDuplicate(group, file: nil) }
+    func focusDuplicateFile(_ file: DuplicateFile, in group: DuplicateGroup) { focusDuplicate(group, file: file) }
+    private func focusDuplicate(_ group: DuplicateGroup, file: DuplicateFile?) {
         guard let index, duplicates.snapshotCreated == snapshot?.created else { return }
+        if duplicateSelectionID == group.id, duplicateSelectedFile?.path == file?.path { return }
         clearMapSelection()
         duplicateSelectedGroup = group
-        let worker = Task.detached(priority: .userInitiated) { try DuplicateMapFocus.build(group, index: index) }
+        duplicateSelectedFile = file
+        let worker = Task.detached(priority: .userInitiated) {
+            try DuplicateMapFocus.build(group, index: index, file: file)
+        }
         duplicateFocusWorker = worker
         duplicateFocusTask = Task {
             guard let focus = try? await worker.value, !Task.isCancelled, self.index === index,
-                duplicateSelectionID == group.id
+                duplicateSelectionID == group.id, duplicateSelectedFile?.path == file?.path
             else { return }
             duplicateMapFocus = focus
         }
     }
     func showDuplicateOverview(_ group: DuplicateGroup) {
+        let file = duplicateSelectedFile
         navigate(0)
-        focusDuplicateGroup(group)
+        focusDuplicate(group, file: file)
     }
 }
 
@@ -131,9 +149,9 @@ struct DuplicateMapSelectionInfo: View {
     @ObservedObject var store: AtlasStore
     var body: some View {
         HStack(spacing: 8) {
-            Text(L10n.text("На карте: ") + "\(focus.counts[store.folderID, default: 0]) / \(focus.group.files.count)")
+            Text(L10n.text("На карте: ") + "\(focus.counts[store.folderID, default: 0]) / \(focus.selectedCount)")
                 .monospacedDigit().foregroundStyle(Palette.sub)
-            if focus.counts[store.folderID, default: 0] < focus.group.files.count, store.folderID != 0 {
+            if focus.counts[store.folderID, default: 0] < focus.selectedCount, store.folderID != 0 {
                 Button(L10n.text("Обзор")) { store.showDuplicateOverview(focus.group) }.buttonStyle(.plain)
             }
             Button {
