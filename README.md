@@ -187,6 +187,8 @@ not replace them. The overview’s underlined **Files with copies** metric opens
 
 ![Duplicate groups with expanded copies, explicit selection and its total size](docs/images/duplicates-en.png)
 
+![Select a duplicate group to highlight its copies on the folder map](docs/images/duplicates-map-en.png)
+
 Different sizes are never compared. The checker samples the first and last 64 KiB.
 For exactly two surviving large files it goes straight to byte comparison,
 skipping a redundant full-file hash pass. Larger candidate buckets use fast
@@ -339,6 +341,8 @@ duplicate-check timings, object counts and fixed error codes. It defaults off;
 turning it off cancels pending sending. No names, paths, search terms, file contents,
 device/user ID, crash capture, session recording or persisted retry queue. Manual
 feedback works independently. CLI/MCP remain offline.
+
+<img src="docs/images/feedback-en.png" width="520" alt="Feedback draft with message, optional email, screenshot attachment and technical details">
 
 ## Contact
 
