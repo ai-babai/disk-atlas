@@ -44,6 +44,52 @@ final class DuplicateTrashTests: XCTestCase {
             XCTAssertEqual(selection.bytes, Int64(before.count) * 100)
         }
     }
+    func testKeepOnlyReplacesSelectionInsideOneGroupAndLeavesOtherGroups() throws {
+        let first = try group("a", copies: 3)
+        let second = try group("b", copies: 2)
+        var selection = DuplicateTrashSelection()
+        selection.toggle(second.files[1], in: second)
+        selection.keepOnly(first.files[1], in: first)
+        XCTAssertEqual(selection.paths, [first.files[0].path, first.files[2].path, second.files[1].path])
+        XCTAssertEqual(selection.bytes, 300)
+        // Choosing another copy swaps the remaining one; the previous one becomes a candidate.
+        selection.keepOnly(first.files[2], in: first)
+        XCTAssertEqual(selection.paths, [first.files[0].path, first.files[1].path, second.files[1].path])
+        XCTAssertEqual(selection.bytes, 300)
+        // A fully selected group returns to exactly one remaining copy; manual edits stay ordinary toggles.
+        selection.toggle(first.files[2], in: first)
+        XCTAssertEqual(selection.count(in: first), 3)
+        selection.keepOnly(first.files[0], in: first)
+        XCTAssertEqual(selection.count(in: first), 2)
+        XCTAssertFalse(selection.paths.contains(first.files[0].path))
+        selection.toggle(first.files[1], in: first)
+        XCTAssertEqual(selection.paths, [first.files[2].path, second.files[1].path])
+        XCTAssertEqual(selection.bytes, 200)
+        let plan = try DuplicateTrashPlan(report: report([first, second]), paths: selection.paths)
+        XCTAssertEqual(plan.batches.map(\.groupID), ["a", "b"])
+        XCTAssertNotNil(plan.batches[0].keeper)
+        // A file outside the group is ignored.
+        let before = selection
+        selection.keepOnly(second.files[0], in: first)
+        XCTAssertEqual(selection.paths, before.paths)
+        XCTAssertEqual(selection.bytes, before.bytes)
+    }
+    func testRemainingPlaceUsesTheShortestUnambiguousFolderOrTheFileName() throws {
+        func place(_ paths: [String], keep index: Int) throws -> String {
+            let files = try paths.map { try Fixtures.file($0, bytes: 1) }
+            return DuplicateGroup(id: "g", files: files).remainingPlace(paths[index])
+        }
+        XCTAssertEqual(
+            try place(["/V/Проекты/Фильм/a.mov", "/V/Загрузки/a.mov", "/V/Архив/a.mov"], keep: 1), "Загрузки")
+        XCTAssertEqual(try place(["/V/Проекты/Фильм/a.mov", "/V/Загрузки/a.mov"], keep: 0), "Фильм")
+        // Same last folder: widen until unique.
+        XCTAssertEqual(try place(["/V/A/Фото/a.jpg", "/V/B/Фото/a.jpg"], keep: 1), "B/Фото")
+        // The only distinguishing trait is depth: anchor at the root.
+        XCTAssertEqual(try place(["/B/a.jpg", "/A/B/a.jpg"], keep: 0), "/B")
+        XCTAssertEqual(try place(["/a.jpg", "/A/a.jpg"], keep: 0), "/")
+        // Same folder, different names: name the file.
+        XCTAssertEqual(try place(["/V/X/a.mov", "/V/X/a copy.mov"], keep: 1), "a copy.mov")
+    }
     func testReviewIdentifiesExactlyTheSelectedFilesAndTheKeeper() throws {
         let value = try group()
         let source = report([value])

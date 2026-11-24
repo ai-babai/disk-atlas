@@ -53,14 +53,11 @@ extension DuplicateOutlineTable {
         }
         func refreshVisibleRows() {
             guard let table else { return }
-            let range = table.rows(in: table.visibleRect)
-            guard range.location != NSNotFound else { return }
-            for row in range.location..<NSMaxRange(range) {
-                guard let item = table.item(atRow: row) as? DuplicateOutlineItem else { continue }
-                for column in 0..<2 {
-                    if let view = table.view(atColumn: column, row: row, makeIfNecessary: false) {
-                        configure(view, item: item)
-                    }
+            // Include rows AppKit prepared just outside the visible rect; they scroll in without reconfiguration.
+            table.enumerateAvailableRowViews { rowView, row in
+                guard let item = table.item(atRow: row) as? DuplicateOutlineItem else { return }
+                for column in 0..<rowView.numberOfColumns {
+                    if let view = rowView.view(atColumn: column) as? NSView { configure(view, item: item) }
                 }
             }
             restorePreviewFocus()

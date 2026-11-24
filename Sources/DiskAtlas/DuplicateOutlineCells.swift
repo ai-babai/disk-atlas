@@ -10,17 +10,20 @@ extension DuplicateOutlineTable.Coordinator {
         cell.button.isHidden = item.more
         cell.button.isEnabled = !parent.session.busy
         let selected = parent.session.trashSelection
+        let state: NSControl.StateValue
         if let file = item.file {
-            cell.button.state = selected.paths.contains(file.path) ? .on : .off
+            state = selected.paths.contains(file.path) ? .on : .off
             cell.button.setAccessibilityLabel(
                 L10n.text("Выбрать для корзины") + ": " + URL(fileURLWithPath: file.path).lastPathComponent)
         } else {
             let count = selected.count(in: item.group)
-            cell.button.state = count == 0 ? .off : count == item.group.files.count ? .on : .mixed
+            state = count == 0 ? .off : count == item.group.files.count ? .on : .mixed
             cell.button.setAccessibilityLabel(
                 L10n.text("Выбрать все копии группы") + ": " + (item.group.displayName ?? ""))
         }
-        cell.button.allowsMixedState = cell.button.state == .mixed
+        // AppKit turns .mixed into .on unless mixed state is allowed first; reused cells may carry either setting.
+        cell.button.allowsMixedState = state == .mixed
+        cell.button.state = state
         cell.action = { [weak self, weak cell] in
             guard let self, !parent.session.busy else { return }
             cell?.window?.makeFirstResponder(cell?.button)
@@ -34,9 +37,14 @@ extension DuplicateOutlineTable.Coordinator {
     }
     private func configureContent(_ cell: DuplicateContentCell, item: DuplicateOutlineItem) {
         let group = item.group
-        let count = parent.session.trashSelection.count(in: group)
+        let selection = parent.session.trashSelection
+        let count = selection.count(in: group)
+        // Name the place only once a single copy is actually left; never promise one before a choice.
+        let remaining =
+            item.file == nil && count == group.files.count - 1
+            ? group.files.first { !selection.paths.contains($0.path) }?.path : nil
         cell.configure(
-            item, columns: parent.columns, selectedCount: count,
+            item, columns: parent.columns, selectedCount: count, remaining: remaining,
             fileSelected: item.file.map { parent.session.trashSelection.paths.contains($0.path) } ?? false,
             highlighted: parent.embedded && parent.store.duplicateSelectionID == group.id
                 && parent.store.duplicateSelectedFile?.path == item.file?.path, busy: parent.session.busy,
@@ -48,6 +56,11 @@ extension DuplicateOutlineTable.Coordinator {
             parent.preview(file, group)
         }
         cell.revealAction = { [weak self] in if let file = item.file { self?.parent.session.reveal(file) } }
+        cell.keepAction = { [weak self] in
+            guard let self, let file = item.file, !parent.session.busy else { return }
+            parent.focusedFile = nil
+            parent.session.trashSelection.keepOnly(file, in: group)
+        }
         cell.trashAction = { [weak self] in
             guard let self else { return }
             if let file = item.file {

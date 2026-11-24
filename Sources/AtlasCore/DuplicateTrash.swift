@@ -14,6 +14,11 @@ public struct DuplicateTrashSelection: Sendable {
         let select = count(in: group) != group.files.count
         for file in group.files { set(file, selected: select) }
     }
+    /// Keep one copy: every other copy in its group becomes a Trash candidate; other groups are unchanged.
+    public mutating func keepOnly(_ file: DuplicateFile, in group: DuplicateGroup) {
+        guard group.files.contains(where: { $0.path == file.path }) else { return }
+        for other in group.files { set(other, selected: other.path != file.path) }
+    }
     private mutating func set(_ file: DuplicateFile, selected: Bool) {
         if selected {
             if paths.insert(file.path).inserted { bytes += file.bytes }
@@ -85,6 +90,22 @@ public struct DuplicateTrashPlan: Sendable, Identifiable {
         path.hasPrefix("/") && !path.split(separator: "/").contains { $0 == "." || $0 == ".." }
     }
 
+}
+
+extension DuplicateGroup {
+    /// Where the single remaining copy stays: the shortest folder suffix no other copy shares,
+    /// a root-anchored folder when only a deeper folder shares it, or the file name when folders coincide.
+    public func remainingPlace(_ path: String) -> String {
+        let folders = { (value: String) in
+            Array(URL(fileURLWithPath: value).deletingLastPathComponent().pathComponents.dropFirst())
+        }
+        let own = folders(path)
+        let others = files.map(\.path).filter { $0 != path }.map(folders)
+        guard !others.contains(own) else { return URL(fileURLWithPath: path).lastPathComponent }
+        let count = (1...max(1, own.count)).first { size in !others.contains { $0.suffix(size) == own.suffix(size) } }
+        let suffix = count.map { own.suffix($0).joined(separator: "/") } ?? ""
+        return suffix.isEmpty ? "/" + own.joined(separator: "/") : suffix
+    }
 }
 
 extension DuplicateReport {

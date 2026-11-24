@@ -5,6 +5,12 @@ created: "2026-11-07"
 ---
 # Changelog
 
+## 0.15.7 — 2026-11-25
+
+- Choose **Keep** beside a duplicate to keep that copy and mark the others in its group for Trash. You can adjust the selection before confirming the move.
+- See which folder holds the remaining copy in the group summary. A dash in the group checkbox now indicates a partial selection.
+- Duplicate rows use a single highlight. An underlined **Keep** action and a separate **Will remain** label distinguish the action from the result in both duplicate views.
+
 ## 0.15.5 — 2026-11-12
 
 - Use native outline rows and disclosure in Duplicates, matching Contents while keeping full paths and bounded rendering for large groups.

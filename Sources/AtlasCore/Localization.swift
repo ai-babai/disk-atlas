@@ -212,7 +212,9 @@ public enum L10n {
         "Переместить в Корзину?": "Move to Trash?", "Переместить в Корзину": "Move to Trash",
         "Проверь список. Выбранные файлы будут перемещены в Корзину; их можно восстановить через Finder.":
             "Review the list. Selected files will move to Trash and can be restored through Finder.",
-        "Сохранится": "Keep this copy",
+        "Сохранится": "Keep this copy", "Оставить эту копию": "Keep this copy",
+        "Эта копия останется, остальные копии группы будут отмечены для Корзины":
+            "This copy stays; every other copy in the group is selected for Trash",
         "Выбрать повторы для корзины · одна копия останется": "Select repeats for Trash · keep one copy",
         "Выбрать повторы для корзины": "Select repeats for Trash", "В корзину повторы…": "Trash repeats…",
         "В корзину повторы": "Trash repeats", "Выбрать для корзины": "Select for Trash",
